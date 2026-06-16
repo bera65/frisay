@@ -1,0 +1,12 @@
+.alert-price-wrapper .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.alert-price-wrapper .btn-outline-danger i {
+    margin-right: 6px;
+}
+
+.modal-header.bg-danger .btn-close {
+    filter: brightness(0) invert(1);
+}
