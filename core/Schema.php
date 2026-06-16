@@ -1,0 +1,93 @@
+<?php
+
+class Schema
+{
+	private static bool $ready = false;
+
+	public static function ensure(): void
+	{
+		if (self::$ready) {
+			return;
+		}
+
+		self::$ready = true;
+		Product::ensureSchema();
+
+		$userCol = DB::execute("SHOW COLUMNS FROM `users` LIKE 'email'");
+		if (empty($userCol)) {
+			DB::execute(
+				"ALTER TABLE `users` ADD COLUMN `email` varchar(128) NOT NULL DEFAULT '' AFTER `phone`"
+			);
+		}
+
+		$notifTable = DB::execute("SHOW TABLES LIKE 'user_notifications'");
+		if (empty($notifTable)) {
+			DB::execute(
+				"CREATE TABLE `user_notifications` (
+					`id_notification` int(11) NOT NULL AUTO_INCREMENT,
+					`id_user` int(11) NOT NULL,
+					`type` varchar(32) NOT NULL DEFAULT '',
+					`title` varchar(255) NOT NULL DEFAULT '',
+					`message` text NOT NULL,
+					`link` varchar(255) NOT NULL DEFAULT '',
+					`is_read` tinyint(1) NOT NULL DEFAULT 0,
+					`date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					PRIMARY KEY (`id_notification`),
+					KEY `id_user` (`id_user`),
+					KEY `is_read` (`is_read`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+			);
+		}
+
+		$couponTable = DB::execute("SHOW TABLES LIKE 'coupons'");
+		if (empty($couponTable)) {
+			DB::execute(
+				"CREATE TABLE `coupons` (
+					`id_coupon` int(11) NOT NULL AUTO_INCREMENT,
+					`code` varchar(32) NOT NULL,
+					`discount_type` enum('percent','fixed') NOT NULL DEFAULT 'percent',
+					`discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
+					`min_cart` decimal(10,2) NOT NULL DEFAULT 0.00,
+					`max_uses` int(11) NOT NULL DEFAULT 0,
+					`used_count` int(11) NOT NULL DEFAULT 0,
+					`date_from` datetime DEFAULT NULL,
+					`date_to` datetime DEFAULT NULL,
+					`active` tinyint(1) NOT NULL DEFAULT 1,
+					`date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					PRIMARY KEY (`id_coupon`),
+					UNIQUE KEY `code` (`code`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+			);
+		}
+
+		$orderCoupon = DB::execute("SHOW COLUMNS FROM `orders` LIKE 'coupon_code'");
+		if (empty($orderCoupon)) {
+			DB::execute(
+				"ALTER TABLE `orders`
+				 ADD COLUMN `coupon_code` varchar(32) NOT NULL DEFAULT '' AFTER `note`,
+				 ADD COLUMN `coupon_discount` decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `coupon_code`"
+			);
+		}
+
+		$resetToken = DB::execute("SHOW COLUMNS FROM `users` LIKE 'reset_token'");
+		if (empty($resetToken)) {
+			DB::execute(
+				"ALTER TABLE `users`
+				 ADD COLUMN `reset_token` varchar(64) NOT NULL DEFAULT '' AFTER `login_code`,
+				 ADD COLUMN `reset_expires` datetime DEFAULT NULL AFTER `reset_token`"
+			);
+		}
+
+		self::ensureSetting('THEME', 'default');
+		self::ensureSetting('MAIL_DRIVER', 'php');
+	}
+
+	private static function ensureSetting(string $key, string $default): void
+	{
+		$exists = DB::getValue('SELECT id FROM settings WHERE title = ? LIMIT 1', [$key]);
+
+		if ($exists === false) {
+			Settings::set($key, $default);
+		}
+	}
+}

@@ -1,0 +1,87 @@
+<?php
+	if (!defined('IN_ADMIN')) {
+		exit;
+	}
+
+	$flash = '';
+	$flashType = 'info';
+	$editableKeys = Settings::getEditableKeys();
+	$values = Settings::getAllForAdmin();
+	$mailConfigured = Mail::isConfigured();
+	$usesSmtp = Mail::usesSmtp();
+
+	if (Tools::isSubmit('saveSettings')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} else {
+			$ok = true;
+
+			foreach (array_keys($editableKeys) as $key) {
+				if ($key === 'SMTP_PASS' && trim((string) Tools::getValue('SMTP_PASS')) === '') {
+					continue;
+				}
+
+				$value = trim((string) Tools::getValue($key));
+				if (!Settings::set($key, $value)) {
+					$ok = false;
+				}
+			}
+
+			$flash = $ok ? 'Ayarlar kaydedildi' : 'Bazı ayarlar kaydedilemedi';
+			$flashType = $ok ? 'success' : 'danger';
+			$values = Settings::getAllForAdmin();
+			$mailConfigured = Mail::isConfigured();
+			$usesSmtp = Mail::usesSmtp();
+		}
+	}
+
+	if (Tools::isSubmit('testMail')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} elseif (!$mailConfigured) {
+			$flash = $usesSmtp
+				? 'SMTP ayarları eksik. Sunucu, kullanıcı ve şifre girin.'
+				: 'PHP mail() için İletişim e-postası veya gönderen e-posta girin.';
+			$flashType = 'danger';
+		} else {
+			$testTo = trim((string) Tools::getValue('test_email'));
+			if ($testTo === '') {
+				$testTo = Settings::get('SMTP_FROM_EMAIL') ?: Settings::get('SMTP_USER') ?: Settings::get('CONTACT_EMAIL');
+			}
+
+			$driverLabel = $usesSmtp ? 'SMTP' : 'PHP mail()';
+
+			if ($testTo === '' || !filter_var($testTo, FILTER_VALIDATE_EMAIL)) {
+				$flash = 'Test için geçerli bir e-posta adresi girin';
+				$flashType = 'danger';
+			} elseif (Mail::send($testTo, 'Test Mail - ' . Settings::get('SITE_NAME'), '<p>Bu bir test e-postasıdır. <strong>' . $driverLabel . '</strong> ile gönderildi.</p>')) {
+				$flash = 'Test maili gönderildi (' . $driverLabel . '): ' . $testTo;
+				$flashType = 'success';
+			} else {
+				$error = Mail::getLastError();
+				$flash = 'Test maili gönderilemedi (' . $driverLabel . ')' . ($error !== '' ? ': ' . $error : '');
+				$flashType = 'danger';
+			}
+		}
+	}
+
+	$smarty->assign([
+		'settingsValues' => $values,
+		'settingsKeys' => $editableKeys,
+		'flash' => $flash,
+		'flashType' => $flashType,
+		'mailConfigured' => $mailConfigured,
+		'usesSmtp' => $usesSmtp,
+		'readOnlySettings' => [
+			'DOMAIN' => Settings::get('DOMAIN'),
+			'FOLDER' => Settings::get('FOLDER'),
+		],
+	]);
+
+	AdminPage::add('settings', 'Site Ayarları');

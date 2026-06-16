@@ -1,0 +1,324 @@
+<?php
+
+class Installer
+{
+	public static function rootPath(): string
+	{
+		return dirname(__DIR__);
+	}
+
+	public static function lockPath(): string
+	{
+		return self::rootPath() . '/config/installed.lock';
+	}
+
+	public static function isInstalled(): bool
+	{
+		return is_file(self::rootPath() . '/config/env.php');
+	}
+
+	public static function requirements(): array
+	{
+		$checks = [
+			[
+				'label' => 'PHP 7.4+',
+				'ok' => version_compare(PHP_VERSION, '7.4.0', '>='),
+				'hint' => 'Mevcut: ' . PHP_VERSION,
+			],
+			[
+				'label' => 'PDO MySQL',
+				'ok' => extension_loaded('pdo_mysql'),
+				'hint' => 'pdo_mysql eklentisi gerekli',
+			],
+			[
+				'label' => 'mbstring',
+				'ok' => extension_loaded('mbstring'),
+				'hint' => 'mbstring eklentisi gerekli',
+			],
+			[
+				'label' => 'GD',
+				'ok' => extension_loaded('gd'),
+				'hint' => 'Ürün görseli işleme için GD gerekli',
+			],
+			[
+				'label' => 'config/ yazılabilir',
+				'ok' => is_writable(self::rootPath() . '/config'),
+				'hint' => 'env.php ve kurulum kilidi oluşturulmalı',
+			],
+			[
+				'label' => 'cache/ yazılabilir',
+				'ok' => is_writable(self::rootPath() . '/cache'),
+				'hint' => 'Smarty önbelleği için gerekli',
+			],
+			[
+				'label' => 'img/products/ yazılabilir',
+				'ok' => is_dir(self::rootPath() . '/img/products') && is_writable(self::rootPath() . '/img/products'),
+				'hint' => 'Ürün görselleri için gerekli',
+			],
+		];
+
+		$ok = true;
+
+		foreach ($checks as $check) {
+			if (!$check['ok']) {
+				$ok = false;
+				break;
+			}
+		}
+
+		return ['ok' => $ok, 'items' => $checks];
+	}
+
+	public static function testDatabase(array $config): array
+	{
+		try {
+			$pdo = self::pdo($config, false);
+			$pdo->query('SELECT 1');
+
+			return ['success' => true, 'message' => 'Veritabanı bağlantısı başarılı'];
+		} catch (Throwable $e) {
+			return ['success' => false, 'message' => 'Bağlantı hatası: ' . $e->getMessage()];
+		}
+	}
+
+	public static function install(array $data): array
+	{
+		if (self::isInstalled()) {
+			return ['success' => false, 'message' => 'Sistem zaten kurulu'];
+		}
+
+		$dbHost = trim((string) ($data['db_host'] ?? 'localhost'));
+		$dbName = trim((string) ($data['db_name'] ?? ''));
+		$dbUser = trim((string) ($data['db_user'] ?? ''));
+		$dbPass = (string) ($data['db_pass'] ?? '');
+		$siteName = trim((string) ($data['site_name'] ?? 'FShop'));
+		$siteUrl = rtrim(trim((string) ($data['site_url'] ?? '')), '/') . '/';
+		$rewriteBase = trim((string) ($data['rewrite_base'] ?? '/'));
+		$adminName = trim((string) ($data['admin_name'] ?? 'Site Yöneticisi'));
+		$adminEmail = trim((string) ($data['admin_email'] ?? ''));
+		$adminPass = (string) ($data['admin_password'] ?? '');
+		$withDemo = !empty($data['install_demo']);
+
+		if ($dbName === '' || $dbUser === '') {
+			return ['success' => false, 'message' => 'Veritabanı adı ve kullanıcı zorunludur'];
+		}
+
+		if ($siteUrl === '/' || !filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+			return ['success' => false, 'message' => 'Geçerli bir site adresi girin (http/https ile)'];
+		}
+
+		if ($adminEmail === '' || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+			return ['success' => false, 'message' => 'Geçerli bir admin e-postası girin'];
+		}
+
+		if (strlen($adminPass) < 8) {
+			return ['success' => false, 'message' => 'Admin şifresi en az 8 karakter olmalı'];
+		}
+
+		if ($rewriteBase === '') {
+			$rewriteBase = '/';
+		}
+
+		if ($rewriteBase[0] !== '/') {
+			$rewriteBase = '/' . $rewriteBase;
+		}
+
+		if ($rewriteBase !== '/' && substr($rewriteBase, -1) !== '/') {
+			$rewriteBase .= '/';
+		}
+
+		$dbConfig = [
+			'db_host' => $dbHost,
+			'db_name' => $dbName,
+			'db_user' => $dbUser,
+			'db_pass' => $dbPass,
+		];
+
+		$test = self::testDatabase($dbConfig);
+
+		if (!$test['success']) {
+			return $test;
+		}
+
+		try {
+			$pdo = self::pdo($dbConfig, true);
+			self::runSqlFile($pdo, self::rootPath() . '/install/schema.sql');
+
+			if ($withDemo) {
+				self::runSqlFile($pdo, self::rootPath() . '/install/seed_demo.sql');
+			}
+
+			$shopToken = bin2hex(random_bytes(16));
+			$folder = $rewriteBase;
+
+			self::setSetting($pdo, 'DOMAIN', $siteUrl);
+			self::setSetting($pdo, 'FOLDER', $folder);
+			self::setSetting($pdo, 'SITE_NAME', $siteName);
+			self::setSetting($pdo, 'SHOP_TOKEN', $shopToken);
+			self::setSetting($pdo, 'THEME', 'default');
+			self::setSetting($pdo, 'PRODUCT_LIMIT', '5000');
+			self::setSetting($pdo, 'FREE_SHIPPING_MIN', '500');
+			self::setSetting($pdo, 'SHIPPING_FEE', '79.90');
+			self::setSetting($pdo, 'HAVALE', '3');
+			self::setSetting($pdo, 'CARGO_DAY', '3');
+			self::setSetting($pdo, 'CONTACT_EMAIL', $adminEmail);
+			self::setSetting($pdo, 'CONTACT_PHONE', '0555 000 00 00');
+			self::setSetting($pdo, 'CONTACT_PHONE_TEL', '+905550000000');
+			self::setSetting($pdo, 'MAIL_DRIVER', 'php');
+
+			$adminHash = password_hash($adminPass, PASSWORD_DEFAULT);
+			$stmt = $pdo->prepare('UPDATE admins SET full_name = ?, email = ?, password = ?, active = 1 WHERE id_admin = 1');
+			$stmt->execute([$adminName, $adminEmail, $adminHash]);
+
+			if ($stmt->rowCount() === 0) {
+				$insert = $pdo->prepare('INSERT INTO admins (full_name, email, password, active) VALUES (?, ?, ?, 1)');
+				$insert->execute([$adminName, $adminEmail, $adminHash]);
+			}
+
+			self::writeEnv([
+				'APP_ENV' => 'production',
+				'APP_DEBUG' => false,
+				'DB_HOST' => $dbHost,
+				'DB_NAME' => $dbName,
+				'DB_USER' => $dbUser,
+				'DB_PASS' => $dbPass,
+				'REWRITE_BASE' => $rewriteBase,
+			]);
+
+			self::updateRewriteBase($rewriteBase);
+			file_put_contents(self::lockPath(), date('c') . PHP_EOL);
+
+			if ($withDemo) {
+				self::refreshDemoCurrencyPrices($dbConfig);
+			}
+
+			return [
+				'success' => true,
+				'message' => 'Kurulum tamamlandı',
+				'admin_email' => $adminEmail,
+				'shop_token' => $shopToken,
+				'cron_url' => rtrim($siteUrl, '/') . str_replace('//', '/', $folder . 'api/cron.php?action=currency&token=' . $shopToken),
+			];
+		} catch (Throwable $e) {
+			return ['success' => false, 'message' => 'Kurulum hatası: ' . $e->getMessage()];
+		}
+	}
+
+	private static function pdo(array $config, bool $useDatabase): PDO
+	{
+		$host = $config['db_host'] ?? 'localhost';
+		$name = $config['db_name'] ?? '';
+		$user = $config['db_user'] ?? '';
+		$pass = $config['db_pass'] ?? '';
+		$dsn = $useDatabase
+			? 'mysql:host=' . $host . ';dbname=' . $name . ';charset=utf8mb4'
+			: 'mysql:host=' . $host . ';charset=utf8mb4';
+
+		$pdo = new PDO($dsn, $user, $pass, [
+			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+		]);
+
+		$pdo->exec("SET NAMES utf8mb4");
+
+		return $pdo;
+	}
+
+	private static function runSqlFile(PDO $pdo, string $path): void
+	{
+		if (!is_file($path)) {
+			throw new RuntimeException('SQL dosyası bulunamadı: ' . $path);
+		}
+
+		$sql = file_get_contents($path);
+		$sql = preg_replace('/^\s*--.*$/m', '', $sql);
+		$statements = preg_split('/;\s*[\r\n]+/', (string) $sql);
+
+		foreach ($statements as $statement) {
+			$statement = trim($statement);
+
+			if ($statement === '') {
+				continue;
+			}
+
+			$pdo->exec($statement);
+		}
+	}
+
+	private static function setSetting(PDO $pdo, string $title, string $value): void
+	{
+		$stmt = $pdo->prepare('SELECT id FROM settings WHERE title = ? LIMIT 1');
+		$stmt->execute([$title]);
+		$row = $stmt->fetch();
+
+		if ($row) {
+			$update = $pdo->prepare('UPDATE settings SET value = ? WHERE title = ?');
+			$update->execute([$value, $title]);
+
+			return;
+		}
+
+		$insert = $pdo->prepare('INSERT INTO settings (title, value) VALUES (?, ?)');
+		$insert->execute([$title, $value]);
+	}
+
+	private static function writeEnv(array $env): void
+	{
+		$path = self::rootPath() . '/config/env.php';
+		$export = var_export($env, true);
+		$content = "<?php\nreturn " . $export . ";\n";
+
+		if (file_put_contents($path, $content) === false) {
+			throw new RuntimeException('config/env.php yazılamadı');
+		}
+	}
+
+	private static function updateRewriteBase(string $rewriteBase): void
+	{
+		$htaccess = self::rootPath() . '/.htaccess';
+
+		if (!is_file($htaccess) || !is_writable($htaccess)) {
+			return;
+		}
+
+		$content = file_get_contents($htaccess);
+		$content = preg_replace(
+			'/RewriteBase\s+.+$/m',
+			'RewriteBase ' . $rewriteBase,
+			$content,
+			1,
+			$count
+		);
+
+		if ($count === 0) {
+			return;
+		}
+
+		file_put_contents($htaccess, $content);
+	}
+
+	private static function refreshDemoCurrencyPrices(array $dbConfig): void
+	{
+		require_once self::rootPath() . '/config/function.php';
+		require_once self::rootPath() . '/config/database.php';
+		require_once self::rootPath() . '/core/Product.php';
+
+		global $db;
+		$host = $dbConfig['db_host'] ?? 'localhost';
+		$name = $dbConfig['db_name'] ?? '';
+		$user = $dbConfig['db_user'] ?? '';
+		$pass = $dbConfig['db_pass'] ?? '';
+
+		try {
+			$db = new PDO(
+				'mysql:host=' . $host . ';dbname=' . $name . ';charset=utf8mb4',
+				$user,
+				$pass,
+				[PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+			);
+			Product::refreshCurrencyPrices();
+		} catch (Throwable $e) {
+			// Demo kurulumda kur API erişilemezse ürünler kayıt sonrası cron ile güncellenir.
+		}
+	}
+}
