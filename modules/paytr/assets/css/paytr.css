@@ -1,0 +1,8 @@
+.paytr-payment-page .paytr-iframe-wrap {
+	min-height: 420px;
+}
+
+.paytr-payment-page .paytr-iframe-wrap iframe {
+	min-height: 420px;
+	border: 0;
+}
