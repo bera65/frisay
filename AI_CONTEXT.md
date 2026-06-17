@@ -1,22 +1,63 @@
 # FShop AI Context
 
-FShop is a PHP ecommerce platform.
+## Project Type
 
-Core folders:
+Open source ecommerce platform written in PHP.
 
+## Stack
+
+- PHP 7.4+
+- MySQL
+- PDO
+- Smarty
+- Bootstrap
+
+## Directory Structure
+
+/config
 /controllers
 /models
-/views
 /modules
+/templates
+/install
+/api
 
-Database tables:
+## Templates
 
-products
-categories
-orders
+Storefront:
+templates/default
 
-Template engine:
-Smarty
+Admin:
+templates/admin
 
-Coding style:
-PSR-12
+## Database
+
+Core tables:
+
+- products
+- categories
+- orders
+- customers
+- settings
+
+## Routing
+
+URL rewriting is handled by Apache mod_rewrite.
+
+## Module System
+
+Modules are stored inside:
+
+modules/
+
+Each module can contain:
+
+- install scripts
+- admin pages
+- frontend hooks
+
+## Currency System
+
+Currency update cron endpoint:
+
+/api/cron.php?action=currency&token=SHOP_TOKEN
