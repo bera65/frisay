@@ -1,14 +1,27 @@
 # FShop
 
-Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
+FShop, PHP ve Smarty kullanılarak geliştirilmiş açık kaynak e-ticaret altyapısıdır.
 
-DEMO : https://fyazilim.com/fshop/
+## Özellikler
 
-## Gereksinimler
+- PHP 7.4+ uyumlu
+- PDO tabanlı veritabanı katmanı
+- Smarty template sistemi
+- Bootstrap tabanlı yönetim paneli
+- Tema desteği
+- Modül sistemi
+- Çoklu para birimi
+- Döviz bazlı fiyatlandırma
+- XML ürün aktarımı
+- SEO dostu URL yapısı
+- Yönetim paneli
+- Açık kaynak ve geliştirilebilir yapı
 
-- PHP 7.4+ (GD, PDO MySQL, mbstring)
-- MySQL 5.7+ / MariaDB 10.3+
-- Apache `mod_rewrite` etkin
+## Neden FShop?
+
+FShop, küçük ve orta ölçekli e-ticaret projeleri için geliştirilmiş hafif bir altyapıdır.
+
+Diğer eticaret sistemlere göre daha sade, daha kolay özelleştirilebilir ve PHP geliştiricileri için daha öğrenilebilir bir mimari sunar.
 
 ## Kurulum (önerilen)
 
