@@ -29,7 +29,9 @@
 
 		if ($moduleName) {
 			Module::dispatchAdminPage($moduleName);
-			ob_end_flush();
+			if (ob_get_level() > 0) {
+				ob_end_flush();
+			}
 			exit;
 		}
 
@@ -48,4 +50,6 @@
 		AdminPage::add('404', $pageTitle);
 	}
 
-	ob_end_flush();
+	if (ob_get_level() > 0) {
+		ob_end_flush();
+	}

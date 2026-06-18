@@ -4,8 +4,35 @@ class Address
 {
 	private const MAX_PER_USER = 10;
 
+	private static bool $schemaReady = false;
+
+	public static function ensureSchema(): void
+	{
+		if (self::$schemaReady) {
+			return;
+		}
+
+		self::$schemaReady = true;
+
+		$columns = [
+			'company_name' => "varchar(128) NOT NULL DEFAULT '' AFTER `phone`",
+			'tax_office' => "varchar(64) NOT NULL DEFAULT '' AFTER `company_name`",
+			'tax_number' => "varchar(20) NOT NULL DEFAULT '' AFTER `tax_office`",
+		];
+
+		foreach ($columns as $name => $definition) {
+			$exists = DB::execute("SHOW COLUMNS FROM `user_addresses` LIKE '{$name}'");
+
+			if (empty($exists)) {
+				DB::execute("ALTER TABLE `user_addresses` ADD COLUMN `{$name}` {$definition}");
+			}
+		}
+	}
+
 	public static function getListForUser(int $idUser): array
 	{
+		self::ensureSchema();
+
 		$rows = DB::execute(
 			'SELECT * FROM user_addresses WHERE id_user = ? ORDER BY is_default DESC, id_address DESC',
 			[$idUser]
@@ -36,6 +63,8 @@ class Address
 
 	public static function save(int $idUser, array $data, int $idAddress = 0): array
 	{
+		self::ensureSchema();
+
 		if ($idUser <= 0) {
 			return self::fail('Giriş yapmalısınız');
 		}
@@ -158,6 +187,10 @@ class Address
 		$district = trim((string) ($data['district'] ?? ''));
 		$addressText = trim((string) ($data['address_text'] ?? ''));
 		$label = trim((string) ($data['label'] ?? ''));
+		$companyName = mb_substr(trim(strip_tags((string) ($data['company_name'] ?? ''))), 0, 128);
+		$taxOffice = mb_substr(trim(strip_tags((string) ($data['tax_office'] ?? ''))), 0, 64);
+		$taxNumber = preg_replace('/\D+/', '', (string) ($data['tax_number'] ?? ''));
+		$taxNumber = mb_substr($taxNumber, 0, 20);
 
 		if (!Validate::isName($name)) {
 			return self::fail('Geçerli bir ad soyad girin');
@@ -181,6 +214,9 @@ class Address
 				'label' => $label,
 				'full_name' => $name,
 				'phone' => $phone,
+				'company_name' => $companyName,
+				'tax_office' => $taxOffice,
+				'tax_number' => $taxNumber,
 				'city' => $city,
 				'district' => $district,
 				'address_text' => $addressText,

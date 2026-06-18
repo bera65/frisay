@@ -11,8 +11,13 @@
 				<div class="col-md-6"><strong>Tarih:</strong> {$order.date_formatted}</div>
 				<div class="col-md-6"><strong>Müşteri:</strong> {$order.customer_name|escape}</div>
 				<div class="col-md-6"><strong>Telefon:</strong> {$order.customer_phone|escape}</div>
+				{if $order.company_name}<div class="col-md-6"><strong>Firma:</strong> {$order.company_name|escape}</div>{/if}
+				{if $order.tax_office}<div class="col-md-6"><strong>Vergi Dairesi:</strong> {$order.tax_office|escape}</div>{/if}
+				{if $order.tax_number}<div class="col-md-6"><strong>Vergi No / TCKN:</strong> {$order.tax_number|escape}</div>{/if}
 				<div class="col-12"><strong>Adres:</strong> {$order.address_city|escape} / {$order.address_district|escape} — {$order.address_text|escape}</div>
 				{if $order.note}<div class="col-12"><strong>Not:</strong> {$order.note|escape}</div>{/if}
+				{if $order.cargo_company}<div class="col-md-6"><strong>Kargo:</strong> {$order.cargo_company|escape}</div>{/if}
+				{if $order.tracking_number}<div class="col-md-6"><strong>Takip No:</strong> {$order.tracking_number|escape}</div>{/if}
 			</div>
 		</div>
 
@@ -48,7 +53,7 @@
 		</div>
 
 		<div class="admin-panel">
-			<h2 class="h6 mb-3">Durum Güncelle</h2>
+			<h2 class="h6 mb-3">Durum ve Kargo</h2>
 			<form method="post">
 				<input type="hidden" name="updateStatus" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
@@ -57,6 +62,10 @@
 					<option value="{$statusId}"{if $order.status == $statusId} selected{/if}>{$statusLabel|escape}</option>
 					{/foreach}
 				</select>
+				<label class="form-label small mb-1">Kargo Firması</label>
+				<input type="text" name="cargo_company" class="form-control mb-3" value="{$order.cargo_company|default:''|escape}" placeholder="Yurtiçi Kargo">
+				<label class="form-label small mb-1">Takip Numarası</label>
+				<input type="text" name="tracking_number" class="form-control mb-3" value="{$order.tracking_number|default:''|escape}" placeholder="YT123456789">
 				<button type="submit" class="btn btn-dark w-100">Kaydet</button>
 			</form>
 		</div>

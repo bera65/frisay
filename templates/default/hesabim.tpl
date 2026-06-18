@@ -101,15 +101,25 @@
 								data-label="{$addr.label|escape}"
 								data-full-name="{$addr.full_name|escape}"
 								data-phone="{$addr.phone|escape}"
-								data-city="{$addr.city|escape}"
-								data-district="{$addr.district|escape}"
-								data-address-text="{$addr.address_text|escape}"
-								data-is-default="{$addr.is_default}">Düzenle</button>
+							data-city="{$addr.city|escape}"
+							data-district="{$addr.district|escape}"
+							data-address-text="{$addr.address_text|escape}"
+							data-company-name="{$addr.company_name|escape}"
+							data-tax-office="{$addr.tax_office|escape}"
+							data-tax-number="{$addr.tax_number|escape}"
+							data-is-default="{$addr.is_default}">Düzenle</button>
 							<button type="button" class="btn btn-sm btn-outline-danger delete-address" data-id="{$addr.id_address}">Sil</button>
 						</div>
 					</div>
 					<p class="mb-1 fw-semibold">{$addr.full_name|escape} · {$addr.phone|escape}</p>
 					<p class="mb-0 text-muted small">{$addr.city|escape} / {$addr.district|escape} — {$addr.address_text|escape}</p>
+					{if $addr.company_name || $addr.tax_number}
+					<p class="mb-0 text-muted small mt-1">
+						{if $addr.company_name}Firma: {$addr.company_name|escape}{/if}
+						{if $addr.tax_office}{if $addr.company_name} · {/if}VD: {$addr.tax_office|escape}{/if}
+						{if $addr.tax_number}{if $addr.company_name || $addr.tax_office} · {/if}VKN/TCKN: {$addr.tax_number|escape}{/if}
+					</p>
+					{/if}
 				</div>
 				{/foreach}
 			{else}
@@ -145,6 +155,21 @@
 					<div class="col-12">
 						<label class="form-label">Açık Adres</label>
 						<textarea name="address_text" class="form-control" rows="3" required></textarea>
+					</div>
+					<div class="col-12">
+						<h3 class="fs-6 mb-2">Fatura Bilgileri <span class="text-muted fw-normal">(Opsiyonel)</span></h3>
+					</div>
+					<div class="col-12">
+						<label class="form-label">Firma Adı</label>
+						<input type="text" name="company_name" class="form-control" placeholder="Kurumsal fatura için">
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">Vergi Dairesi</label>
+						<input type="text" name="tax_office" class="form-control">
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">Vergi No / TCKN</label>
+						<input type="text" name="tax_number" class="form-control" maxlength="20" inputmode="numeric">
 					</div>
 					<div class="col-12">
 						<div class="form-check">

@@ -71,6 +71,37 @@
 		}
 	}
 
+	if (Tools::isSubmit('saveWebApi')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} else {
+			Settings::set('WEBAPI_ENABLED', Tools::getValue('WEBAPI_ENABLED') ? '1' : '0');
+			$flash = 'Web API ayarı kaydedildi';
+			$flashType = 'success';
+		}
+	}
+
+	if (Tools::isSubmit('regenWebApiKey')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} else {
+			Settings::set('WEBAPI_KEY', bin2hex(random_bytes(32)));
+			Settings::set('WEBAPI_ENABLED', '1');
+			$flash = 'Web API anahtarı oluşturuldu / yenilendi';
+			$flashType = 'success';
+		}
+	}
+
+	$webApiKey = (string) Settings::get('WEBAPI_KEY');
+	$webApiEnabled = Settings::get('WEBAPI_ENABLED') === '1';
+	$webApiUrl = rtrim($domain, '/') . '/api/v1/';
+
 	$smarty->assign([
 		'settingsValues' => $values,
 		'settingsKeys' => $editableKeys,
@@ -82,6 +113,9 @@
 			'DOMAIN' => Settings::get('DOMAIN'),
 			'FOLDER' => Settings::get('FOLDER'),
 		],
+		'webApiKey' => $webApiKey,
+		'webApiEnabled' => $webApiEnabled,
+		'webApiUrl' => $webApiUrl,
 	]);
 
 	AdminPage::add('settings', 'Site Ayarları');

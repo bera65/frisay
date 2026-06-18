@@ -149,12 +149,15 @@ class Installer
 			}
 
 			$shopToken = bin2hex(random_bytes(16));
+			$webApiKey = bin2hex(random_bytes(32));
 			$folder = $rewriteBase;
 
 			self::setSetting($pdo, 'DOMAIN', $siteUrl);
 			self::setSetting($pdo, 'FOLDER', $folder);
 			self::setSetting($pdo, 'SITE_NAME', $siteName);
 			self::setSetting($pdo, 'SHOP_TOKEN', $shopToken);
+			self::setSetting($pdo, 'WEBAPI_ENABLED', '1');
+			self::setSetting($pdo, 'WEBAPI_KEY', $webApiKey);
 			self::setSetting($pdo, 'THEME', 'default');
 			self::setSetting($pdo, 'PRODUCT_LIMIT', '5000');
 			self::setSetting($pdo, 'FREE_SHIPPING_MIN', '500');

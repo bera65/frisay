@@ -23,6 +23,9 @@
 							data-city="{$addr.city|escape}"
 							data-district="{$addr.district|escape}"
 							data-address-text="{$addr.address_text|escape}"
+							data-company-name="{$addr.company_name|escape}"
+							data-tax-office="{$addr.tax_office|escape}"
+							data-tax-number="{$addr.tax_number|escape}"
 							{if $selectedAddressId == $addr.id_address} checked{/if}>
 						<span>
 							<strong>{if $addr.label}{$addr.label|escape}{else}Adres{/if}</strong>
@@ -87,6 +90,23 @@
 						<label class="form-label">Sipariş Notu (Opsiyonel)</label>
 						<textarea name="note" class="form-control" rows="2" placeholder="Kargo notu vb.">{$formData.note|escape}</textarea>
 					</div>
+				</div>
+			</div>
+
+			<h2 class="fs-6 mb-3 mt-4">Fatura Bilgileri <span class="text-muted fw-normal">(Opsiyonel)</span></h2>
+			<p class="small text-muted mb-2">Kurumsal fatura veya TCKN bilgisi girmek isterseniz doldurun. Bu bilgiler sipariş ve entegrasyon API çıktısında <code>invoiceAddress</code> alanına yazılır.</p>
+			<div class="row g-3">
+				<div class="col-12">
+					<label class="form-label">Firma Adı</label>
+					<input type="text" name="company_name" class="form-control" value="{$formData.company_name|escape}" placeholder="Kurumsal fatura için">
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Vergi Dairesi</label>
+					<input type="text" name="tax_office" class="form-control" value="{$formData.tax_office|escape}" placeholder="Örn: Kadıköy">
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Vergi No / TCKN</label>
+					<input type="text" name="tax_number" class="form-control" value="{$formData.tax_number|escape}" placeholder="10 veya 11 haneli" maxlength="20" inputmode="numeric">
 				</div>
 			</div>
 

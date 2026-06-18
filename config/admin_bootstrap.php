@@ -2,7 +2,9 @@
 	ob_start();
 
 	define('IN_ADMIN', true);
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 	require_once dirname(__FILE__) . '/function.php';
 	require_once dirname(__FILE__) . '/connection.php';
 	require_once dirname(__FILE__) . '/database.php';
@@ -18,6 +20,7 @@
 	require_once dirname(__FILE__) . '/../core/Brand.php';
 	require_once dirname(__FILE__) . '/../core/Cms.php';
 	require_once dirname(__FILE__) . '/../core/Customer.php';
+	require_once dirname(__FILE__) . '/../core/Address.php';
 	require_once dirname(__FILE__) . '/../core/Pagination.php';
 	require_once dirname(__FILE__) . '/../core/ModuleBase.php';
 	require_once dirname(__FILE__) . '/../core/Module.php';

@@ -581,8 +581,14 @@ class Product
 		if (!in_array($doviz, $allowedCurrencies, true)) {
 			$doviz = 'try';
 		}
-		
+
 		if ($doviz === 'try') {
+			if ($dovizPrice <= 0 && $price > 0) {
+				$dovizPrice = $price;
+			}
+			if ($dovizOldPrice <= 0 && $oldPrice > 0) {
+				$dovizOldPrice = $oldPrice;
+			}
 			$price = $dovizPrice;
 			$oldPrice = $dovizOldPrice;
 		} else {
@@ -669,7 +675,26 @@ class Product
 			return self::fail('Geçerli bir görsel seçin');
 		}
 
-		$info = @getimagesize($file['tmp_name']);
+		$binary = file_get_contents($file['tmp_name']);
+
+		if (!is_string($binary) || $binary === '') {
+			return self::fail('Görsel okunamadı');
+		}
+
+		return self::importImageBinary($idProduct, $binary);
+	}
+
+	public static function importImageBinary(int $idProduct, string $binary): array
+	{
+		if ($idProduct <= 0 || !self::getByIdAdmin($idProduct)) {
+			return self::fail('Ürün bulunamadı');
+		}
+
+		if ($binary === '') {
+			return self::fail('Geçerli bir görsel seçin');
+		}
+
+		$info = @getimagesizefromstring($binary);
 
 		if (!$info) {
 			return self::fail('Dosya bir görsel değil');
@@ -701,7 +726,7 @@ class Product
 			return self::fail('Görsel klasörü oluşturulamadı');
 		}
 
-		$source = imagecreatefromstring(file_get_contents($file['tmp_name']));
+		$source = imagecreatefromstring($binary);
 
 		if (!$source) {
 			return self::fail('Görsel işlenemedi');
@@ -717,6 +742,103 @@ class Product
 		];
 	}
 
+	public static function importImageFromUrl(int $idProduct, string $url): array
+	{
+		if ($idProduct <= 0 || !self::getByIdAdmin($idProduct)) {
+			return self::fail('Ürün bulunamadı');
+		}
+
+		$url = trim($url);
+
+		if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+			return self::fail('Geçersiz görsel URL');
+		}
+
+		$scheme = strtolower((string) (parse_url($url, PHP_URL_SCHEME) ?? ''));
+
+		if (!in_array($scheme, ['http', 'https'], true)) {
+			return self::fail('Sadece http/https URL desteklenir');
+		}
+
+		if (!function_exists('curl_init')) {
+			return self::fail('cURL eklentisi gerekli');
+		}
+
+		$ch = curl_init($url);
+		curl_setopt_array($ch, [
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_MAXREDIRS => 3,
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_TIMEOUT => 20,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_USERAGENT => 'FShop-WebAPI/1.0',
+		]);
+
+		$binary = curl_exec($ch);
+		$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$curlError = curl_error($ch);
+		curl_close($ch);
+
+		if ($binary === false || $binary === '') {
+			return self::fail($curlError !== '' ? 'Görsel indirilemedi: ' . $curlError : 'Görsel indirilemedi');
+		}
+
+		if ($httpCode < 200 || $httpCode >= 300) {
+			return self::fail('Görsel indirilemedi (HTTP ' . $httpCode . ')');
+		}
+
+		if (strlen($binary) > 5 * 1024 * 1024) {
+			return self::fail('Görsel 5 MB sınırını aşıyor');
+		}
+
+		return self::importImageBinary($idProduct, $binary);
+	}
+
+	public static function patchQuick(int $id, array $data): array
+	{
+		$product = self::getByIdAdmin($id);
+
+		if (!$product) {
+			return self::fail('Ürün bulunamadı');
+		}
+
+		$row = [];
+
+		if (array_key_exists('stock', $data)) {
+			$row['stock'] = max(0, (int) $data['stock']);
+		}
+
+		if (array_key_exists('active', $data)) {
+			$row['active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+		}
+
+		if (array_key_exists('price', $data) || array_key_exists('doviz_price', $data)) {
+			$doviz = strtolower(trim((string) ($product['doviz'] ?? 'try')));
+			$dovizPrice = array_key_exists('doviz_price', $data)
+				? (float) str_replace(',', '.', (string) $data['doviz_price'])
+				: (float) str_replace(',', '.', (string) $data['price']);
+
+			$row['doviz_price'] = max(0, $dovizPrice);
+
+			if ($doviz === 'try') {
+				$row['price'] = $row['doviz_price'];
+			} else {
+				$row['price'] = max(0, self::kurPrice($dovizPrice, $doviz));
+			}
+		}
+
+		if ($row === []) {
+			return self::fail('Güncellenecek alan yok (price, stock veya active gönderin)');
+		}
+
+		$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
+
+		return $ok !== false
+			? ['success' => true, 'message' => 'Ürün hızlı güncellendi', 'id' => $id]
+			: self::fail('Ürün güncellenemedi');
+	}
+
 	public static function setCover(int $idImage): array
 	{
 		$row = DB::getRowSafe('images', 'id_image = ?', [$idImage]);
@@ -730,6 +852,21 @@ class Product
 		DB::update('images', ['cover' => 1], 'id_image = :where_id', ['where_id' => $idImage]);
 
 		return ['success' => true, 'message' => 'Kapak görseli güncellendi', 'id' => $idImage];
+	}
+
+	public static function deleteById(int $id): array
+	{
+		if ($id <= 0 || !self::getByIdAdmin($id)) {
+			return self::fail('Ürün bulunamadı');
+		}
+
+		foreach (self::getImages($id) as $image) {
+			self::deleteImage((int) $image['id_image']);
+		}
+
+		DB::execute('DELETE FROM products WHERE id_product = ?', [$id]);
+
+		return ['success' => true, 'message' => 'Ürün silindi', 'id' => $id];
 	}
 
 	public static function deleteImage(int $idImage): array

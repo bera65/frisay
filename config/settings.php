@@ -41,7 +41,6 @@
 	$theme		= Settings::get('THEME') ?: 'default';
 	Theme::ensureColorsFile($theme);
 
-
 	$DOCUMENT_ROOT = '';
 	$PHP_SELF = '';
 

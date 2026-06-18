@@ -15,7 +15,7 @@
 			if ($exists !== false) {
 				$result = DB::update('settings', ['value' => $value], 'title = :where_title', ['where_title' => $title]);
 
-				// MySQL/PDO: değer aynı kaldıysa rowCount 0 döner; bu hata değildir.
+				// MySQL/PDO: deger ayni kaldiysa rowCount 0 doner; bu hata degildir.
 				return $result !== false;
 			}
 
@@ -34,8 +34,8 @@
 				'CONTACT_EMAIL' => ['label' => 'İletişim E-posta', 'group' => 'iletisim'],
 				'CONTACT_PHONE' => ['label' => 'Telefon (görünen)', 'group' => 'iletisim'],
 				'CONTACT_PHONE_TEL' => ['label' => 'Telefon (tel: linki)', 'group' => 'iletisim'],
-				'FREE_SHIPPING_MIN' => ['label' => 'Ücretsiz kargo limiti (₺)', 'group' => 'kargo'],
-				'SHIPPING_FEE' => ['label' => 'Kargo ücreti (₺)', 'group' => 'kargo'],
+				'FREE_SHIPPING_MIN' => ['label' => 'Ücretsiz kargo limiti (TL)', 'group' => 'kargo'],
+				'SHIPPING_FEE' => ['label' => 'Kargo ücreti (TL)', 'group' => 'kargo'],
 				'MAIL_DRIVER' => ['label' => 'E-posta gönderim yöntemi', 'group' => 'mail', 'type' => 'select'],
 				'SMTP_HOST' => ['label' => 'SMTP Sunucu', 'group' => 'smtp', 'type' => 'text'],
 				'SMTP_PORT' => ['label' => 'SMTP Port', 'group' => 'smtp', 'type' => 'text'],

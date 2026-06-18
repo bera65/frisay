@@ -80,6 +80,13 @@ class Schema
 
 		self::ensureSetting('THEME', 'default');
 		self::ensureSetting('MAIL_DRIVER', 'php');
+		Order::ensureSchema();
+
+		if (!class_exists('Address', false)) {
+			require_once dirname(__DIR__) . '/core/Address.php';
+		}
+
+		Address::ensureSchema();
 	}
 
 	private static function ensureSetting(string $key, string $default): void

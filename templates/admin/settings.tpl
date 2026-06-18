@@ -39,8 +39,8 @@
 				<div class="mb-3">
 					<label class="form-label">{$settingsKeys.MAIL_DRIVER.label|escape}</label>
 					<select name="MAIL_DRIVER" class="form-select" id="mailDriverSelect">
-						<option value="mail" {if $settingsValues.MAIL_DRIVER != 'smtp'}selected{/if}>PHP mail() — Sunucunun kendi mail sistemi</option>
-						<option value="smtp" {if $settingsValues.MAIL_DRIVER == 'smtp'}selected{/if}>SMTP — Harici mail sunucusu</option>
+						<option value="mail" {if $settingsValues.MAIL_DRIVER != 'smtp'}selected{/if}>PHP mail() - Sunucunun kendi mail sistemi</option>
+						<option value="smtp" {if $settingsValues.MAIL_DRIVER == 'smtp'}selected{/if}>SMTP - Harici mail sunucusu</option>
 					</select>
 				</div>
 
@@ -70,7 +70,7 @@
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{$settingsKeys.SMTP_PASS.label|escape}</label>
-							<input type="password" name="SMTP_PASS" class="form-control" value="" placeholder="{if $settingsValues.SMTP_PASS}••••••••{else}SMTP şifresi{/if}" autocomplete="new-password">
+							<input type="password" name="SMTP_PASS" class="form-control" value="" placeholder="{if $settingsValues.SMTP_PASS}********{else}SMTP şifresi{/if}" autocomplete="new-password">
 							<div class="form-text">Boş bırakırsanız mevcut şifre korunur.</div>
 						</div>
 						<div class="col-md-4">
@@ -129,6 +129,43 @@
 			<p class="small mb-2"><strong>Domain:</strong> {$readOnlySettings.DOMAIN|escape}</p>
 			<p class="small mb-0"><strong>Klasör:</strong> {$readOnlySettings.FOLDER|escape}</p>
 			<p class="text-muted small mt-3 mb-0">Domain ve klasör ayarları veritabanından doğrudan değiştirilmelidir.</p>
+		</div>
+		<div class="admin-panel mt-4">
+			<h2 class="h6 mb-3">Web API</h2>
+			<p class="small text-muted">Uzaktan sipariş çekme, ürün ekleme/güncelleme/silme için JSON API.</p>
+			<p class="small mb-2"><strong>Base URL:</strong><br><code class="small">{$webApiUrl|escape}</code></p>
+			<p class="small mb-2"><strong>API Key:</strong><br>
+				{if $webApiKey}
+				<code class="small user-select-all">{$webApiKey|escape}</code>
+				{else}
+				<span class="text-warning">Henüz oluşturulmadı</span>
+				{/if}
+			</p>
+			<form method="post" class="mb-2">
+				<input type="hidden" name="saveWebApi" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" name="WEBAPI_ENABLED" id="webApiEnabled" value="1" {if $webApiEnabled}checked{/if}>
+					<label class="form-check-label" for="webApiEnabled">API aktif</label>
+				</div>
+				<button type="submit" class="btn btn-outline-secondary btn-sm mt-2">API Durumunu Kaydet</button>
+			</form>
+			<form method="post" onsubmit="return confirm('API anahtarı yenilenirse eski anahtar geçersiz olur. Devam edilsin mi?');">
+				<input type="hidden" name="regenWebApiKey" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<button type="submit" class="btn btn-outline-warning btn-sm">{if $webApiKey}Anahtarı Yenile{else}Anahtar Oluştur{/if}</button>
+			</form>
+			<ul class="small text-muted mb-0 ps-3 mt-3">
+				<li>Header: <code>X-API-Key: ...</code></li>
+				<li>veya <code>Authorization: Bearer ...</code></li>
+				<li>GET <code>/api/v1/orders</code> — <code>date_from</code>, <code>date_to</code>, <code>startDate</code>, <code>endDate</code></li>
+				<li>PATCH <code>/api/v1/orders/&#123;id&#125;</code> — <code>status</code>, <code>cargoCompany</code>, <code>trackingNumber</code></li>
+				<li>GET <code>/api/v1/categories</code> · GET <code>/api/v1/brands</code></li>
+				<li>GET/POST/PATCH/DELETE <code>/api/v1/products</code> — <code>category</code> / <code>brand</code> adı ile</li>
+				<li>PATCH <code>/api/v1/products/&#123;id&#125;/quick</code> — sadece fiyat, stok, active</li>
+				<li>POST <code>/api/v1/products/&#123;id&#125;/image</code> — dosya veya <code>image_url</code></li>
+				<li><code>description_html</code> — HTML ürün açıklaması</li>
+			</ul>
 		</div>
 		<div class="admin-panel mt-4">
 			<h2 class="h6 mb-3">E-posta Bilgisi</h2>

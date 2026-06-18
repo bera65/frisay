@@ -6,7 +6,7 @@
 	}
 
 	define('IN_SCRIPT', true);
-	require_once(dirname(__FILE__).'/config/settings.php');
+	require_once dirname(__FILE__) . '/config/settings.php';
 
 	$container = Tools::getValue('container') ?: 'home';
 	$skipPageRender = false;
@@ -25,10 +25,10 @@
 		exit;
 	}
 
-	$pageTitle 	= 'FShop';
-	$pageDesc 	= Settings::get('SITE_NAME');
-	$css = $js 	= false;
-	$noLayout   = false;
+	$pageTitle = 'FShop';
+	$pageDesc = Settings::get('SITE_NAME');
+	$css = $js = false;
+	$noLayout = false;
 
 	$filePath = dirname(__FILE__) . '/container/front/' . $container . '.php';
 
@@ -63,4 +63,6 @@
 		$page->add('404', 'Sayfa Bulunamadı');
 	}
 
-	ob_end_flush();
+	if (ob_get_level() > 0) {
+		ob_end_flush();
+	}

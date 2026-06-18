@@ -1,0 +1,4 @@
+.font-monospace { font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .85em; }
+#feedUrlInput { background: #f8f9fa; }
+#previewTable th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+#previewTable td { vertical-align: middle; font-size: .85rem; }

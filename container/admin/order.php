@@ -19,7 +19,11 @@
 		if (!hash_equals($adminToken, $postToken)) {
 			$flash = 'Geçersiz istek';
 		} else {
-			$result = Order::updateStatus($idOrder, (int) Tools::getValue('status'));
+			$result = Order::updateFromApi($idOrder, [
+				'status' => (int) Tools::getValue('status'),
+				'cargo_company' => (string) Tools::getValue('cargo_company'),
+				'tracking_number' => (string) Tools::getValue('tracking_number'),
+			]);
 			$flash = $result['message'];
 
 			if ($result['success']) {

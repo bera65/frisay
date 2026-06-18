@@ -8,6 +8,33 @@ class Order
 	const STATUS_DELIVERED = 4;
 	const STATUS_CANCELLED = 5;
 
+	private static bool $schemaReady = false;
+
+	public static function ensureSchema(): void
+	{
+		if (self::$schemaReady) {
+			return;
+		}
+
+		self::$schemaReady = true;
+
+		$columns = [
+			'company_name' => "varchar(128) NOT NULL DEFAULT '' AFTER `customer_phone`",
+			'tax_office' => "varchar(64) NOT NULL DEFAULT '' AFTER `company_name`",
+			'tax_number' => "varchar(20) NOT NULL DEFAULT '' AFTER `tax_office`",
+			'cargo_company' => "varchar(64) NOT NULL DEFAULT '' AFTER `status`",
+			'tracking_number' => "varchar(64) NOT NULL DEFAULT '' AFTER `cargo_company`",
+		];
+
+		foreach ($columns as $name => $definition) {
+			$exists = DB::execute("SHOW COLUMNS FROM `orders` LIKE '{$name}'");
+
+			if (empty($exists)) {
+				DB::execute("ALTER TABLE `orders` ADD COLUMN `{$name}` {$definition}");
+			}
+		}
+	}
+
 	public static function getStatusLabel(int $status): string
 	{
 		$labels = [
@@ -67,6 +94,8 @@ class Order
 
 	public static function place(array $data): array
 	{
+		self::ensureSchema();
+
 		if (!Customer::isLoggedIn()) {
 			return self::fail('Sipariş vermek için giriş yapmalısınız');
 		}
@@ -82,6 +111,10 @@ class Order
 		$district = trim((string) ($data['address_district'] ?? ''));
 		$address = trim((string) ($data['address_text'] ?? ''));
 		$note = trim((string) ($data['note'] ?? ''));
+		$companyName = mb_substr(trim(strip_tags((string) ($data['company_name'] ?? ''))), 0, 128);
+		$taxOffice = mb_substr(trim(strip_tags((string) ($data['tax_office'] ?? ''))), 0, 64);
+		$taxNumber = preg_replace('/\D+/', '', (string) ($data['tax_number'] ?? ''));
+		$taxNumber = mb_substr($taxNumber, 0, 20);
 		$payment = (string) ($data['payment_method'] ?? '');
 		$idUser = Customer::getId();
 		$idAddress = (int) ($data['id_address'] ?? 0);
@@ -98,6 +131,16 @@ class Order
 			$city = $savedAddress['city'];
 			$district = $savedAddress['district'];
 			$address = $savedAddress['address_text'];
+
+			if ($companyName === '' && trim((string) ($savedAddress['company_name'] ?? '')) !== '') {
+				$companyName = mb_substr(trim((string) $savedAddress['company_name']), 0, 128);
+			}
+			if ($taxOffice === '' && trim((string) ($savedAddress['tax_office'] ?? '')) !== '') {
+				$taxOffice = mb_substr(trim((string) $savedAddress['tax_office']), 0, 64);
+			}
+			if ($taxNumber === '' && trim((string) ($savedAddress['tax_number'] ?? '')) !== '') {
+				$taxNumber = mb_substr(preg_replace('/\D+/', '', (string) $savedAddress['tax_number']), 0, 20);
+			}
 		}
 
 		if (!Validate::isName($name)) {
@@ -184,6 +227,9 @@ class Order
 				'payment_method' => $payment,
 				'customer_name' => $name,
 				'customer_phone' => $phone,
+				'company_name' => $companyName,
+				'tax_office' => $taxOffice,
+				'tax_number' => $taxNumber,
 				'address_city' => $city,
 				'address_district' => $district,
 				'address_text' => $address,
@@ -229,6 +275,9 @@ class Order
 					'label' => isset($data['address_label']) ? $data['address_label'] : '',
 					'full_name' => $name,
 					'phone' => $phone,
+					'company_name' => $companyName,
+					'tax_office' => $taxOffice,
+					'tax_number' => $taxNumber,
 					'city' => $city,
 					'district' => $district,
 					'address_text' => $address,
@@ -321,7 +370,11 @@ class Order
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
-			'SELECT * FROM order_detail WHERE id_order = ? ORDER BY id_order_detail ASC',
+			'SELECT od.*, p.barcode, p.stock_code, p.vat
+			FROM order_detail od
+			LEFT JOIN products p ON p.id_product = od.id_product
+			WHERE od.id_order = ?
+			ORDER BY od.id_order_detail ASC',
 			[$idOrder]
 		) ?: [];
 
@@ -455,7 +508,7 @@ class Order
 		return self::enrichAdminRows(self::getAdminList(0, $limit, 0));
 	}
 
-	public static function getAdminList(int $status = 0, int $limit = 30, int $offset = 0): array
+	public static function getAdminList(int $status = 0, int $limit = 30, int $offset = 0, string $dateFrom = '', string $dateTo = ''): array
 	{
 		$sql = 'SELECT * FROM orders WHERE 1=1';
 		$params = [];
@@ -464,6 +517,8 @@ class Order
 			$sql .= ' AND status = ?';
 			$params[] = $status;
 		}
+
+		self::applyDateFilters($sql, $params, $dateFrom, $dateTo);
 
 		$sql .= ' ORDER BY id_order DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
 
@@ -480,13 +535,35 @@ class Order
 		return $rows;
 	}
 
-	public static function countAdmin(int $status = 0): int
+	public static function countAdmin(int $status = 0, string $dateFrom = '', string $dateTo = ''): int
 	{
+		$sql = 'SELECT COUNT(*) FROM orders WHERE 1=1';
+		$params = [];
+
 		if ($status > 0) {
-			return (int) DB::getValue('SELECT COUNT(*) FROM orders WHERE status = ?', [$status]);
+			$sql .= ' AND status = ?';
+			$params[] = $status;
 		}
 
-		return (int) DB::getValue('SELECT COUNT(*) FROM orders');
+		self::applyDateFilters($sql, $params, $dateFrom, $dateTo);
+
+		return (int) DB::getValue($sql, $params);
+	}
+
+	private static function applyDateFilters(string &$sql, array &$params, string $dateFrom, string $dateTo): void
+	{
+		$dateFrom = trim($dateFrom);
+		$dateTo = trim($dateTo);
+
+		if ($dateFrom !== '') {
+			$sql .= ' AND date_add >= ?';
+			$params[] = $dateFrom;
+		}
+
+		if ($dateTo !== '') {
+			$sql .= ' AND date_add <= ?';
+			$params[] = $dateTo;
+		}
 	}
 
 	public static function getByIdAdmin(int $idOrder): ?array
@@ -504,7 +581,11 @@ class Order
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
-			'SELECT * FROM order_detail WHERE id_order = ? ORDER BY id_order_detail ASC',
+			'SELECT od.*, p.barcode, p.stock_code, p.vat
+			FROM order_detail od
+			LEFT JOIN products p ON p.id_product = od.id_product
+			WHERE od.id_order = ?
+			ORDER BY od.id_order_detail ASC',
 			[$idOrder]
 		) ?: [];
 
@@ -519,11 +600,12 @@ class Order
 
 	public static function updateStatus(int $idOrder, int $status): array
 	{
-		$options = self::getStatusOptions();
+		return self::updateFromApi($idOrder, ['status' => $status]);
+	}
 
-		if (!isset($options[$status])) {
-			return self::fail('Geçersiz sipariş durumu');
-		}
+	public static function updateFromApi(int $idOrder, array $data): array
+	{
+		self::ensureSchema();
 
 		$order = self::getByIdAdmin($idOrder);
 
@@ -531,27 +613,69 @@ class Order
 			return self::fail('Sipariş bulunamadı');
 		}
 
+		$row = [];
 		$oldStatus = (int) $order['status'];
 
-		if ($oldStatus === $status) {
+		if (array_key_exists('status', $data)) {
+			$status = (int) $data['status'];
+
+			if (!isset(self::getStatusOptions()[$status])) {
+				return self::fail('Geçersiz sipariş durumu');
+			}
+
+			$row['status'] = $status;
+		}
+
+		if (array_key_exists('cargo_company', $data)) {
+			$row['cargo_company'] = mb_substr(trim(strip_tags((string) $data['cargo_company'])), 0, 64);
+		}
+
+		if (array_key_exists('tracking_number', $data)) {
+			$row['tracking_number'] = mb_substr(trim(strip_tags((string) $data['tracking_number'])), 0, 64);
+		}
+
+		if ($row === []) {
+			return self::fail('Güncellenecek alan yok');
+		}
+
+		$newStatus = (int) ($row['status'] ?? $oldStatus);
+
+		if (
+			isset($row['status'])
+			&& $newStatus === $oldStatus
+			&& !array_key_exists('cargo_company', $row)
+			&& !array_key_exists('tracking_number', $row)
+		) {
 			return self::ok('Sipariş durumu zaten güncel');
+		}
+
+		if (
+			!isset($row['status'])
+			&& array_key_exists('cargo_company', $row)
+			&& $row['cargo_company'] === (string) ($order['cargo_company'] ?? '')
+			&& array_key_exists('tracking_number', $row)
+			&& $row['tracking_number'] === (string) ($order['tracking_number'] ?? '')
+		) {
+			return self::ok('Sipariş bilgileri zaten güncel');
 		}
 
 		DB::update(
 			'orders',
-			['status' => $status],
+			$row,
 			'id_order = :id_order',
 			['id_order' => $idOrder]
 		);
 
-		if ($status === self::STATUS_CANCELLED && $oldStatus !== self::STATUS_CANCELLED) {
+		if ($newStatus === self::STATUS_CANCELLED && $oldStatus !== self::STATUS_CANCELLED) {
 			self::restoreStock($idOrder);
 		}
 
-		$order['status'] = $status;
-		Notification::orderStatusChanged($order, $oldStatus, $status);
+		if (isset($row['status']) && $newStatus !== $oldStatus) {
+			$order['status'] = $newStatus;
+			Notification::orderStatusChanged($order, $oldStatus, $newStatus);
+		}
 
-		return self::ok('Sipariş durumu güncellendi');
+		return self::ok('Sipariş güncellendi');
 	}
 
 	public static function restoreStock(int $idOrder): void
@@ -564,6 +688,84 @@ class Order
 		foreach ($items as $item) {
 			Product::increaseStock((int) $item['id_product'], (int) $item['qty']);
 		}
+	}
+
+	/** Web API: siparişlere satır ve müşteri e-postası ekler */
+	public static function attachApiDetails(array $orders): array
+	{
+		if ($orders === []) {
+			return [];
+		}
+
+		$orderIds = array_map(static fn(array $row): int => (int) $row['id_order'], $orders);
+		$userIds = array_values(array_unique(array_filter(array_map(
+			static fn(array $row): int => (int) ($row['id_user'] ?? 0),
+			$orders
+		))));
+
+		$linesByOrder = self::getLinesGroupedByOrderIds($orderIds);
+		$emailsByUser = self::getEmailsByUserIds($userIds);
+		$prepared = [];
+
+		foreach ($orders as $order) {
+			$idOrder = (int) $order['id_order'];
+			$idUser = (int) ($order['id_user'] ?? 0);
+			$order['items'] = $linesByOrder[$idOrder] ?? [];
+			$order['customer_email'] = $emailsByUser[$idUser] ?? '';
+			$prepared[] = $order;
+		}
+
+		return $prepared;
+	}
+
+	private static function getLinesGroupedByOrderIds(array $orderIds): array
+	{
+		$orderIds = array_values(array_filter(array_map('intval', $orderIds)));
+
+		if ($orderIds === []) {
+			return [];
+		}
+
+		$placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+		$rows = DB::execute(
+			'SELECT od.*, p.barcode, p.stock_code, p.vat
+			FROM order_detail od
+			LEFT JOIN products p ON p.id_product = od.id_product
+			WHERE od.id_order IN (' . $placeholders . ')
+			ORDER BY od.id_order ASC, od.id_order_detail ASC',
+			$orderIds
+		) ?: [];
+
+		$grouped = [];
+
+		foreach ($rows as $row) {
+			$grouped[(int) $row['id_order']][] = $row;
+		}
+
+		return $grouped;
+	}
+
+	private static function getEmailsByUserIds(array $userIds): array
+	{
+		$userIds = array_values(array_filter(array_map('intval', $userIds)));
+
+		if ($userIds === []) {
+			return [];
+		}
+
+		$placeholders = implode(',', array_fill(0, count($userIds), '?'));
+		$rows = DB::execute(
+			'SELECT id_user, email FROM users WHERE id_user IN (' . $placeholders . ')',
+			$userIds
+		) ?: [];
+
+		$map = [];
+
+		foreach ($rows as $row) {
+			$map[(int) $row['id_user']] = (string) ($row['email'] ?? '');
+		}
+
+		return $map;
 	}
 
 	private static function ok(string $message): array

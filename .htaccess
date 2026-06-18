@@ -1,0 +1,41 @@
+﻿RewriteEngine On
+RewriteBase /fshop/
+
+# 404 Sayfası
+ErrorDocument 404 /404
+
+
+# 3. Gerçek dosya ve dizinleri yönlendirme dışı tut (Resim, CSS, JS vb.)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 4. Kritik Dosyalar (PWA ve Favicon için ekstra koruma)
+RewriteRule ^(sw\.js|manifest\.json|favicon\.ico|robots\.txt)$ - [L]
+
+# 4b. Sitemap
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# 4c. Döviz cron
+RewriteRule ^api/cron$ api/cron.php [L,QSA]
+
+# 4d. Web API (uzaktan sipariş / ürün)
+RewriteRule ^api/v1/?$ api/webapi.php [L,QSA]
+RewriteRule ^api/v1/(.*)$ api/webapi.php?route=$1 [L,QSA]
+
+# 5. Ürün linki
+RewriteRule ^([a-zA-Z0-9-]+)/(.+)-([0-9]+)$ index.php?container=product&category=$1&slug=$2&id=$3 [L,QSA,NC]
+
+# 5b. Marka sayfası
+RewriteRule ^marka/([0-9a-zA-Z-]+)$ index.php?container=brand&link=$1 [L,QSA,NC]
+
+# 5c. Admin paneli
+RewriteRule ^admin/?$ admin/index.php [L,QSA]
+RewriteRule ^admin/([a-zA-Z0-9_-]+)/?$ admin/index.php?container=$1 [L,QSA]
+
+# 6. Genel Konteyner Yönlendirmesi (En sonda olmalı)
+# Eğer üstteki hiçbir kurala uymazsa buraya düşer
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?container=$1 [NC,L,QSA]
+
+

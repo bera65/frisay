@@ -1,0 +1,29 @@
+# Ortam (canlıda env.php oluşturun, repoya eklemeyin)
+config/env.php
+config/env0.php
+config/installed.lock
+
+# Loglar
+logs/*.log
+logs/php-error.log
+admin/error_log
+
+# Smarty önbellek
+cache/force/*
+!cache/force/index.php
+cache/cache/*
+!cache/cache/index.php
+
+# Yüklenen ürün görselleri
+img/products/*
+!img/products/index.php
+
+# IDE / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Geçici
+config/debug.log
+*.bak

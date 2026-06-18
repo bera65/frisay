@@ -81,6 +81,9 @@ $(document).on('submit', '#addressForm', function (e) {
     city: $('#addressForm [name="city"]').val(),
     district: $('#addressForm [name="district"]').val(),
     address_text: $('#addressForm [name="address_text"]').val(),
+    company_name: $('#addressForm [name="company_name"]').val(),
+    tax_office: $('#addressForm [name="tax_office"]').val(),
+    tax_number: $('#addressForm [name="tax_number"]').val(),
     is_default: $('#addressDefaultCheck').is(':checked') ? 1 : 0
   }).done(function (data) {
     if (data.success) {
@@ -106,6 +109,9 @@ $(document).on('click', '.edit-address', function () {
   $('#addressForm [name="city"]').val($btn.data('city'));
   $('#addressForm [name="district"]').val($btn.data('district'));
   $('#addressForm [name="address_text"]').val($btn.data('addressText'));
+  $('#addressForm [name="company_name"]').val($btn.data('companyName') || '');
+  $('#addressForm [name="tax_office"]').val($btn.data('taxOffice') || '');
+  $('#addressForm [name="tax_number"]').val($btn.data('taxNumber') || '');
   $('#addressDefaultCheck').prop('checked', String($btn.data('isDefault')) === '1');
   $('#cancelAddressEdit').removeClass('d-none');
 
@@ -176,8 +182,12 @@ function syncCheckoutAddressFields() {
     $('#checkoutCity').val($selected.data('city'));
     $('#checkoutDistrict').val($selected.data('district'));
     $('#checkoutAddressText').val($selected.data('addressText'));
+    $('[name="company_name"]').val($selected.data('companyName') || '');
+    $('[name="tax_office"]').val($selected.data('taxOffice') || '');
+    $('[name="tax_number"]').val($selected.data('taxNumber') || '');
     $fields.addClass('is-readonly');
     $inputs.prop('readonly', true);
+    $('[name="company_name"], [name="tax_office"], [name="tax_number"]').prop('readonly', false);
     $('#saveAddressBlock').addClass('d-none');
   } else {
     $fields.removeClass('is-readonly');
