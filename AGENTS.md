@@ -70,7 +70,10 @@ fshop/
 
 | Endpoint | Amaç |
 |----------|------|
+<<<<<<< HEAD
 | `GET/POST /api/v1/...` | Web API (sipariş, ürün, kategori, marka) — bkz. [docs/WEBAPI.md](docs/WEBAPI.md) |
+=======
+>>>>>>> d7a4f86df62b57dd798983f9771a0d8d6c9dea1a
 | `POST /api/module.php?m={modul}&action={islem}` | Modül API |
 | `GET /api/cron.php?action=currency&token=SHOP_TOKEN` | Döviz fiyat güncelleme |
 
