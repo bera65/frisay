@@ -1,6 +1,11 @@
-# FShop
+# FriSay
 
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
+
+Demo : https://fyazilim.com/frisay
+Admin : https://fyazilim.com/frisay/admin
+User : admin@fyazilim.com
+Pass : admin123
 
 ## Gereksinimler
 
@@ -11,10 +16,10 @@ Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 ## Kurulum (önerilen)
 
 1. Dosyaları sunucuya yükleyin.
-2. Boş bir MySQL veritabanı oluşturun (ör. `fshop`).
+2. Boş bir MySQL veritabanı oluşturun (ör. `frisay`).
 3. Tarayıcıda kurulum sihirbazını açın:
    - Kök dizin: `https://siteadresiniz.com/install/`
-   - Alt klasör: `https://siteadresiniz.com/fshop/install/`
+   - Alt klasör: `https://siteadresiniz.com/frisay/install/`
 4. Adımları izleyin:
    - Sistem gereksinimleri
    - Veritabanı bilgileri
@@ -25,8 +30,8 @@ Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 ### Manuel kurulum (alternatif)
 
 ```bash
-mysql -u root -p fshop < install/schema.sql
-mysql -u root -p fshop < install/seed_demo.sql
+mysql -u root -p frisay < install/schema.sql
+mysql -u root -p frisay < install/seed_demo.sql
 cp config/env.example.php config/env.php
 ```
 
@@ -54,7 +59,7 @@ Admin → **Ayarlar** → **Web API** bölümünden API anahtarı oluşturun.
 - Header: `Authorization: Bearer ANAHTARINIZ`
 - Query: `?api_key=ANAHTARINIZ`
 
-**Base URL:** `https://siteadresiniz.com/api/v1/` (WAMP: `http://localhost/fshop/api/v1/`)
+**Base URL:** `https://siteadresiniz.com/api/v1/` (WAMP: `http://localhost/frisay/api/v1/`)
 
 ### Siparişler
 
@@ -124,9 +129,9 @@ Alternatif alan adları: `product_name`, `id_category`, `id_brand`, `product_lin
 
 ## Yerel geliştirme (WAMP)
 
-1. Projeyi `www/fshop/` altına koyun.
-2. `http://localhost/fshop/install/` adresinden kurun.
-3. `.htaccess` içindeki `RewriteBase /fshop/` kurulumda otomatik ayarlanır.
+1. Projeyi `www/frisay/` altına koyun.
+2. `http://localhost/frisay/install/` adresinden kurun.
+3. `.htaccess` içindeki `RewriteBase /frisay/` kurulumda otomatik ayarlanır.
 
 ## Canlıya alma kontrol listesi
 
