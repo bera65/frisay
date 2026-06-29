@@ -2,8 +2,8 @@
 
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 
-Demo : https://fyazilim.com/frisay
-Admin : https://fyazilim.com/frisay/admin
+Demo : https://fyazilim.com/fshop
+Admin : https://fyazilim.com/fshop/admin
 User : admin@fyazilim.com
 Pass : admin123
 
