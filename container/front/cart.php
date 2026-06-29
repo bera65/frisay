@@ -5,13 +5,17 @@
 		exit;
 	}
 
-	$cartSeo = Seo::resolvePage('cart', 'Sepetim', 'Alışveriş sepetiniz');
+	$cartSeo = Seo::resolvePage('cart', translate('Cart page title'), translate('Cart page description'));
 	$pageTitle = $cartSeo['title'];
 	$pageDesc = $cartSeo['description'];
 
-	$css = 'cart.css';
+	$css = 'pages.css';
 	$cart = Cart::getSummary();
 
 	$smarty->assign([
 		'cart' => $cart,
+		'breadcrumb' => [
+			['name' => translate('Home Page'), 'url' => $domain],
+			['name' => translate('My Cart'), 'url' => ''],
+		],
 	]);

@@ -9,10 +9,12 @@
 	require_once dirname(__FILE__) . '/config/settings.php';
 
 	$container = Tools::getValue('container') ?: 'home';
+	Routes::redirectLegacyIfNeeded($container);
+
 	$skipPageRender = false;
 	$searchQuery = trim((string) (Tools::getValue('q') ?: Tools::getValue('query')));
 
-	$protected = ['hesabim', 'siparislerim', 'favoriler', 'checkout', 'checkout-success', 'siparis', 'odeme-paytr'];
+	$protected = Routes::protectedPages();
 
 	if (Tools::getValue('login') === '1' && !Customer::isLoggedIn()) {
 		header('Location: ' . $domain . 'login');

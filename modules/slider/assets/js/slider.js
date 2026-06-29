@@ -10,6 +10,7 @@
 		var prevBtn = root.querySelector('.fshop-slider__arrow--prev');
 		var nextBtn = root.querySelector('.fshop-slider__arrow--next');
 		var currentEl = root.querySelector('.fshop-slider__current');
+		var dots = Array.prototype.slice.call(root.querySelectorAll('.fshop-slider__dot'));
 		var type = root.getAttribute('data-slider-type') || 'hero';
 		var perView = parseInt(root.getAttribute('data-slider-per-view') || '1', 10);
 		var index = 0;
@@ -35,6 +36,10 @@
 		function updateHero() {
 			for (var i = 0; i < slides.length; i++) {
 				slides[i].classList.toggle('is-active', i === index);
+			}
+
+			for (var d = 0; d < dots.length; d++) {
+				dots[d].classList.toggle('is-active', d === index);
 			}
 
 			if (currentEl) {
@@ -108,6 +113,16 @@
 				next();
 				startAutoplay();
 			});
+		}
+
+		for (var d = 0; d < dots.length; d++) {
+			(function (dotIndex) {
+				dots[dotIndex].addEventListener('click', function () {
+					stopAutoplay();
+					goTo(dotIndex);
+					startAutoplay();
+				});
+			})(d);
 		}
 
 		root.addEventListener('mouseenter', stopAutoplay);

@@ -395,7 +395,7 @@ class Customer
 				['id_user' => (int) $user['id_user']]
 			);
 
-			$resetUrl = rtrim($domain, '/') . '/sifre-sifirla?token=' . $rawToken;
+			$resetUrl = rtrim($domain, '/') . '/reset-password?token=' . $rawToken;
 			Mail::sendPasswordReset($email, (string) $user['user_full_name'], $resetUrl);
 		}
 

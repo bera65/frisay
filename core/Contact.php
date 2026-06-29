@@ -5,7 +5,7 @@ class Contact
 	public static function submit(array $data): array
 	{
 		if (!empty($data['website'])) {
-			return self::ok('Mesajınız alındı. En kısa sürede dönüş yapacağız.');
+			return self::ok(self::t('Your message has been received. We will get back to you soon.'));
 		}
 
 		$name = trim((string) ($data['full_name'] ?? ''));
@@ -15,34 +15,34 @@ class Contact
 		$message = trim((string) ($data['message'] ?? ''));
 
 		if (!Validate::isName($name)) {
-			return self::fail('Geçerli bir ad soyad girin');
+			return self::fail(self::t('Please enter a valid full name'));
 		}
 
 		if (!Validate::isEmail($email)) {
-			return self::fail('Geçerli bir e-posta adresi girin');
+			return self::fail(self::t('Please enter a valid email address'));
 		}
 
 		if ($phone !== '' && !Validate::isPhoneNumber($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin');
+			return self::fail(self::t('Please enter a valid phone number'));
 		}
 
 		if ($subject !== '' && !Validate::isGenericName($subject)) {
-			return self::fail('Konu alanı geçersiz karakterler içeriyor');
+			return self::fail(self::t('Subject contains invalid characters'));
 		}
 
 		if (Tools::strlen($message) < 10) {
-			return self::fail('Mesaj en az 10 karakter olmalı');
+			return self::fail(self::t('Message must be at least 10 characters'));
 		}
 
 		if (!Validate::isCleanHtml($message)) {
-			return self::fail('Mesaj geçersiz içerik içeriyor');
+			return self::fail(self::t('Message contains invalid content'));
 		}
 
 		$idUser = Customer::isLoggedIn() ? Customer::getId() : 0;
 		$ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
 		if (self::isRateLimited($ip, $email)) {
-			return self::fail('Çok sık mesaj gönderdiniz, lütfen biraz bekleyin');
+			return self::fail(self::t('You are sending messages too frequently, please wait'));
 		}
 
 		$id = DB::insert('contact_messages', [
@@ -56,12 +56,12 @@ class Contact
 		]);
 
 		if (!$id) {
-			return self::fail('Mesaj gönderilemedi, lütfen tekrar deneyin');
+			return self::fail(self::t('Could not send message, please try again'));
 		}
 
 		self::notifyAdmin($name, $email, $subject, $message);
 
-		return self::ok('Mesajınız alındı. En kısa sürede dönüş yapacağız.');
+		return self::ok(self::t('Your message has been received. We will get back to you soon.'));
 	}
 
 	private static function isRateLimited(string $ip, string $email): bool
@@ -108,6 +108,11 @@ class Contact
 			'success' => false,
 			'message' => $message,
 		];
+	}
+
+	private static function t(string $message): string
+	{
+		return function_exists('translate') ? translate($message) : $message;
 	}
 
 	public static function countUnread(): int

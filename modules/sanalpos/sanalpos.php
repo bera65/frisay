@@ -12,7 +12,7 @@ require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
  * Akış:
  * 1. Checkout'ta "Kredi Kartı" seçilir, "Siparişi Onayla" denir.
  * 2. paysBeforeOrder = true olduğu için sipariş OLUŞTURULMAZ;
- *    checkout verisi session'da bekletilir, müşteri /odeme-karti sayfasına gider.
+ *    checkout verisi session'da bekletilir, müşteri /card-payment sayfasına gider.
  * 3. Kart bilgileri girilir, "Ödemeyi Onayla" denir → chargeCard() bankaya gider.
  * 4. Banka ONAY verirse Order::placePending() siparişi oluşturur,
  *    durum "Hazırlanıyor" yapılır ve müşteri checkout-success'e gider.
@@ -34,9 +34,9 @@ class SanalposModule extends ModuleBase
 	public string $paymentMethodLabel = 'Kredi Kartı';
 	public bool $paysBeforeOrder = true;
 
-	/** Kart sayfası: site.com/odeme-karti */
+	/** Kart sayfası: site.com/card-payment */
 	public array $routes = [
-		'odeme-karti' => 'front/payment.php',
+		'card-payment' => 'front/payment.php',
 	];
 
 	public array $displayHooks = [
@@ -59,7 +59,7 @@ class SanalposModule extends ModuleBase
 	{
 		global $domain;
 
-		return $domain . 'odeme-karti';
+		return $domain . 'card-payment';
 	}
 
 	public function renderDisplayHook(string $hook, array $context = []): ?string

@@ -81,6 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			'admin_email' => trim((string) ($_POST['admin_email'] ?? '')),
 			'admin_password' => (string) ($_POST['admin_password'] ?? ''),
 			'install_demo' => !empty($_POST['install_demo']) ? 1 : 0,
+			'shop_lang' => (string) ($_POST['shop_lang'] ?? 'tr'),
+			'admin_lang' => (string) ($_POST['admin_lang'] ?? 'tr'),
+			'theme' => (string) ($_POST['theme'] ?? 'blue'),
 		]);
 
 		$result = Installer::install($payload);
@@ -193,6 +196,25 @@ $guessRewrite = ($appBase === '' || $appBase === '/') ? '/' : $appBase . '/';
 				<label>RewriteBase (.htaccess)
 					<input type="text" name="rewrite_base" value="<?php echo htmlspecialchars($guessRewrite, ENT_QUOTES, 'UTF-8'); ?>" required>
 				</label>
+				<label>Mağaza teması
+					<select name="theme">
+						<option value="blue" selected>Blue (önerilen)</option>
+						<option value="default">Varsayılan</option>
+						<option value="prime">Prime</option>
+					</select>
+				</label>
+				<label>Mağaza dili (varsayılan)
+					<select name="shop_lang">
+						<option value="tr" selected>Türkçe</option>
+						<option value="en">English</option>
+					</select>
+				</label>
+				<label>Admin panel dili (varsayılan)
+					<select name="admin_lang">
+						<option value="tr" selected>Türkçe</option>
+						<option value="en">English</option>
+					</select>
+				</label>
 				<label>Admin Ad Soyad
 					<input type="text" name="admin_name" value="Site Yöneticisi" required>
 				</label>
@@ -215,10 +237,12 @@ $guessRewrite = ($appBase === '' || $appBase === '/') ? '/' : $appBase . '/';
 			<h2>Kurulum Tamamlandı</h2>
 			<p>Mağazanız kullanıma hazır.</p>
 			<ul class="install-summary">
-				<li><strong>Admin:</strong> <?php echo htmlspecialchars((string) ($done['admin_email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></li>
+				<li><strong>Admin e-posta:</strong> <?php echo htmlspecialchars((string) ($done['admin_email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></li>
+				<li><strong>Mağaza:</strong> <a href="../"><?php echo htmlspecialchars($guessUrl, ENT_QUOTES, 'UTF-8'); ?></a></li>
+				<li><strong>Admin:</strong> <a href="../admin/">Admin Paneli</a></li>
 				<li><strong>Döviz cron URL:</strong><br><code><?php echo htmlspecialchars((string) ($done['cron_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></code></li>
 			</ul>
-			<p class="install-note">Dövizli ürün fiyatları için bu URL'yi sunucu cron'una saatte bir ekleyebilirsiniz.</p>
+			<p class="install-note">Kurulumdan sonra <code>install/</code> klasörüne web erişimini kapatmanız önerilir. <code>config/env.example.php</code> dosyasını referans alarak yedekleme ve canlı ortam ayarlarını yapın.</p>
 			<div class="install-actions">
 				<a class="install-btn" href="../">Mağazaya Git</a>
 				<a class="install-btn install-btn-muted" href="../admin/">Admin Paneli</a>

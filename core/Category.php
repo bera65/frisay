@@ -33,23 +33,42 @@ class Category
 
 		$row = DB::getRowSafe('categories', 'category_link = ? AND active = 1', [$link]);
 
-		return $row ?: null;
+		if (!$row) {
+			$lang = Lang::current();
+			$idCategory = DB::getValue(
+				'SELECT id_category FROM category_lang WHERE category_link = ? AND lang = ? LIMIT 1',
+				[$link, $lang]
+			);
+
+			if ($idCategory === false) {
+				$idCategory = DB::getValue(
+					'SELECT id_category FROM category_lang WHERE category_link = ? LIMIT 1',
+					[$link]
+				);
+			}
+
+			if ($idCategory !== false) {
+				$row = DB::getRowSafe('categories', 'id_category = ? AND active = 1', [(int) $idCategory]);
+			}
+		}
+
+		return $row ? Lang::applyCategory($row) : null;
 	}
 
 	public static function getById(int $id): ?array
 	{
 		$row = DB::getRowSafe('categories', 'id_category = ? AND active = 1', [$id]);
 
-		return $row ?: null;
+		return $row ? Lang::applyCategory($row) : null;
 	}
 
 	public static function getMenuList(): array
 	{
 		$rows = DB::execute(
 			'SELECT * FROM categories WHERE active = 1 AND id_parent > 0 ORDER BY category_name ASC'
-		);
+		) ?: [];
 
-		return $rows ?: [];
+		return array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
 	}
 
 	public static function getUrl(array $category): string
@@ -108,10 +127,26 @@ class Category
 		return DB::execute($sql, $params) ?: [];
 	}
 
-	public static function isLinkUnique(string $link, int $excludeId = 0): bool
+	public static function isLinkUnique(string $link, int $excludeId = 0, ?string $lang = null): bool
 	{
-		$sql = 'SELECT COUNT(*) FROM categories WHERE category_link = ?';
-		$params = [$link];
+		$lang = $lang ?: Lang::getDefault();
+
+		if ($lang === Lang::getDefault()) {
+			$sql = 'SELECT COUNT(*) FROM categories WHERE category_link = ?';
+			$params = [$link];
+
+			if ($excludeId > 0) {
+				$sql .= ' AND id_category != ?';
+				$params[] = $excludeId;
+			}
+
+			if ((int) DB::getValue($sql, $params) > 0) {
+				return false;
+			}
+		}
+
+		$sql = 'SELECT COUNT(*) FROM category_lang WHERE category_link = ? AND lang = ?';
+		$params = [$link, $lang];
 
 		if ($excludeId > 0) {
 			$sql .= ' AND id_category != ?';
@@ -121,16 +156,58 @@ class Category
 		return (int) DB::getValue($sql, $params) === 0;
 	}
 
+	public static function getLangRows(int $idCategory): array
+	{
+		Lang::ensureSchema();
+
+		return Lang::getLangRowsMap('category_lang', 'id_category', $idCategory);
+	}
+
+	private static function saveLangRows(int $idCategory, array $langData): ?array
+	{
+		Lang::ensureSchema();
+
+		foreach (Lang::getAvailable() as $lang) {
+			$entry = is_array($langData[$lang] ?? null) ? $langData[$lang] : [];
+			$name = trim((string) ($entry['category_name'] ?? ''));
+			$link = trim((string) ($entry['category_link'] ?? ''));
+
+			if ($link === '' && $name !== '') {
+				$link = Tools::createSlug($name);
+			} else {
+				$link = Tools::createSlug($link);
+			}
+
+			if ($link !== '' && !self::isLinkUnique($link, $idCategory, $lang)) {
+				return self::fail('Bu URL slug zaten kullanılıyor (' . Lang::label($lang) . ')');
+			}
+
+			Lang::saveLangRow('category_lang', 'id_category', $idCategory, $lang, [
+				'category_name' => mb_substr($name, 0, 64),
+				'category_link' => mb_substr($link, 0, 128),
+				'meta_title' => mb_substr(trim(strip_tags((string) ($entry['meta_title'] ?? ''))), 0, 255),
+				'meta_description' => mb_substr(trim(strip_tags((string) ($entry['meta_description'] ?? ''))), 0, 512),
+			]);
+		}
+
+		return null;
+	}
+
 	public static function save(array $data, int $id = 0): array
 	{
 		self::ensureSchema();
+		Lang::ensureSchema();
 
-		$name = trim((string) ($data['category_name'] ?? ''));
-		$link = trim((string) ($data['category_link'] ?? ''));
+		$langData = is_array($data['langs'] ?? null) ? $data['langs'] : [];
+		$defaultLang = Lang::getDefault();
+		$defaultEntry = is_array($langData[$defaultLang] ?? null) ? $langData[$defaultLang] : $data;
+
+		$name = trim((string) ($defaultEntry['category_name'] ?? $data['category_name'] ?? ''));
+		$link = trim((string) ($defaultEntry['category_link'] ?? $data['category_link'] ?? ''));
 		$idParent = (int) ($data['id_parent'] ?? 0);
 		$active = !empty($data['active']) ? 1 : 0;
-		$metaTitle = mb_substr(trim(strip_tags((string) ($data['meta_title'] ?? ''))), 0, 255);
-		$metaDescription = mb_substr(trim(strip_tags((string) ($data['meta_description'] ?? ''))), 0, 512);
+		$metaTitle = mb_substr(trim(strip_tags((string) ($defaultEntry['meta_title'] ?? $data['meta_title'] ?? ''))), 0, 255);
+		$metaDescription = mb_substr(trim(strip_tags((string) ($defaultEntry['meta_description'] ?? $data['meta_description'] ?? ''))), 0, 512);
 
 		if ($name === '') {
 			return self::fail('Kategori adı zorunludur');
@@ -146,7 +223,7 @@ class Category
 			return self::fail('Geçerli bir URL slug girin');
 		}
 
-		if (!self::isLinkUnique($link, $id)) {
+		if (!self::isLinkUnique($link, $id, $defaultLang)) {
 			return self::fail('Bu URL slug zaten kullanılıyor');
 		}
 
@@ -162,16 +239,25 @@ class Category
 		if ($id > 0) {
 			$ok = DB::update('categories', $row, 'id_category = :where_id', ['where_id' => $id]);
 
-			return $ok !== false
-				? ['success' => true, 'message' => 'Kategori güncellendi', 'id' => $id]
-				: self::fail('Kategori güncellenemedi');
+			if ($ok === false) {
+				return self::fail('Kategori güncellenemedi');
+			}
+
+			$langError = self::saveLangRows($id, $langData);
+
+			return $langError ?: ['success' => true, 'message' => 'Kategori güncellendi', 'id' => $id];
 		}
 
 		$newId = DB::insert('categories', $row);
 
-		return $newId
-			? ['success' => true, 'message' => 'Kategori eklendi', 'id' => (int) $newId]
-			: self::fail('Kategori eklenemedi');
+		if (!$newId) {
+			return self::fail('Kategori eklenemedi');
+		}
+
+		$newId = (int) $newId;
+		$langError = self::saveLangRows($newId, $langData);
+
+		return $langError ?: ['success' => true, 'message' => 'Kategori eklendi', 'id' => $newId];
 	}
 
 	private static function fail(string $message): array

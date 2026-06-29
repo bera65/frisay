@@ -44,7 +44,7 @@ class Notification
 		$title = 'Hoş geldiniz!';
 		$message = 'Merhaba ' . $fullName . ",\n\nFShop'a kayıt olduğunuz için teşekkür ederiz. Hesabınızdan siparişlerinizi takip edebilirsiniz.";
 
-		self::notifyUser($idUser, 'welcome', $title, $message, 'hesabim');
+		self::notifyUser($idUser, 'welcome', $title, $message, 'my-account');
 	}
 
 	public static function orderPlaced(int $idUser, string $reference, float $total): void
@@ -54,7 +54,7 @@ class Notification
 			. 'Sipariş No: ' . $reference . "\n"
 			. 'Toplam: ' . Tools::displayPrice($total);
 
-		self::notifyUser($idUser, 'order_placed', $title, $message, 'siparislerim');
+		self::notifyUser($idUser, 'order_placed', $title, $message, 'orders');
 	}
 
 	public static function orderStatusChanged(array $order, int $oldStatus, int $newStatus): void
@@ -70,7 +70,7 @@ class Notification
 		$title = 'Sipariş durumu güncellendi';
 		$message = self::buildStatusMessage($reference, $oldStatus, $newStatus, $payment);
 
-		self::notifyUser($idUser, 'order_status', $title, $message, 'siparislerim');
+		self::notifyUser($idUser, 'order_status', $title, $message, 'orders');
 	}
 
 	private static function buildStatusMessage(string $reference, int $oldStatus, int $newStatus, string $payment): string

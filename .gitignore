@@ -18,6 +18,10 @@ cache/cache/*
 img/products/*
 !img/products/index.php
 
+# Dijital ürün dosyaları
+storage/digital/*
+!storage/digital/index.php
+
 # IDE / OS
 .idea/
 .vscode/

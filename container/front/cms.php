@@ -20,13 +20,13 @@
 
 	$pageDesc = trim((string) ($cmsPage['meta_description'] ?? ''));
 	if ($pageDesc === '') {
-		$pageDesc = $cmsPage['desc'];
+		$pageDesc = $cmsPage['summary'] ?: $cmsPage['desc'];
 	}
 
 	$smarty->assign([
 		'cmsPage' => $cmsPage,
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
+			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => $cmsPage['title'], 'url' => ''],
 		],
 	]);

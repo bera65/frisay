@@ -19,7 +19,7 @@ class PaytrModule extends ModuleBase
 	public string $paymentMethodLabel = 'Kredi / Banka Kartı (PayTR)';
 
 	public array $routes = [
-		'odeme-paytr' => 'front/payment.php',
+		'paytr-payment' => 'front/payment.php',
 	];
 
 	public array $displayHooks = [
@@ -111,7 +111,7 @@ class PaytrModule extends ModuleBase
 
 		return [
 			'success' => true,
-			'redirect' => rtrim($domain, '/') . '/odeme-paytr?id=' . $idOrder,
+			'redirect' => rtrim($domain, '/') . '/paytr-payment?id=' . $idOrder,
 			'message' => '',
 		];
 	}
@@ -166,7 +166,7 @@ class PaytrModule extends ModuleBase
 			'user_address' => self::formatAddress($order),
 			'user_phone' => (string) $order['customer_phone'],
 			'merchant_ok_url' => rtrim($domain, '/') . '/checkout-success?id=' . (int) $order['id_order'],
-			'merchant_fail_url' => rtrim($domain, '/') . '/odeme-paytr?id=' . (int) $order['id_order'] . '&fail=1',
+			'merchant_fail_url' => rtrim($domain, '/') . '/paytr-payment?id=' . (int) $order['id_order'] . '&fail=1',
 			'timeout_limit' => '30',
 			'currency' => $currency,
 			'test_mode' => $testMode,

@@ -38,14 +38,14 @@ class Order
 	public static function getStatusLabel(int $status): string
 	{
 		$labels = [
-			self::STATUS_PENDING => 'Ödeme Bekliyor',
-			self::STATUS_PROCESSING => 'Hazırlanıyor',
-			self::STATUS_SHIPPED => 'Kargoda',
-			self::STATUS_DELIVERED => 'Teslim Edildi',
-			self::STATUS_CANCELLED => 'İptal Edildi',
+			self::STATUS_PENDING => translate('Order status pending'),
+			self::STATUS_PROCESSING => translate('Order status processing'),
+			self::STATUS_SHIPPED => translate('Order status shipped'),
+			self::STATUS_DELIVERED => translate('Order status delivered'),
+			self::STATUS_CANCELLED => translate('Order status cancelled'),
 		];
 
-		return $labels[$status] ?? 'Bilinmiyor';
+		return $labels[$status] ?? translate('Order status unknown');
 	}
 
 	public static function getPaymentLabel(string $method): string
@@ -57,8 +57,8 @@ class Order
 		}
 
 		$labels = [
-			'bank_transfer' => 'Havale / EFT',
-			'cash_on_delivery' => 'Kapıda Ödeme',
+			'bank_transfer' => translate('Bank Transfer'),
+			'cash_on_delivery' => translate('Cash on Delivery'),
 		];
 
 		return isset($labels[$method]) ? $labels[$method] : $method;
@@ -72,11 +72,21 @@ class Order
 		return $subtotal >= $min ? 0.0 : $fee;
 	}
 
-	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0): array
+	public static function isPaymentAccepted(int $status): bool
+	{
+		return in_array($status, [
+			self::STATUS_PROCESSING,
+			self::STATUS_SHIPPED,
+			self::STATUS_DELIVERED,
+		], true);
+	}
+
+	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0, ?array $cart = null): array
 	{
 		$discount = max(0.0, min($subtotal, $discount));
 		$afterDiscount = $subtotal - $discount;
-		$shipping = self::getShippingFee($afterDiscount);
+		$requiresShipping = Cart::requiresShipping($cart);
+		$shipping = $requiresShipping ? self::getShippingFee($afterDiscount) : 0.0;
 		$total = $afterDiscount + $shipping;
 
 		return [
@@ -85,10 +95,13 @@ class Order
 			'discount' => $discount,
 			'discount_formatted' => Tools::displayPrice($discount),
 			'shipping' => $shipping,
-			'shipping_formatted' => Tools::displayPrice($shipping),
+			'shipping_formatted' => $requiresShipping && $shipping > 0
+				? Tools::displayPrice($shipping)
+				: ($requiresShipping ? translate('Free') : '—'),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
 			'free_shipping_min' => (float) (Settings::get('FREE_SHIPPING_MIN') ?: 1500),
+			'requires_shipping' => $requiresShipping,
 		];
 	}
 
@@ -97,12 +110,12 @@ class Order
 		self::ensureSchema();
 
 		if (!Customer::isLoggedIn()) {
-			return self::fail('Sipariş vermek için giriş yapmalısınız');
+			return self::fail(translate('Must login to order'));
 		}
 
 		$cart = Cart::getSummary();
 		if ($cart['empty']) {
-			return self::fail('Sepetiniz boş');
+			return self::fail(translate('Cart is empty order'));
 		}
 
 		$name = trim((string) ($data['customer_name'] ?? ''));
@@ -123,7 +136,7 @@ class Order
 			$savedAddress = Address::getForUser($idAddress, $idUser);
 
 			if (!$savedAddress) {
-				return self::fail('Seçilen adres bulunamadı');
+				return self::fail(translate('Address not found'));
 			}
 
 			$name = $savedAddress['full_name'];
@@ -144,15 +157,15 @@ class Order
 		}
 
 		if (!Validate::isName($name)) {
-			return self::fail('Geçerli bir ad soyad girin');
+			return self::fail(translate('Please enter a valid full name'));
 		}
 
 		if (!Customer::isValidPhone($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin');
+			return self::fail(translate('Please enter a valid phone number'));
 		}
 
 		if ($city === '' || $district === '' || $address === '') {
-			return self::fail('Teslimat adresini eksiksiz doldurun');
+			return self::fail(translate('Complete delivery address'));
 		}
 
 		$paymentMethods = Module::getPaymentMethods();
@@ -160,15 +173,19 @@ class Order
 		if ($paymentMethods !== []) {
 			// Ödeme modülleri kurulu: yöntem onlardan birine ait olmalı
 			if (!isset($paymentMethods[$payment])) {
-				return self::fail('Geçerli bir ödeme yöntemi seçin');
+				return self::fail(translate('Invalid payment method'));
 			}
 		} elseif (!in_array($payment, ['bank_transfer', 'cash_on_delivery'], true)) {
 			// Hiç ödeme modülü yoksa eski sabit yöntemler geçerli
-			return self::fail('Geçerli bir ödeme yöntemi seçin');
+			return self::fail(translate('Invalid payment method'));
 		}
 
 		if (empty($data['accept_terms'])) {
-			return self::fail('Devam etmek için sözleşmeleri onaylamalısınız');
+			return self::fail(translate('Must accept terms'));
+		}
+
+		if ($payment === 'cash_on_delivery' && Cart::hasVirtualProducts($cart)) {
+			return self::fail(translate('COD not for virtual'));
 		}
 
 		// "Önce ödeme" isteyen modül (sanal POS gibi): sipariş henüz OLUŞTURULMAZ.
@@ -200,7 +217,7 @@ class Order
 		$couponDiscount = Coupon::getDiscount($subtotal);
 		$appliedCoupon = Coupon::getApplied();
 		$couponCode = $appliedCoupon ? (string) $appliedCoupon['code'] : '';
-		$totals = self::getCheckoutTotals($subtotal, $couponDiscount);
+		$totals = self::getCheckoutTotals($subtotal, $couponDiscount, $cart);
 		$reference = self::generateReference();
 
 		global $db;
@@ -306,7 +323,7 @@ class Order
 
 			return [
 				'success' => true,
-				'message' => 'Siparişiniz alındı',
+				'message' => translate('Order placed'),
 				'id_order' => (int) $idOrder,
 				'reference' => $reference,
 				'redirect' => $redirect,
@@ -316,7 +333,7 @@ class Order
 				$db->rollBack();
 			}
 
-			return self::fail('Sipariş oluşturulamadı, lütfen tekrar deneyin');
+			return self::fail(translate('Order create failed'));
 		}
 	}
 
@@ -370,7 +387,7 @@ class Order
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
-			'SELECT od.*, p.barcode, p.stock_code, p.vat
+			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind
 			FROM order_detail od
 			LEFT JOIN products p ON p.id_product = od.id_product
 			WHERE od.id_order = ?
@@ -381,6 +398,7 @@ class Order
 		foreach ($order['items'] as &$item) {
 			$item['price_formatted'] = Tools::displayPrice($item['price']);
 			$item['total_formatted'] = Tools::displayPrice($item['total']);
+			VirtualProduct::enrichOrderItem($item, $idUser, (int) $order['status']);
 		}
 		unset($item);
 
@@ -581,7 +599,7 @@ class Order
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
-			'SELECT od.*, p.barcode, p.stock_code, p.vat
+			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind, p.virtual_file_name
 			FROM order_detail od
 			LEFT JOIN products p ON p.id_product = od.id_product
 			WHERE od.id_order = ?
@@ -592,6 +610,7 @@ class Order
 		foreach ($order['items'] as &$item) {
 			$item['price_formatted'] = Tools::displayPrice($item['price']);
 			$item['total_formatted'] = Tools::displayPrice($item['total']);
+			VirtualProduct::enrichAdminOrderItem($item);
 		}
 		unset($item);
 
@@ -673,6 +692,16 @@ class Order
 		if (isset($row['status']) && $newStatus !== $oldStatus) {
 			$order['status'] = $newStatus;
 			Notification::orderStatusChanged($order, $oldStatus, $newStatus);
+
+			if (self::isPaymentAccepted($newStatus) && !self::isPaymentAccepted($oldStatus)) {
+				VirtualProduct::fulfillOrder($idOrder);
+			}
+		}
+
+		$updatedOrder = self::getByIdAdmin($idOrder) ?: $order;
+
+		if (class_exists('Module', false)) {
+			Module::runHook('order.updated', [$updatedOrder, $oldStatus, $row]);
 		}
 
 		return self::ok('Sipariş güncellendi');

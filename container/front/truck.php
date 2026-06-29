@@ -3,9 +3,9 @@
 		exit;
 	}
 
-	$pageTitle = 'Kargo Takip';
-	$pageDesc = 'Sipariş durumu sorgulama';
-	$css = 'catalog.css';
+	$pageTitle = translate('Track page title');
+	$pageDesc = translate('Track page description');
+	$css = 'pages.css';
 	$trackResult = null;
 	$trackError = '';
 	$reference = strtoupper(trim((string) Tools::getValue('reference')));
@@ -15,7 +15,7 @@
 		$trackResult = Order::trackByReference($reference, $idUser);
 
 		if (!$trackResult) {
-			$trackError = 'Bu sipariş numarası ile kayıt bulunamadı.';
+			$trackError = translate('Order not found for reference');
 		}
 	}
 
@@ -29,7 +29,7 @@
 		'trackError' => $trackError,
 		'recentOrders' => $recentOrders,
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
-			['name' => 'Kargo Takip', 'url' => ''],
+			['name' => translate('Home Page'), 'url' => $domain],
+			['name' => translate('Track Order'), 'url' => ''],
 		],
 	]);

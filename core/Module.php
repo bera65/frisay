@@ -8,6 +8,8 @@ class Module
 		'footer.html',
 		'admin.menu',
 		'order.placed',
+		'product.updated',
+		'order.updated',
 	];
 
 	/** @var array<string, ModuleBase> */
@@ -139,6 +141,8 @@ class Module
 			'footer.html' => 'Footer alanına HTML ekler (eski; tercih: display hook)',
 			'admin.menu' => 'Admin menüsüne öğe ekler (varsayılan: kapalı, detay sayfası kullanın)',
 			'order.placed' => 'Sipariş oluşturulunca tetiklenir',
+			'product.updated' => 'Ürün admin veya API üzerinden kaydedilince tetiklenir',
+			'order.updated' => 'Sipariş admin veya API üzerinden güncellenince tetiklenir',
 		];
 	}
 
@@ -158,7 +162,36 @@ class Module
 			'product_inf' 		=> 'Ürün detay — {$hooks.product_inf}',
 			'order_payment' 	=> 'Ödeme Modülü — {$hooks.order_payment}',
 			'order_confirmation' => 'Sipariş onay sayfası — {$hooks.order_confirmation}',
+			'admin_product_button' => 'Admin ürün düzenleme — Kaydet butonu yanı — {$adminHooks.admin_product_button}',
+			'admin_order_detail' => 'Admin sipariş detay — {$adminHooks.admin_order_detail}',
+			'admin_dashboard_top' => 'Admin gösterge paneli — üst alan — {$adminHooks.admin_dashboard_top}',
+			'admin_dashboard_kpi' => 'Admin gösterge paneli — KPI kartları altı — {$adminHooks.admin_dashboard_kpi}',
+			'admin_dashboard_main_left' => 'Admin gösterge paneli — sol sütun — {$adminHooks.admin_dashboard_main_left}',
+			'admin_dashboard_main_right' => 'Admin gösterge paneli — sağ sütun — {$adminHooks.admin_dashboard_main_right}',
+			'admin_dashboard_bottom' => 'Admin gösterge paneli — sayfa altı — {$adminHooks.admin_dashboard_bottom}',
 		];
+	}
+
+	/**
+	 * @param string[] $hookNames
+	 * @param array<string, mixed> $context
+	 * @return array<string, string>
+	 */
+	public static function renderAdminHooks(array $hookNames, array $context = []): array
+	{
+		$hooks = [];
+
+		foreach ($hookNames as $hookName) {
+			$hookName = trim((string) $hookName);
+
+			if ($hookName === '') {
+				continue;
+			}
+
+			$hooks[$hookName] = self::renderDisplayHook($hookName, $context);
+		}
+
+		return $hooks;
 	}
 
 	/** Sayfa bağlamlı hook'ları günceller (ör. ürün sayfası) */
@@ -251,7 +284,11 @@ class Module
 				continue;
 			}
 
-			$chunk = $module->renderDisplayHook($hookName, $context);
+			if (strpos($hookName, 'admin_') === 0) {
+				$chunk = $module->renderAdminDisplayHook($hookName, $context);
+			} else {
+				$chunk = $module->renderDisplayHook($hookName, $context);
+			}
 
 			if ($chunk !== null && $chunk !== '') {
 				$html .= $chunk;
@@ -265,7 +302,21 @@ class Module
 	public static function getRenderedDisplayHooks(): array
 	{
 		$hooks = [];
-		$deferred = ['product', 'product_tab', 'product_tab_content', 'product_inf', 'order_payment', 'order_confirmation'];
+		$deferred = [
+			'product',
+			'product_tab',
+			'product_tab_content',
+			'product_inf',
+			'order_payment',
+			'order_confirmation',
+			'admin_product_button',
+			'admin_order_detail',
+			'admin_dashboard_top',
+			'admin_dashboard_kpi',
+			'admin_dashboard_main_left',
+			'admin_dashboard_main_right',
+			'admin_dashboard_bottom',
+		];
 
 		foreach (array_keys(self::getDisplayHookCatalog()) as $hookName) {
 			$hooks[$hookName] = in_array($hookName, $deferred, true)

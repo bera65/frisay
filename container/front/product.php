@@ -13,7 +13,7 @@
 	if (!$product) {
 		http_response_code(404);
 		$skipPageRender = true;
-		$page->add('404', 'Sayfa Bulunamadı');
+		$page->add('404', translate('Page Not Found'));
 		return;
 	}
 
@@ -46,8 +46,24 @@
 	$globalCargoDay = max(0, (int) Settings::get('CARGO_DAY'));
 	$productCargoDay = max(0, (int) ($product['cargo_day'] ?? 0));
 
+	$relatedProducts = [];
+	$idBrand = (int) ($product['id_brand'] ?? 0);
+	if ($idBrand > 0) {
+		$relatedRaw = Product::getActiveList(null, 8, 0, 'newest', $idBrand);
+		foreach ($relatedRaw as $relatedItem) {
+			if ((int) ($relatedItem['id_product'] ?? 0) === $idProduct) {
+				continue;
+			}
+			$relatedProducts[] = $relatedItem;
+			if (count($relatedProducts) >= 5) {
+				break;
+			}
+		}
+	}
+
 	$smarty->assign([
 		'product' 			=> $product,
+		'productUrl'		=> Product::getLink($product),
 		'productName' 		=> $product['product_name'],
 		'brandName' 		=> $product['brand_name'],
 		'brandUrl' 			=> Brand::getUrl(['brand_link' => $product['brand_link']]),
@@ -67,8 +83,9 @@
 		'cargoPrice' 		=> (float)Settings::get('SHIPPING_FEE'),
 		'havale'			=> (float)Settings::get('HAVALE'),
 		'isFavorite' 		=> Favorite::isFavorite($idProduct),
+		'relatedProducts'	=> $relatedProducts,
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
+			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => $product['category_name'], 'url' => $domain . $product['category_link']],
 			['name' => $product['product_name'], 'url' => ''],
 		],
@@ -76,7 +93,7 @@
 			$product,
 			$images,
 			[
-				['name' => 'Anasayfa', 'url' => rtrim($domain, '/') . '/'],
+				['name' => translate('Home Page'), 'url' => rtrim($domain, '/') . '/'],
 				['name' => $product['category_name'], 'url' => $domain . $product['category_link']],
 				['name' => $product['product_name'], 'url' => Product::getLink($product)],
 			],

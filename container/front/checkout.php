@@ -3,7 +3,7 @@
 		exit;
 	}
 
-	$css = 'checkout.css';
+	$css = 'pages.css';
 	$js = 'account.js';
 
 	if ($cart['empty']) {
@@ -44,7 +44,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($token, $postToken)) {
-			$orderError = 'Geçersiz istek, sayfayı yenileyip tekrar deneyin';
+			$orderError = translate('Invalid request, please refresh and try again');
 		} else {
 			$selectedAddressId = (int) Tools::getValue('id_address');
 
@@ -94,8 +94,8 @@
 		}
 	}
 
-	$pageTitle = 'Ödeme';
-	$pageDesc = 'Sipariş Tamamla';
+	$pageTitle = translate('Checkout page title');
+	$pageDesc = translate('Checkout page description');
 
 	$smarty->assign([
 		'checkoutTotals' => $checkoutTotals,
@@ -103,10 +103,12 @@
 		'addresses' => $addresses,
 		'selectedAddressId' => $selectedAddressId,
 		'formData' => $formData,
+		'cartHasVirtual' => Cart::hasVirtualProducts($cart),
+		'cartRequiresShipping' => Cart::requiresShipping($cart),
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
-			['name' => 'Sepet', 'url' => $domain . 'cart'],
-			['name' => 'Ödeme', 'url' => ''],
+			['name' => translate('Home Page'), 'url' => $domain],
+			['name' => translate('My Cart'), 'url' => $domain . 'cart'],
+			['name' => translate('Checkout page title'), 'url' => ''],
 		],
 	]);
 	Module::refreshHook($smarty, 'order_payment', ['cart' => $cart]);

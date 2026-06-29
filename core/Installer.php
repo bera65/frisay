@@ -98,6 +98,21 @@ class Installer
 		$adminEmail = trim((string) ($data['admin_email'] ?? ''));
 		$adminPass = (string) ($data['admin_password'] ?? '');
 		$withDemo = !empty($data['install_demo']);
+		$shopLang = strtolower(trim((string) ($data['shop_lang'] ?? 'tr')));
+		$adminLang = strtolower(trim((string) ($data['admin_lang'] ?? 'tr')));
+		$theme = trim((string) ($data['theme'] ?? 'blue'));
+
+		if (!in_array($shopLang, ['tr', 'en'], true)) {
+			$shopLang = 'tr';
+		}
+
+		if (!in_array($adminLang, ['tr', 'en'], true)) {
+			$adminLang = 'tr';
+		}
+
+		if (!in_array($theme, ['default', 'blue', 'prime'], true)) {
+			$theme = 'blue';
+		}
 
 		if ($dbName === '' || $dbUser === '') {
 			return ['success' => false, 'message' => 'Veritabanı adı ve kullanıcı zorunludur'];
@@ -158,7 +173,10 @@ class Installer
 			self::setSetting($pdo, 'SHOP_TOKEN', $shopToken);
 			self::setSetting($pdo, 'WEBAPI_ENABLED', '1');
 			self::setSetting($pdo, 'WEBAPI_KEY', $webApiKey);
-			self::setSetting($pdo, 'THEME', 'default');
+			self::setSetting($pdo, 'THEME', $theme);
+			self::setSetting($pdo, 'DEFAULT_LANG', $shopLang);
+			self::setSetting($pdo, 'SHOP_LANGUAGES', 'tr,en');
+			self::setSetting($pdo, 'ADMIN_DEFAULT_LANG', $adminLang);
 			self::setSetting($pdo, 'PRODUCT_LIMIT', '5000');
 			self::setSetting($pdo, 'FREE_SHIPPING_MIN', '500');
 			self::setSetting($pdo, 'SHIPPING_FEE', '79.90');

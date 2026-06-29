@@ -14,6 +14,12 @@
 					<label class="form-label">{$settingsKeys.SITE_NAME.label|escape}</label>
 					<input type="text" name="SITE_NAME" class="form-control" value="{$settingsValues.SITE_NAME|escape}">
 				</div>
+				<div class="mb-0">
+					<label class="form-label">Mağaza para birimi</label>
+					<p class="mb-2"><strong>{$shopCurrencyLabel|escape}</strong> <code>{$shopCurrencyCode|escape}</code></p>
+					<a href="{$adminUrl}currencies" class="btn btn-sm btn-outline-secondary">Para birimlerini yönet</a>
+					<div class="form-text mt-2">Yeni birim eklemek veya aktif birimi değiştirmek için para birimleri sayfasını kullanın.</div>
+				</div>
 			</div>
 
 			<div class="admin-panel mb-4">

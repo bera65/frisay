@@ -105,6 +105,8 @@
 	$smarty->assign([
 		'settingsValues' => $values,
 		'settingsKeys' => $editableKeys,
+		'shopCurrencyCode' => Currency::getShopCurrency(),
+		'shopCurrencyLabel' => Currency::label(),
 		'flash' => $flash,
 		'flashType' => $flashType,
 		'mailConfigured' => $mailConfigured,

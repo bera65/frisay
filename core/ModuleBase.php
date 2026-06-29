@@ -254,6 +254,46 @@ abstract class ModuleBase
 		return null;
 	}
 
+	/**
+	 * Admin panel display hook — assets/templates/admin/{hook}.tpl
+	 * @param array<string, mixed> $context
+	 */
+	public function renderAdminDisplayHook(string $hook, array $context = []): ?string
+	{
+		if (!in_array($hook, $this->getSupportedDisplayHooks(), true)) {
+			return null;
+		}
+
+		if ($this->hasAdminDisplayTemplate($hook)) {
+			return $this->renderAdminTemplate($hook, $context);
+		}
+
+		return null;
+	}
+
+	public function hasAdminDisplayTemplate(string $template): bool
+	{
+		return is_file($this->getPath() . '/assets/templates/admin/' . $template . '.tpl');
+	}
+
+	/**
+	 * @param array<string, mixed> $vars
+	 */
+	public function renderAdminTemplate(string $template, array $vars = []): string
+	{
+		if (!$this->hasAdminDisplayTemplate($template)) {
+			return '';
+		}
+
+		global $smarty;
+
+		$tplFile = $this->getPath() . '/assets/templates/admin/' . $template . '.tpl';
+		$compileId = 'module_admin_' . $this->name;
+		$tpl = $smarty->createTemplate('file:' . $tplFile, $vars, $compileId, $smarty);
+
+		return $tpl->fetch();
+	}
+
 	public function getPaymentMethodLabel(): string
 	{
 		return $this->paymentMethodLabel !== '' ? $this->paymentMethodLabel : $this->title;

@@ -36,6 +36,12 @@
 		'order' => $order,
 		'flash' => $flash,
 		'statusOptions' => Order::getStatusOptions(),
+		'adminHooks' => [
+			'admin_order_detail' => Module::renderDisplayHook('admin_order_detail', [
+				'id_order' => $idOrder,
+				'order' => $order,
+			]),
+		],
 	]);
 
 	AdminPage::add('order', 'Sipariş #' . $order['reference']);

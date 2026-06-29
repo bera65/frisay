@@ -45,4 +45,4 @@
 	</div>
 </div>
 
-{include file='fshop/plugin/pagination.tpl'}
+{include file='admin/plugin/pagination.tpl'}

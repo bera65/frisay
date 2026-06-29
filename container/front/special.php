@@ -3,7 +3,7 @@
 		exit;
 	}
 
-	$css = 'catalog.css';
+	$css = 'pages.css';
 	$sort = (string) Tools::getValue('sort');
 	if ($sort === '') {
 		$sort = 'discount';
@@ -15,7 +15,7 @@
 	$pagination = Pagination::build($productCount, $currentPage, $perPage, $baseUrl, ['sort' => $sort !== 'discount' ? $sort : '']);
 	$products = Product::getDiscountedList($perPage, $pagination['offset'], $sort);
 
-	$specialSeo = Seo::resolvePage('special', 'Kampanyalar', 'İndirimli ürünler ve kampanyalar');
+	$specialSeo = Seo::resolvePage('special', translate('Specilas'), translate('Discounted Products'));
 	$pageTitle = $specialSeo['title'];
 	$pageDesc = $specialSeo['description'];
 
@@ -26,8 +26,9 @@
 		'sort' => $sort,
 		'sortOptions' => Pagination::getSortOptions(),
 		'catalogBaseUrl' => $baseUrl,
+		'emptyMessage' => translate('No discounted products yet.'),
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
-			['name' => 'Kampanyalar', 'url' => ''],
+			['name' => translate('Home Page'), 'url' => $domain],
+			['name' => translate('Specilas'), 'url' => ''],
 		],
 	]);

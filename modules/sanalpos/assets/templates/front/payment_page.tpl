@@ -9,7 +9,7 @@
 				<div class="alert alert-danger">{$paymentError|escape}</div>
 				{/if}
 
-				<form method="post" action="{$domain}odeme-karti" autocomplete="off">
+				<form method="post" action="{$domain}card-payment" autocomplete="off">
 					<input type="hidden" name="payCard" value="1">
 					<input type="hidden" name="token" value="{$token}">
 

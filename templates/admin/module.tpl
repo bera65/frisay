@@ -27,8 +27,9 @@
 		<div class="admin-panel mb-4">
 			<h3 class="h6 mb-3">Görünür hook ataması</h3>
 			<p class="text-muted small mb-3">
-				Modülün sitede hangi alanda görüneceğini seçin. Şablonlarda
-				<code>{ldelim}$hooks.footer{rdelim}</code> gibi hook noktaları kullanılır.
+				Modülün sitede hangi alanda görüneceğini seçin. Mağazada
+				<code>{ldelim}$hooks.footer{rdelim}</code>, admin panelde
+				<code>{ldelim}$adminHooks.admin_product_button{rdelim}</code> gibi hook noktaları kullanılır.
 			</p>
 			{if $mod.installed}
 			<form method="post" class="mb-0">

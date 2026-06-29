@@ -23,8 +23,12 @@
 	}
 
 	Theme::ensureColorsFile($editTheme);
+	Theme::ensureCustomCss($editTheme);
 	$themeColors = Theme::getColors($editTheme);
 	$colorDefs = Theme::getColorDefinitions();
+	$themeOptionDefs = Theme::getOptionDefinitions($editTheme);
+	$themeOptions = Theme::getOptions($editTheme);
+	$headerVariants = Theme::discoverHeaderVariants($editTheme);
 
 	if (Tools::isSubmit('saveTheme')) {
 		$postToken = (string) Tools::getValue('token');
@@ -82,6 +86,41 @@
 		}
 	}
 
+	if (Tools::isSubmit('saveThemeOptions')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} else {
+			$saveTheme = (string) Tools::getValue('edit_theme');
+
+			if (!Theme::isValidName($saveTheme)) {
+				$flash = 'Geçersiz tema';
+				$flashType = 'danger';
+			} else {
+				$inputOptions = [];
+
+				foreach (array_keys(Theme::getOptionDefinitions($saveTheme)) as $optKey) {
+					$inputOptions[$optKey] = (string) Tools::getValue('opt_' . $optKey);
+				}
+
+				$result = Theme::saveOptions($saveTheme, $inputOptions);
+
+				if ($result['success']) {
+					$editTheme = $saveTheme;
+					$themeOptions = Theme::getOptions($editTheme);
+					$themeOptionDefs = Theme::getOptionDefinitions($editTheme);
+					$flash = $result['message'];
+					$flashType = 'success';
+				} else {
+					$flash = $result['message'];
+					$flashType = 'danger';
+				}
+			}
+		}
+	}
+
 	if (Tools::isSubmit('uploadLogo')) {
 		$postToken = (string) Tools::getValue('token');
 
@@ -124,6 +163,9 @@
 		'colorDefs' => $colorDefs,
 		'colorGroups' => $colorGroups,
 		'colorPickerValues' => $colorPickerValues,
+		'themeOptionDefs' => $themeOptionDefs,
+		'themeOptions' => $themeOptions,
+		'headerVariants' => $headerVariants,
 		'siteLogos' => SiteAssets::getLogos(),
 		'flash' => $flash,
 		'flashType' => $flashType,

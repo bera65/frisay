@@ -1,23 +1,62 @@
 {if $flash}
-<div class="alert alert-success">{$flash|escape}</div>
+<div class="alert alert-{$flashType|default:'success'}">{$flash|escape}</div>
 {/if}
-<form method="post" id="productForm">
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<p class="text-muted small mb-0">Ürün adı, slug ve açıklamalar dil sekmelerine göre kaydedilir ({$shopLanguages|@count} dil).</p>
+	<a href="{$adminUrl}languages" class="btn btn-sm btn-outline-secondary">Dilleri Yönet</a>
+</div>
+
+<form method="post" id="productForm" class="mb-3">
 	<div class="row g-4">
 		<div class="col-lg-8">
 			<div class="admin-panel">
 				<input type="hidden" name="saveProduct" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 
+				<ul class="nav nav-tabs mb-3" role="tablist">
+					{foreach $productLangForms as $langCode => $langForm}
+					<li class="nav-item" role="presentation">
+						<button class="nav-link{if $langForm@first} active{/if}" data-bs-toggle="tab" data-bs-target="#product-pane-{$langCode|escape}" type="button" role="tab">{$langForm.label|escape}</button>
+					</li>
+					{/foreach}
+				</ul>
+
+				<div class="tab-content mb-3">
+					{foreach $productLangForms as $langCode => $langForm}
+					<div class="tab-pane fade{if $langForm@first} show active{/if}" id="product-pane-{$langCode|escape}" role="tabpanel">
+						<div class="row g-3">
+							<div class="col-12">
+								<label class="form-label">Ürün Adı ({$langForm.label|escape}){if $langForm@first} *{/if}</label>
+								<input type="text" name="langs[{$langCode|escape}][product_name]" class="form-control"{if $langForm@first} required{/if} value="{$langForm.product_name|escape}">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">URL Slug</label>
+								<input type="text" name="langs[{$langCode|escape}][product_link]" class="form-control" value="{$langForm.product_link|escape}" placeholder="Boş bırakılırsa otomatik">
+							</div>
+							<div class="col-12">
+								<label class="form-label">Kısa Açıklama</label>
+								<textarea name="langs[{$langCode|escape}][short_description]" class="form-control" rows="2" maxlength="512">{$langForm.short_description|default:''|escape}</textarea>
+							</div>
+							<div class="col-12">
+								<label class="form-label">Meta Başlık</label>
+								<input type="text" name="langs[{$langCode|escape}][meta_title]" class="form-control" value="{$langForm.meta_title|default:''|escape}" maxlength="255">
+							</div>
+							<div class="col-12">
+								<label class="form-label">Meta Açıklama</label>
+								<textarea name="langs[{$langCode|escape}][meta_description]" class="form-control" rows="2" maxlength="512">{$langForm.meta_description|default:''|escape}</textarea>
+							</div>
+							<div class="col-12">
+								<label class="form-label">Uzun Açıklama{if $langForm@first} *{/if}</label>
+								<textarea name="langs[{$langCode|escape}][description]" class="form-control wysiwyg-editor" rows="12">{$langForm.description|escape}</textarea>
+							</div>
+						</div>
+					</div>
+					{/foreach}
+				</div>
+
 				<div class="row g-3">
-					<div class="col-12">
-						<label class="form-label">Ürün Adı *</label>
-						<input required type="text" name="product_name" class="form-control" value="{$product.product_name|escape}">
-					</div>
 					<div class="col-md-6">
-						<label class="form-label">URL Slug</label>
-						<input type="text" name="product_link" class="form-control" value="{$product.product_link|escape}" placeholder="Boş bırakılırsa otomatik">
-					</div>
-					<div class="col-md-3">
 						<label class="form-label">Kategori</label>
 						<select name="id_category" class="form-select" required>
 							{foreach $categoryOptions as $cat}
@@ -25,7 +64,7 @@
 							{/foreach}
 						</select>
 					</div>
-					<div class="col-md-3">
+					<div class="col-md-6">
 						<label class="form-label">Marka</label>
 						<select name="id_brand" class="form-select" required>
 							{foreach $brandOptions as $b}
@@ -33,29 +72,6 @@
 							{/foreach}
 						</select>
 					</div>
-					<div class="col-12">
-						<label class="form-label">Kısa Açıklama</label>
-						<textarea name="short_description" class="form-control" rows="2" maxlength="512" placeholder="Ürün sayfasında başlığın altında görünür">{$product.short_description|default:''|escape}</textarea>
-						<div class="form-text">Düz metin, en fazla 512 karakter. Özet / öne çıkan bilgi için kullanın.</div>
-					</div>
-					<div class="col-12">
-						<h3 class="h6 mb-2">SEO</h3>
-					</div>
-					<div class="col-12">
-						<label class="form-label">Meta Başlık</label>
-						<input type="text" name="meta_title" class="form-control" value="{$product.meta_title|default:''|escape}" maxlength="255" placeholder="Boş bırakılırsa ürün adı kullanılır">
-					</div>
-					<div class="col-12">
-						<label class="form-label">Meta Açıklama</label>
-						<textarea name="meta_description" class="form-control" rows="2" maxlength="512" placeholder="Boş bırakılırsa kısa açıklama kullanılır">{$product.meta_description|default:''|escape}</textarea>
-						<div class="form-text">Arama motorları için, en fazla 512 karakter.</div>
-					</div>
-					<div class="col-12">
-						<label class="form-label">Uzun Açıklama *</label>
-						<textarea required name="description" id="productDescription" class="form-control wysiwyg-editor" rows="12">{$product.description|escape}</textarea>
-						<div class="form-text">Ürün sayfasında altta görünür. Zengin metin editörü ile HTML içerik oluşturabilirsiniz.</div>
-					</div>
-
 					<div class="col-md-3">
 						<label class="form-label">KDV</label>
 						<select name="vat" class="form-select">
@@ -65,8 +81,24 @@
 						</select>
 					</div>
 					<div class="col-md-3">
+						<label class="form-label">Ürün Türü</label>
+						<select name="product_type" id="productType" class="form-select">
+							<option value="physical"{if $product.product_type|default:'physical' != 'virtual'} selected{/if}>Fiziksel ürün</option>
+							<option value="virtual"{if $product.product_type|default:'physical' == 'virtual'} selected{/if}>Sanal / dijital ürün</option>
+						</select>
+					</div>
+					<div class="col-md-3" id="virtualKindWrap">
+						<label class="form-label">Teslimat Türü</label>
+						<select name="virtual_kind" id="virtualKind" class="form-select">
+							<option value="download"{if $product.virtual_kind|default:'' == 'download'} selected{/if}>İndirilebilir dosya</option>
+							<option value="license"{if $product.virtual_kind|default:'' == 'license'} selected{/if}>Lisans anahtarı</option>
+							<option value="text"{if $product.virtual_kind|default:'' == 'text'} selected{/if}>Metin teslimatı</option>
+						</select>
+					</div>
+					<div class="col-md-3">
 						<label class="form-label">Stok</label>
-						<input type="number" name="stock" class="form-control" value="{$product.stock|escape}" min="0">
+						<input type="number" name="stock" id="productStock" class="form-control" value="{$product.stock|escape}" min="0">
+						<div class="form-text" id="virtualStockHint" style="display:none;">Lisans ürünlerinde stok, kullanılabilir anahtar sayısıdır. 0 = sınırsız (indirme/metin).</div>
 					</div>
 					<div class="col-md-3">
 						<label class="form-label">Stok Kodu *</label>
@@ -96,6 +128,37 @@
 						<label class="form-label">Ürün Etiketi</label>
 						<input type="text" name="label" class="form-control" value="{$product.label|default:''|escape}" maxlength="128" placeholder="örn: 3 Al 2 Öde">
 					</div>
+
+					<div class="col-12" id="virtualTextWrap">
+						<label class="form-label">Teslimat Metni</label>
+						<textarea name="virtual_text" class="form-control" rows="4" placeholder="Sipariş sonrası müşteriye gösterilecek lisans bilgisi, indirme talimatı veya erişim detayı">{$product.virtual_text|default:''|escape}</textarea>
+						<div class="form-text">Metin teslimatında bu alan doğrudan müşteriye iletilir. İndirilebilir dosyada isteğe bağlı ek bilgi olarak kullanılabilir.</div>
+					</div>
+
+					<div class="col-12" id="virtualLicenseWrap">
+						<label class="form-label">Lisans Anahtarları</label>
+						{if $availableLicenses|@count}
+						<div class="mb-3">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<span class="small fw-semibold text-muted">Kullanılabilir anahtarlar ({$availableLicenses|@count})</span>
+								{if $licenseStats.used > 0}<span class="small text-muted">Kullanılmış: {$licenseStats.used}</span>{/if}
+							</div>
+							<div class="border rounded p-2 bg-light font-monospace small" style="max-height:220px;overflow:auto;">
+								{foreach $availableLicenses as $lic}
+								<div class="py-1 border-bottom border-light-subtle">{$lic.license_key|escape}</div>
+								{/foreach}
+							</div>
+						</div>
+						{/if}
+						<label class="form-label small">Yeni anahtar ekle</label>
+						<textarea name="license_keys" class="form-control font-monospace" rows="5" placeholder="Her satıra bir lisans anahtarı yazın"></textarea>
+						<div class="form-text">
+							Yeni anahtarlar kayıt sırasında listeye eklenir; kullanılmış anahtarlar silinmez.
+							{if !$isNew && $product.product_type|default:'physical' == 'virtual' && $product.virtual_kind|default:'' == 'license' && !$availableLicenses|@count}
+							<br>Henüz kullanılabilir anahtar yok. Kullanılmış: <strong>{$licenseStats.used}</strong>
+							{/if}
+						</div>
+					</div>
 				</div>
 
 				<div class="mt-4 d-flex gap-2">
@@ -106,7 +169,8 @@
 						</a>
 					{/if}
 
-					<div class="ms-auto d-flex gap-2">
+					<div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
+						{if $adminHooks.admin_product_button}{$adminHooks.admin_product_button nofilter}{/if}
 						<button type="submit" class="btn btn-dark">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
 							Kaydet
@@ -114,53 +178,7 @@
 					</div>
 				</div>
 			</div>
-
-			{if !$isNew}
-			<div class="admin-panel mt-4">
-				<h2 class="h6 mb-3">Görseller</h2>
-				{if $product.images|@count}
-				<div class="d-flex flex-wrap gap-2 mb-3">
-					{foreach $product.images as $img}
-					<div class="border rounded p-2 text-center" style="width:110px">
-						<img src="{$img.url}" alt="" class="img-fluid mb-2" style="max-height:70px">
-						{if $img.cover}<div class="badge bg-dark mb-1">Kapak</div>{/if}
-						<div class="d-flex flex-column gap-1">
-							{if !$img.cover}
-							<form method="post" class="d-inline">
-								<input type="hidden" name="setCover" value="1">
-								<input type="hidden" name="id_image" value="{$img.id_image}">
-								<input type="hidden" name="token" value="{$adminToken}">
-								<button type="submit" class="btn btn-sm btn-outline-dark w-100">Kapak Yap</button>
-							</form>
-							{/if}
-							<form method="post" class="d-inline" onsubmit="return confirm('Görsel silinsin mi?');">
-								<input type="hidden" name="deleteImage" value="1">
-								<input type="hidden" name="id_image" value="{$img.id_image}">
-								<input type="hidden" name="token" value="{$adminToken}">
-								<button type="submit" class="btn btn-sm btn-outline-danger w-100">Sil</button>
-							</form>
-						</div>
-					</div>
-					{/foreach}
-				</div>
-				{else}
-				<p class="text-muted small">Henüz görsel yok.</p>
-				{/if}
-
-				<form method="post" enctype="multipart/form-data">
-					<input type="hidden" name="uploadImage" value="1">
-					<input type="hidden" name="token" value="{$adminToken}">
-					<input type="file" name="image" class="form-control form-control-sm mb-2" accept="image/jpeg,image/png,image/webp" required>
-					<button type="submit" class="btn btn-sm btn-dark">Görsel Yükle</button>
-				</form>
-			</div>
-			{else}
-			<div class="admin-panel mt-4">
-				<p class="text-muted small mb-0">Görsel yüklemek için önce ürünü kaydedin.</p>
-			</div>
-			{/if}
 		</div>
-
 		<div class="col-lg-4">
 			<div class="admin-panel mb-4">
 				<h2 class="h6 mb-3">Ürün Videosu</h2>
@@ -170,32 +188,130 @@
 			</div>
 
 			<div class="admin-panel mb-4">
-				<h2 class="h6 mb-3">Gelişmiş Fiyat</h2>
+				<h2 class="h6 mb-3">Fiyat ({$shopCurrencyLabel|escape})</h2>
 				<div class="row g-3">
 					<div class="col-6">
-						<label class="form-label" for="productPrice">Ürün Fiyatı</label>
-						<input type="text" id="productPrice" name="doviz_price" class="form-control" value="{$product.doviz_price|escape}">
+						<label class="form-label" for="productPrice">Satış Fiyatı</label>
+						<input type="text" id="productPrice" name="price" class="form-control" value="{$product.price|escape}">
 					</div>
 					<div class="col-6">
 						<label class="form-label" for="productOldPrice">Eski Fiyat</label>
-						<input type="text" id="productOldPrice" name="doviz_old_price" class="form-control" value="{$product.doviz_old_price|escape}">
+						<input type="text" id="productOldPrice" name="old_price" class="form-control" value="{$product.old_price|escape}">
 					</div>
 					<div class="col-12">
-						<label class="form-label" for="productCurrency">Döviz Cinsi</label>
-						<select id="productCurrency" name="doviz" class="form-select">
-							<option value="try"{if $product.doviz|default:'try' == 'try'} selected{/if}>Türk Lirası</option>
-							<option value="usd"{if $product.doviz|default:'try' == 'usd'} selected{/if}>Dolar</option>
-							<option value="eur"{if $product.doviz|default:'try' == 'eur'} selected{/if}>Euro</option>
-							<option value="xau"{if $product.doviz|default:'try' == 'xau'} selected{/if}>Altın Gram</option>
-						</select>
+						<p class="small text-muted mb-0">Mağaza para birimi: <strong>{$shopCurrencyLabel|escape}</strong>. Fiyatlar kur çevrimi olmadan doğrudan bu birimde kaydedilir.</p>
 					</div>
-					<p>Güncel Fiyat : <b>{Tools::displayPrice($product.price)}</b></p>
-				</div>
-				<div class="alert alert-info mt-3 mb-0 small">
-					TRY dışında bir döviz seçerseniz fiyat, cron ile güncel kura göre TL'ye çevrilir.
-					Örneğin 10 USD kaydederseniz sistem fiyatı anlık kur üzerinden günceller.
 				</div>
 			</div>
 		</div>
 	</div>
 </form>
+
+{if !$isNew}
+<div class="row g-4" id="virtualFilePanel" style="display:none;">
+	<div class="col-lg-8">
+		<div class="admin-panel">
+			<h2 class="h6 mb-3">Dijital Dosya</h2>
+			{if $product.virtual_file_name}
+			<p class="mb-2"><strong>Yüklü dosya:</strong> {$product.virtual_file_name|escape}</p>
+			<form method="post" action="{$adminUrl}product?id={$idProduct}" class="d-inline" onsubmit="return confirm('Dijital dosya silinsin mi?');">
+				<input type="hidden" name="deleteVirtualFile" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<button type="submit" class="btn btn-sm btn-outline-danger mb-3">Dosyayı Sil</button>
+			</form>
+			{else}
+			<p class="text-muted small mb-3">Henüz dijital dosya yüklenmedi.</p>
+			{/if}
+			<form method="post" action="{$adminUrl}product?id={$idProduct}" enctype="multipart/form-data">
+				<input type="hidden" name="uploadVirtualFile" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<input type="file" name="virtual_file" class="form-control form-control-sm mb-2"{if !$product.virtual_file_name} required{/if}>
+				<div class="form-text mb-2">ZIP, PDF, RAR, TXT ve benzeri dosyalar. Maks. 50 MB.</div>
+				<button type="submit" class="btn btn-sm btn-dark">Dijital Dosya Yükle</button>
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="row g-4">
+	<div class="col-lg-8">
+		<div class="admin-panel">
+			<h2 class="h6 mb-3">Görseller</h2>
+			{if $product.images|@count}
+			<div class="d-flex flex-wrap gap-2 mb-3">
+				{foreach $product.images as $img}
+				<div class="border rounded p-2 text-center" style="width:110px">
+					<img src="{$img.url}" alt="" class="img-fluid mb-2" style="max-height:70px">
+					{if $img.cover}<div class="badge bg-dark mb-1">Kapak</div>{/if}
+					<div class="d-flex flex-column gap-1">
+						{if !$img.cover}
+						<form method="post" action="{$adminUrl}product?id={$idProduct}">
+							<input type="hidden" name="setCover" value="1">
+							<input type="hidden" name="id_image" value="{$img.id_image}">
+							<input type="hidden" name="token" value="{$adminToken}">
+							<button type="submit" class="btn btn-sm btn-outline-dark w-100">Kapak Yap</button>
+						</form>
+						{/if}
+						<form method="post" action="{$adminUrl}product?id={$idProduct}" onsubmit="return confirm('Görsel silinsin mi?');">
+							<input type="hidden" name="deleteImage" value="1">
+							<input type="hidden" name="id_image" value="{$img.id_image}">
+							<input type="hidden" name="token" value="{$adminToken}">
+							<button type="submit" class="btn btn-sm btn-outline-danger w-100">Sil</button>
+						</form>
+					</div>
+				</div>
+				{/foreach}
+			</div>
+			{else}
+			<p class="text-muted small">Henüz görsel yok.</p>
+			{/if}
+
+			<form method="post" action="{$adminUrl}product?id={$idProduct}" enctype="multipart/form-data">
+				<input type="hidden" name="uploadImage" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<input type="file" name="image" class="form-control form-control-sm mb-2" accept="image/jpeg,image/png,image/webp" required>
+				<button type="submit" class="btn btn-sm btn-dark">Görsel Yükle</button>
+			</form>
+		</div>
+	</div>
+</div>
+{else}
+<div class="row g-4">
+	<div class="col-lg-8">
+		<div class="admin-panel">
+			<p class="text-muted small mb-0">Görsel yüklemek için önce ürünü kaydedin.</p>
+		</div>
+	</div>
+</div>
+{/if}
+
+<script>
+(function () {
+	var typeEl = document.getElementById('productType');
+	var kindEl = document.getElementById('virtualKind');
+	var kindWrap = document.getElementById('virtualKindWrap');
+	var textWrap = document.getElementById('virtualTextWrap');
+	var licenseWrap = document.getElementById('virtualLicenseWrap');
+	var filePanel = document.getElementById('virtualFilePanel');
+	var stockHint = document.getElementById('virtualStockHint');
+	var stockInput = document.getElementById('productStock');
+
+	function refreshVirtualFields() {
+		var isVirtual = typeEl && typeEl.value === 'virtual';
+		var kind = kindEl ? kindEl.value : '';
+
+		if (kindWrap) kindWrap.style.display = isVirtual ? '' : 'none';
+		if (textWrap) textWrap.style.display = isVirtual && kind === 'text' ? '' : 'none';
+		if (licenseWrap) licenseWrap.style.display = isVirtual && kind === 'license' ? '' : 'none';
+		if (filePanel) filePanel.style.display = isVirtual && kind === 'download' ? '' : 'none';
+		if (stockHint) stockHint.style.display = isVirtual ? '' : 'none';
+		if (stockInput) {
+			stockInput.readOnly = isVirtual && kind === 'license';
+		}
+	}
+
+	if (typeEl) typeEl.addEventListener('change', refreshVirtualFields);
+	if (kindEl) kindEl.addEventListener('change', refreshVirtualFields);
+	refreshVirtualFields();
+})();
+</script>

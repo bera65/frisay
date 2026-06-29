@@ -1,30 +1,94 @@
 {if $flash}
-<div class="alert alert-info py-2">{$flash|escape}</div>
+<div class="alert alert-{$flashType|default:'info'} py-2">{$flash|escape}</div>
 {/if}
 
-<div class="admin-panel">
-	<p class="small text-muted mb-3">Slug: <code>{$cmsPage.slug|escape}</code> — {$cmsPage.desc|escape}</p>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+	<p class="text-muted small mb-0">İçerik sekmeleri sitedeki aktif dillere göre oluşturulur ({$shopLanguages|@count} dil).</p>
+	<a href="{$adminUrl}languages" class="btn btn-sm btn-outline-secondary">Dilleri Yönet</a>
+</div>
 
+<div class="admin-panel">
 	<form method="post">
 		<input type="hidden" name="saveCms" value="1">
 		<input type="hidden" name="token" value="{$adminToken}">
 
-		<h3 class="h6 mb-2">SEO</h3>
-		<div class="mb-3">
-			<label class="form-label">Meta Başlık</label>
-			<input type="text" name="meta_title" class="form-control" value="{$cmsSeo.meta_title|escape}" maxlength="255" placeholder="Boş bırakılırsa sayfa başlığı kullanılır">
-		</div>
-		<div class="mb-4">
-			<label class="form-label">Meta Açıklama</label>
-			<textarea name="meta_description" class="form-control" rows="2" maxlength="512" placeholder="Boş bırakılırsa varsayılan açıklama kullanılır">{$cmsSeo.meta_description|escape}</textarea>
+		<div class="row g-3 mb-4">
+			<div class="col-md-2">
+				<label class="form-label">Sıra</label>
+				<input type="number" name="position" class="form-control" value="{$cmsPage.position|default:0}">
+			</div>
+			<div class="col-md-3">
+				<label class="form-label d-block">Durum</label>
+				<div class="form-check form-switch mt-2">
+					<input class="form-check-input" type="checkbox" name="active" value="1" id="cmsActive"{if $cmsPage.active|default:1} checked{/if}>
+					<label class="form-check-label" for="cmsActive">Yayında</label>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label d-block">Footer</label>
+				<div class="form-check form-switch mt-2">
+					<input class="form-check-input" type="checkbox" name="show_footer" value="1" id="cmsFooter"{if $cmsPage.show_footer|default:1} checked{/if}>
+					<label class="form-check-label" for="cmsFooter">Footer'da göster</label>
+				</div>
+			</div>
 		</div>
 
-		<label class="form-label">Sayfa İçeriği</label>
-		<textarea name="content" class="form-control wysiwyg-editor" rows="22">{$cmsContent|escape}</textarea>
-		<div class="mt-3 d-flex gap-2">
+		<ul class="nav nav-tabs mb-3" id="cmsLangTabs" role="tablist">
+			{foreach $cmsLangForms as $langCode => $langForm}
+			<li class="nav-item" role="presentation">
+				<button class="nav-link{if $langForm@first} active{/if}" id="cms-tab-{$langCode|escape}" data-bs-toggle="tab" data-bs-target="#cms-pane-{$langCode|escape}" type="button" role="tab">{$langForm.label|escape}</button>
+			</li>
+			{/foreach}
+		</ul>
+
+		<div class="tab-content" id="cmsLangTabContent">
+			{foreach $cmsLangForms as $langCode => $langForm}
+			<div class="tab-pane fade{if $langForm@first} show active{/if}" id="cms-pane-{$langCode|escape}" role="tabpanel">
+				<div class="mb-3">
+					<label class="form-label">URL Slug ({$langForm.label|escape})</label>
+					<input type="text" name="langs[{$langCode|escape}][slug]" class="form-control cms-lang-slug" data-lang="{$langCode|escape}" value="{$langForm.slug|escape}" placeholder="hakkimizda">
+					<div class="form-text">Adres: {$domain}<span class="cms-slug-preview" data-lang="{$langCode|escape}">{$langForm.slug|escape}</span></div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Başlık ({$langForm.label|escape})</label>
+					<input type="text" name="langs[{$langCode|escape}][title]" class="form-control" value="{$langForm.title|escape}" maxlength="255">
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Kısa açıklama</label>
+					<input type="text" name="langs[{$langCode|escape}][summary]" class="form-control" value="{$langForm.summary|escape}" maxlength="512">
+				</div>
+				<div class="row g-3 mb-3">
+					<div class="col-md-6">
+						<label class="form-label">Meta başlık</label>
+						<input type="text" name="langs[{$langCode|escape}][meta_title]" class="form-control" value="{$langForm.meta_title|escape}" maxlength="255">
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">Meta açıklama</label>
+						<input type="text" name="langs[{$langCode|escape}][meta_description]" class="form-control" value="{$langForm.meta_description|escape}" maxlength="512">
+					</div>
+				</div>
+				<label class="form-label">İçerik</label>
+				<textarea name="langs[{$langCode|escape}][content]" class="form-control wysiwyg-editor" rows="18">{$langForm.content|escape}</textarea>
+			</div>
+			{/foreach}
+		</div>
+
+		<div class="mt-4 d-flex gap-2">
 			<button type="submit" class="btn btn-dark">Kaydet</button>
 			<a href="{$adminUrl}cms" class="btn btn-outline-secondary">Geri</a>
-			<a href="{$cmsPage.url}" class="btn btn-outline-dark" target="_blank" rel="noopener">Sitede Gör</a>
+			{if !$isNewCms && $cmsPage.url}
+			<a href="{$cmsPage.url|escape}" class="btn btn-outline-dark" target="_blank" rel="noopener">Sitede Gör</a>
+			{/if}
 		</div>
 	</form>
 </div>
+
+<script>
+document.querySelectorAll('.cms-lang-slug').forEach(function (input) {
+	input.addEventListener('input', function () {
+		var lang = this.getAttribute('data-lang');
+		var preview = document.querySelector('.cms-slug-preview[data-lang="' + lang + '"]');
+		if (preview) preview.textContent = this.value;
+	});
+});
+</script>

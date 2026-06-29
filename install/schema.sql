@@ -4,6 +4,8 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `cms_lang`;
+DROP TABLE IF EXISTS `cms_pages`;
 DROP TABLE IF EXISTS `images`;
 DROP TABLE IF EXISTS `order_detail`;
 DROP TABLE IF EXISTS `orders`;
@@ -76,12 +78,96 @@ CREATE TABLE `products` (
   `stock_code` varchar(64) NOT NULL DEFAULT '',
   `barcode` varchar(64) NOT NULL DEFAULT '',
   `desi` int(11) NOT NULL DEFAULT 1,
+  `product_type` varchar(16) NOT NULL DEFAULT 'physical',
+  `virtual_kind` varchar(16) NOT NULL DEFAULT '',
+  `virtual_file` varchar(255) NOT NULL DEFAULT '',
+  `virtual_file_name` varchar(255) NOT NULL DEFAULT '',
+  `virtual_text` text DEFAULT NULL,
   PRIMARY KEY (`id_product`),
   KEY `id_category` (`id_category`),
   KEY `id_brand` (`id_brand`),
   KEY `product_link` (`product_link`),
   KEY `barcode` (`barcode`),
   KEY `stock_code` (`stock_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `product_license_keys` (
+  `id_license` int(11) NOT NULL AUTO_INCREMENT,
+  `id_product` int(11) NOT NULL,
+  `license_key` varchar(512) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'available',
+  `id_order_detail` int(11) NOT NULL DEFAULT 0,
+  `date_used` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_license`),
+  KEY `id_product` (`id_product`),
+  KEY `status` (`status`),
+  UNIQUE KEY `product_key` (`id_product`, `license_key`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `cms_pages` (
+  `id_cms` int(11) NOT NULL AUTO_INCREMENT,
+  `slug` varchar(128) NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `show_footer` tinyint(1) NOT NULL DEFAULT 1,
+  `position` int(11) NOT NULL DEFAULT 0,
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_upd` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_cms`),
+  UNIQUE KEY `slug` (`slug`),
+  KEY `active` (`active`),
+  KEY `show_footer` (`show_footer`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `cms_lang` (
+  `id_cms` int(11) NOT NULL,
+  `lang` varchar(8) NOT NULL,
+  `slug` varchar(128) NOT NULL DEFAULT '',
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `summary` varchar(512) NOT NULL DEFAULT '',
+  `content` mediumtext,
+  `meta_title` varchar(255) NOT NULL DEFAULT '',
+  `meta_description` varchar(512) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id_cms`, `lang`),
+  KEY `lang` (`lang`),
+  UNIQUE KEY `lang_slug` (`lang`, `slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `product_lang` (
+  `id_product` int(11) NOT NULL,
+  `lang` varchar(8) NOT NULL,
+  `product_name` varchar(128) NOT NULL DEFAULT '',
+  `product_link` varchar(128) NOT NULL DEFAULT '',
+  `short_description` varchar(512) NOT NULL DEFAULT '',
+  `description` mediumtext,
+  `meta_title` varchar(255) NOT NULL DEFAULT '',
+  `meta_description` varchar(512) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id_product`, `lang`),
+  KEY `lang` (`lang`),
+  UNIQUE KEY `lang_link` (`lang`, `product_link`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `category_lang` (
+  `id_category` int(11) NOT NULL,
+  `lang` varchar(8) NOT NULL,
+  `category_name` varchar(64) NOT NULL DEFAULT '',
+  `category_link` varchar(128) NOT NULL DEFAULT '',
+  `meta_title` varchar(255) NOT NULL DEFAULT '',
+  `meta_description` varchar(512) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id_category`, `lang`),
+  KEY `lang` (`lang`),
+  UNIQUE KEY `lang_link` (`lang`, `category_link`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `brand_lang` (
+  `id_brand` int(11) NOT NULL,
+  `lang` varchar(8) NOT NULL,
+  `brand_name` varchar(64) NOT NULL DEFAULT '',
+  `brand_link` varchar(128) NOT NULL DEFAULT '',
+  `meta_title` varchar(255) NOT NULL DEFAULT '',
+  `meta_description` varchar(512) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id_brand`, `lang`),
+  KEY `lang` (`lang`),
+  UNIQUE KEY `lang_link` (`lang`, `brand_link`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `images` (
@@ -144,6 +230,8 @@ CREATE TABLE `order_detail` (
   `price` decimal(20,2) NOT NULL,
   `qty` int(11) NOT NULL,
   `total` decimal(20,2) NOT NULL,
+  `virtual_delivery` text DEFAULT NULL,
+  `download_token` varchar(64) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_order_detail`),
   KEY `id_order` (`id_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -259,7 +347,14 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('PRODUCT_LIMIT', '5000'),
 ('SITE_NAME', 'FShop'),
 ('DOMAIN', 'http://localhost/'),
-('THEME', 'default'),
+('THEME', 'blue'),
+('DEFAULT_LANG', 'tr'),
+('SHOP_LANGUAGES', 'tr,en'),
+('ADMIN_DEFAULT_LANG', 'tr'),
+('LANG_LABELS', '{"tr":"Türkçe","en":"English"}'),
+('SHOP_CURRENCIES', 'try,usd,eur'),
+('CURRENCY_META', '{"try":{"label":"Türk Lirası","symbol":"₺"},"usd":{"label":"Amerikan Doları","symbol":"$"},"eur":{"label":"Euro","symbol":"€"}}'),
+('SHOP_CURRENCY', 'try'),
 ('FREE_SHIPPING_MIN', '500'),
 ('SHIPPING_FEE', '79.90'),
 ('HAVALE', '3'),

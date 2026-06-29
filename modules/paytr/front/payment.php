@@ -24,7 +24,7 @@ if ((int) $order['status'] === Order::STATUS_PROCESSING) {
 }
 
 if ((int) $order['status'] !== Order::STATUS_PENDING) {
-	header('Location: ' . $domain . 'siparislerim');
+	header('Location: ' . $domain . 'orders');
 	exit;
 }
 

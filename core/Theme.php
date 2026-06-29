@@ -44,6 +44,10 @@ class Theme
 	{
 		$labels = [
 			'default' => 'Varsayılan Tema',
+			'blue' => 'Blue',
+			'chapan' => 'Chapan',
+			'dress' => 'Dress',
+			'prime' => 'Prime',
 		];
 
 		return $labels[$name] ?? ucfirst(str_replace(['-', '_'], ' ', $name));
@@ -52,6 +56,325 @@ class Theme
 	public static function colorsPath(string $theme): string
 	{
 		return self::templatesPath() . '/' . self::sanitizeName($theme) . '/css/colors.css';
+	}
+
+	public static function customCssPath(string $theme): string
+	{
+		return self::templatesPath() . '/' . self::sanitizeName($theme) . '/css/custom.css';
+	}
+
+	private static function optionsSettingsKey(string $theme): string
+	{
+		return 'THEME_OPTIONS_' . self::sanitizeName($theme);
+	}
+
+	/** @return array<string, string> */
+	public static function discoverHeaderVariants(string $theme): array
+	{
+		if (!self::isValidName($theme)) {
+			return [];
+		}
+
+		$dir = self::templatesPath() . '/' . $theme . '/_mini';
+		$variants = [];
+
+		if (!is_dir($dir)) {
+			return [];
+		}
+
+		foreach (scandir($dir) ?: [] as $entry) {
+			if (!preg_match('/^header\d+\.tpl$/', $entry)) {
+				continue;
+			}
+
+			$key = substr($entry, 0, -4);
+			$variants[$key] = self::headerVariantLabel($key);
+		}
+
+		ksort($variants);
+
+		return $variants;
+	}
+
+	private static function headerVariantLabel(string $key): string
+	{
+		$labels = [
+			'header1' => 'Klasik',
+			'header2' => 'Modern (üst bar)',
+			'header3' => 'Kompakt',
+		];
+
+		return $labels[$key] ?? ucfirst($key);
+	}
+
+	/** @return array<string, array{label: string, type: string, default: string, options?: array<string, string>}> */
+	public static function getOptionDefinitions(string $theme): array
+	{
+		$fonts = self::getFontChoices();
+		$widths = self::getContainerWidthChoices();
+		$defs = [
+			'font' => [
+				'label' => 'Yazı tipi',
+				'type' => 'select',
+				'default' => 'system',
+				'options' => $fonts,
+			],
+			'container_width' => [
+				'label' => 'Site genişliği',
+				'type' => 'select',
+				'default' => '1320',
+				'options' => $widths,
+			],
+		];
+
+		$headers = self::discoverHeaderVariants($theme);
+
+		if ($headers !== []) {
+			$defaultHeader = isset($headers['header2']) ? 'header2' : array_key_first($headers);
+			$defs = array_merge([
+				'header' => [
+					'label' => 'Header stili',
+					'type' => 'select',
+					'default' => (string) $defaultHeader,
+					'options' => $headers,
+				],
+			], $defs);
+		}
+
+		return $defs;
+	}
+
+	/** @return array<string, string> */
+	public static function getFontChoices(): array
+	{
+		return [
+			'system' => 'Sistem (Segoe UI)',
+			'inter' => 'Inter',
+			'poppins' => 'Poppins',
+			'nunito' => 'Nunito',
+			'roboto' => 'Roboto',
+			'open-sans' => 'Open Sans',
+		];
+	}
+
+	/** @return array<string, string> */
+	public static function getContainerWidthChoices(): array
+	{
+		return [
+			'1140' => 'Standart (1140px)',
+			'1320' => 'Geniş (1320px)',
+			'1440' => 'Çok geniş (1440px)',
+			'fluid' => 'Tam genişlik',
+		];
+	}
+
+	/** @return array{font_family: string, google_font_url: string} */
+	public static function resolveFont(string $fontKey): array
+	{
+		$map = [
+			'system' => [
+				'font_family' => "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+				'google_font_url' => '',
+			],
+			'inter' => [
+				'font_family' => "'Inter', sans-serif",
+				'google_font_url' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+			],
+			'poppins' => [
+				'font_family' => "'Poppins', sans-serif",
+				'google_font_url' => 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
+			],
+			'nunito' => [
+				'font_family' => "'Nunito', sans-serif",
+				'google_font_url' => 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
+			],
+			'roboto' => [
+				'font_family' => "'Roboto', sans-serif",
+				'google_font_url' => 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+			],
+			'open-sans' => [
+				'font_family' => "'Open Sans', sans-serif",
+				'google_font_url' => 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap',
+			],
+		];
+
+		return $map[$fontKey] ?? $map['system'];
+	}
+
+	/** @return array<string, string> */
+	public static function getDefaultOptions(string $theme): array
+	{
+		$options = [];
+
+		foreach (self::getOptionDefinitions($theme) as $key => $meta) {
+			$options[$key] = (string) $meta['default'];
+		}
+
+		return $options;
+	}
+
+	/** @return array<string, string> */
+	public static function getOptions(string $theme): array
+	{
+		if (!self::isValidName($theme)) {
+			return [];
+		}
+
+		$defaults = self::getDefaultOptions($theme);
+		$raw = Settings::get(self::optionsSettingsKey($theme));
+
+		if ($raw === '') {
+			return $defaults;
+		}
+
+		$decoded = json_decode($raw, true);
+
+		if (!is_array($decoded)) {
+			return $defaults;
+		}
+
+		$defs = self::getOptionDefinitions($theme);
+		$merged = $defaults;
+
+		foreach ($decoded as $key => $value) {
+			if (!isset($defs[$key])) {
+				continue;
+			}
+
+			$value = trim((string) $value);
+			$allowed = $defs[$key]['options'] ?? null;
+
+			if (is_array($allowed) && $allowed !== [] && !isset($allowed[$value])) {
+				continue;
+			}
+
+			$merged[$key] = $value;
+		}
+
+		return $merged;
+	}
+
+	/** @param array<string, string> $options */
+	public static function saveOptions(string $theme, array $options): array
+	{
+		if (!self::isValidName($theme)) {
+			return ['success' => false, 'message' => 'Geçersiz tema'];
+		}
+
+		$defs = self::getOptionDefinitions($theme);
+		$normalized = self::getDefaultOptions($theme);
+
+		foreach ($defs as $key => $meta) {
+			if (!array_key_exists($key, $options)) {
+				continue;
+			}
+
+			$value = trim((string) $options[$key]);
+			$allowed = $meta['options'] ?? null;
+
+			if (is_array($allowed) && $allowed !== [] && !isset($allowed[$value])) {
+				return ['success' => false, 'message' => 'Geçersiz seçim: ' . $meta['label']];
+			}
+
+			$normalized[$key] = $value;
+		}
+
+		$json = json_encode($normalized, JSON_UNESCAPED_UNICODE);
+
+		if ($json === false || !Settings::set(self::optionsSettingsKey($theme), $json)) {
+			return ['success' => false, 'message' => 'Tema ayarları kaydedilemedi'];
+		}
+
+		self::writeCustomCss($theme, $normalized);
+
+		return ['success' => true, 'message' => 'Tema özelleştirmesi kaydedildi'];
+	}
+
+	public static function ensureCustomCss(string $theme): void
+	{
+		if (!self::isValidName($theme)) {
+			return;
+		}
+
+		$path = self::customCssPath($theme);
+
+		if (is_file($path)) {
+			return;
+		}
+
+		self::writeCustomCss($theme, self::getOptions($theme));
+	}
+
+	/** @param array<string, string> $options */
+	private static function writeCustomCss(string $theme, array $options): void
+	{
+		$path = self::customCssPath($theme);
+		$dir = dirname($path);
+
+		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return;
+		}
+
+		$font = self::resolveFont($options['font'] ?? 'system');
+		$widthKey = $options['container_width'] ?? '1320';
+		$widthMap = [
+			'1140' => '1140px',
+			'1320' => '1320px',
+			'1440' => '1440px',
+			'fluid' => '100%',
+		];
+		$maxWidth = $widthMap[$widthKey] ?? '1320px';
+		$padding = $widthKey === 'fluid' ? '0 16px' : '0 12px';
+
+		$css = implode("\n", [
+			'/**',
+			' * Tema özelleştirme — Admin > Temalar ekranından düzenlenir.',
+			' */',
+			':root {',
+			"\t--theme-font-family: {$font['font_family']};",
+			"\t--theme-container-max: {$maxWidth};",
+			"\t--theme-container-padding: {$padding};",
+			'}',
+			'',
+			'body, .prime-body {',
+			"\tfont-family: var(--theme-font-family);",
+			'}',
+			'',
+			'.custom-container,',
+			'.page > .container,',
+			'.page .container.custom-container {',
+			"\tmax-width: var(--theme-container-max);",
+			"\tpadding-left: var(--theme-container-padding);",
+			"\tpadding-right: var(--theme-container-padding);",
+			"\tmargin-left: auto;",
+			"\tmargin-right: auto;",
+			"\twidth: 100%;",
+			'}',
+			'',
+		]);
+
+		file_put_contents($path, $css);
+	}
+
+	/** @return array<string, mixed> */
+	public static function getResolvedOptions(string $theme): array
+	{
+		$options = self::getOptions($theme);
+		$font = self::resolveFont($options['font'] ?? 'system');
+		$header = $options['header'] ?? '';
+
+		if ($header === '' || !is_file(self::templatesPath() . '/' . $theme . '/_mini/' . $header . '.tpl')) {
+			$variants = self::discoverHeaderVariants($theme);
+			$header = isset($variants['header2']) ? 'header2' : ($variants ? (string) array_key_first($variants) : '');
+		}
+
+		return [
+			'header' => $header,
+			'font' => $options['font'] ?? 'system',
+			'container_width' => $options['container_width'] ?? '1320',
+			'font_family' => $font['font_family'],
+			'google_font_url' => $font['google_font_url'],
+		];
 	}
 
 	public static function isValidName(string $theme): bool
@@ -174,6 +497,7 @@ class Theme
 		}
 
 		self::ensureColorsFile($theme);
+		self::ensureCustomCss($theme);
 
 		return ['success' => true, 'message' => 'Aktif tema güncellendi'];
 	}

@@ -75,12 +75,20 @@ class Pagination
 
 	public static function getSortOptions(): array
 	{
-		return [
-			'newest' => 'En Yeni',
-			'price_asc' => 'Fiyat (Artan)',
-			'price_desc' => 'Fiyat (Azalan)',
-			'name_asc' => 'İsim (A-Z)',
-			'discount' => 'İndirim Oranı',
+		$options = [
+			'newest' => 'Newest',
+			'price_asc' => 'Price (Low to High)',
+			'price_desc' => 'Price (High to Low)',
+			'name_asc' => 'Name (A-Z)',
+			'discount' => 'Discount Rate',
 		];
+
+		if (function_exists('translate')) {
+			foreach ($options as $key => $label) {
+				$options[$key] = translate($label);
+			}
+		}
+
+		return $options;
 	}
 }

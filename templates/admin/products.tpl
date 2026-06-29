@@ -73,7 +73,7 @@
 				{foreach $products as $row}
 				<tr>
 					<td style="width:48px"><img src="{$row.image_url}" alt="" width="40" height="40" style="object-fit:contain"></td>
-					<td>{$row.product_name|escape}</td>
+					<td>{$row.product_name|escape}{if $row.product_type|default:'physical' == 'virtual'} <span class="badge bg-info">Sanal</span>{/if}</td>
 					<td>{$row.category_name|escape}</td>
 					<td>{$row.brand_name|escape}</td>
 					<td>{$row.price_formatted}</td>

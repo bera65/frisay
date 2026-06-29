@@ -3,8 +3,8 @@
 		exit;
 	}
 
-	$pageTitle = 'İletişim';
-	$pageDesc = 'Bizimle iletişime geçin';
+	$pageTitle = translate('Contact Us');
+	$pageDesc = translate('Get in Touch');
 	$contactSeo = Seo::resolvePage('contact', $pageTitle, $pageDesc);
 	$pageTitle = $contactSeo['title'];
 	$pageDesc = $contactSeo['description'];
@@ -22,7 +22,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($token, $postToken)) {
-			$contactError = 'Geçersiz istek, sayfayı yenileyip tekrar deneyin';
+			$contactError = translate('Invalid request, please refresh and try again');
 		} else {
 			$formData = [
 				'full_name' => (string) Tools::getValue('full_name'),
@@ -56,7 +56,7 @@
 		'formData' => $formData,
 		'contactEmail' => Settings::get('CONTACT_EMAIL'),
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
-			['name' => 'İletişim', 'url' => ''],
+			['name' => translate('Home Page'), 'url' => $domain],
+			['name' => translate('Contact Us'), 'url' => ''],
 		],
 	]);

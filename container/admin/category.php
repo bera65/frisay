@@ -43,8 +43,35 @@
 		'active' => 1,
 	];
 
+	$langRows = $isNew ? [] : Category::getLangRows($id);
+	$langForms = [];
+
+	foreach (Lang::getAvailable() as $langCode) {
+		$row = $langRows[$langCode] ?? [];
+
+		if ($row === [] && $category) {
+			$row = [
+				'category_name' => (string) ($category['category_name'] ?? ''),
+				'category_link' => (string) ($category['category_link'] ?? ''),
+				'meta_title' => (string) ($category['meta_title'] ?? ''),
+				'meta_description' => (string) ($category['meta_description'] ?? ''),
+			];
+		}
+
+		$langForms[$langCode] = [
+			'code' => $langCode,
+			'label' => Lang::label($langCode),
+			'category_name' => (string) ($row['category_name'] ?? ''),
+			'category_link' => (string) ($row['category_link'] ?? ''),
+			'meta_title' => (string) ($row['meta_title'] ?? ''),
+			'meta_description' => (string) ($row['meta_description'] ?? ''),
+		];
+	}
+
 	$smarty->assign([
 		'category' => $form,
+		'categoryLangForms' => $langForms,
+		'shopLanguages' => Lang::getAvailable(),
 		'idCategory' => $id,
 		'isNew' => $isNew,
 		'flash' => $flash,

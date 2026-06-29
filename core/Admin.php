@@ -140,7 +140,7 @@ class Admin
 		$cancelled = Order::STATUS_CANCELLED;
 		$daily = [];
 
-		for ($i = 6; $i >= 0; $i--) {
+		for ($i = 13; $i >= 0; $i--) {
 			$date = date('Y-m-d', strtotime('-' . $i . ' days'));
 			$prevDate = date('Y-m-d', strtotime('-' . $i . ' days -7 days'));
 			$daily[] = [

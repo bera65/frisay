@@ -1,0 +1,291 @@
+/* Blue — inner pages */
+.panel {
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid #e2e8f0;
+	margin-bottom: 20px;
+	box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+	overflow: hidden;
+}
+
+.panel__body { padding: 1.25rem 1.5rem; }
+
+.prime-container,
+.blue-page {
+	width: 100%;
+	max-width: 100%;
+}
+
+.prime-page { padding: 8px 0 32px; }
+
+.prime-page__title {
+	margin: 0 0 1rem;
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: #17345f;
+}
+
+.prime-page__subtitle {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: #2d2d2d;
+}
+
+.prime-page__label {
+	margin: 0 0 4px;
+	font-size: 12px;
+	color: #7a8a95;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.prime-page__value {
+	margin: 0;
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: #2d2d2d;
+}
+
+.prime-page__hint {
+	margin: 0.75rem 0 0;
+	font-size: 13px;
+	color: #7a8a95;
+}
+
+.page-card,
+.prime-page-card {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 1.25rem 1.5rem;
+	margin-bottom: 1rem;
+	box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+}
+
+.prime-page-card--soft { background: #f8fafc; }
+
+.prime-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 10px 18px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	border: 1px solid transparent;
+	cursor: pointer;
+}
+
+.prime-btn--primary { background: #17345f; color: #fff; }
+.prime-btn--primary:hover { background: #122a4a; color: #fff; }
+.prime-btn--accent { background: #f58220; color: #fff; }
+.prime-btn--accent:hover { background: #e06e12; color: #fff; }
+.prime-btn--outline { background: #fff; border-color: #e2e8f0; color: #17345f; }
+.prime-btn--outline:hover { border-color: #17345f; color: #17345f; }
+.prime-btn--sm { padding: 7px 12px; font-size: 12px; }
+
+.prime-empty {
+	text-align: center;
+	padding: 48px 20px;
+	color: #7a8a95;
+}
+
+.prime-empty i {
+	font-size: 40px;
+	color: #e2e8f0;
+	margin-bottom: 12px;
+	display: block;
+}
+
+.prime-list-row,
+.prime-list-card {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 0;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.prime-list-card { padding: 1rem 1.25rem; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 10px; }
+
+.prime-track-form__row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.prime-track-form__row .form-control { flex: 1; min-width: 200px; }
+
+.prime-promo-cards {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.prime-promo-cards__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.prime-promo-cards__item i {
+	font-size: 1.5rem;
+	color: #f58220;
+	margin-top: 2px;
+}
+
+.checkout-success .success-icon {
+	width: 64px;
+	height: 64px;
+	margin: 0 auto;
+	border-radius: 50%;
+	background: #16a34a;
+	color: #fff;
+	font-size: 2rem;
+	line-height: 64px;
+	font-weight: 700;
+}
+
+/* Auth */
+.auth-page { padding: 8px 0 24px; }
+
+.auth-aside {
+	background: linear-gradient(135deg, #17345f, #213c8b);
+	color: #fff;
+}
+
+.auth-aside__title { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; }
+.auth-aside__text { opacity: 0.9; line-height: 1.6; }
+.auth-aside__list { margin: 16px 0 0; padding-left: 18px; }
+.auth-aside__list li { margin-bottom: 8px; }
+
+.auth-card .page-heading,
+.page-heading { font-size: 1.5rem; font-weight: 700; color: #17345f; }
+.auth-card__subtitle { color: #7a8a95; margin-bottom: 1rem; }
+.auth-password-wrap { position: relative; }
+.auth-password-toggle {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	border: none;
+	background: transparent;
+	color: #64748b;
+	padding: 4px;
+}
+.auth-switch a { font-weight: 600; }
+
+/* Account */
+.dress-account { padding-bottom: 24px; }
+.dress-account__title { font-size: 1.75rem; font-weight: 700; color: #17345f; margin-bottom: 1rem; }
+
+.dress-account-sidebar {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 1rem;
+}
+
+.dress-account-profile { text-align: center; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem; }
+.dress-account-avatar {
+	width: 64px; height: 64px; border-radius: 50%;
+	background: #17345f; color: #fff;
+	display: inline-flex; align-items: center; justify-content: center;
+	font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;
+}
+
+.dress-account-nav { display: flex; flex-direction: column; gap: 4px; }
+.dress-account-nav__item {
+	display: flex; align-items: center; gap: 10px;
+	width: 100%; padding: 10px 12px;
+	border: none; background: transparent; border-radius: 8px;
+	color: #2d2d2d; text-decoration: none; font-size: 14px; text-align: left;
+}
+.dress-account-nav__item:hover,
+.dress-account-nav__item.is-active { background: #f1f5f9; color: #17345f; }
+.dress-account-nav__badge {
+	margin-left: auto; background: #f58220; color: #fff;
+	font-size: 11px; padding: 2px 8px; border-radius: 999px;
+}
+
+.dress-account-logout {
+	display: flex; align-items: center; gap: 8px; width: 100%;
+	margin-top: 12px; padding: 10px 12px;
+	border: 1px solid #e2e8f0; border-radius: 8px;
+	background: #fff; color: #dc3545; font-weight: 600;
+}
+
+.dress-account-panel { display: none; }
+.dress-account-panel.is-active { display: block; }
+
+.dress-account-stats {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	margin-bottom: 1rem;
+}
+
+.dress-account-stat {
+	display: flex; align-items: center; gap: 10px;
+	padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff;
+}
+
+.dress-account-stat__label { display: block; font-size: 12px; color: #7a8a95; }
+.dress-account-stat__value { font-size: 1.25rem; font-weight: 700; color: #17345f; }
+
+.dress-account-welcome {
+	background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+	padding: 1rem; margin-bottom: 1.25rem; line-height: 1.6;
+}
+
+.dress-account-section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: #17345f; }
+.dress-account-card {
+	background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+	padding: 1rem; margin-bottom: 12px;
+}
+
+.dress-account-card__head {
+	display: flex; justify-content: space-between; align-items: flex-start;
+	gap: 12px; margin-bottom: 8px; flex-wrap: wrap;
+}
+
+.dress-account-address-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.dress-account-empty { color: #7a8a95; padding: 24px; text-align: center; }
+.notification-item.is-unread { border-left: 3px solid #f58220; }
+.btn-submit { background: #17345f; color: #fff; border: none; }
+.btn-submit:hover { background: #122a4a; color: #fff; }
+
+/* Checkout */
+.checkout-form .address-option { cursor: pointer; transition: border-color 0.2s; }
+.checkout-form .address-option:has(input:checked) { border-color: #17345f !important; }
+.checkout-summary { position: sticky; top: 16px; }
+
+/* Cart page */
+.prime-cart-page { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+.prime-cart-page__item {
+	display: grid; grid-template-columns: 80px 1fr auto; gap: 12px;
+	padding: 12px 0; border-bottom: 1px solid #e2e8f0; align-items: center;
+}
+.prime-cart-page__thumb img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; }
+.prime-cart-page__name { color: #2d2d2d; text-decoration: none; font-weight: 600; display: block; margin-bottom: 4px; }
+.prime-cart-page__qty { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.prime-cart-page__remove { border: none; background: none; color: #dc3545; font-size: 13px; margin-left: 8px; }
+.prime-cart-page__summary {
+	background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;
+	height: fit-content; position: sticky; top: 16px;
+}
+.prime-cart-page__total { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 12px; }
+.prime-cart-page__ship { font-size: 13px; color: #7a8a95; margin-bottom: 12px; }
+.cart-qty-btn {
+	width: 32px; height: 32px; border: 1px solid #e2e8f0; background: #fff; border-radius: 6px;
+}
+
+@media (max-width: 991.98px) {
+	.prime-cart-page { grid-template-columns: 1fr; }
+	.dress-account-stats { grid-template-columns: 1fr; }
+	.prime-page__title { font-size: 1.4rem; }
+}

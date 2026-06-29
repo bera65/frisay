@@ -78,8 +78,24 @@ class Schema
 			);
 		}
 
-		self::ensureSetting('THEME', 'default');
+		self::ensureSetting('THEME', 'blue');
 		self::ensureSetting('MAIL_DRIVER', 'php');
+		self::ensureSetting('DEFAULT_LANG', 'tr');
+		self::ensureSetting('SHOP_LANGUAGES', 'tr,en');
+		self::ensureSetting('ADMIN_DEFAULT_LANG', 'tr');
+		self::ensureSetting('LANG_LABELS', '{"tr":"Türkçe","en":"English"}');
+		self::ensureSetting('SHOP_CURRENCIES', 'try,usd,eur');
+		self::ensureSetting(
+			'CURRENCY_META',
+			'{"try":{"label":"Türk Lirası","symbol":"₺"},"usd":{"label":"Amerikan Doları","symbol":"$"},"eur":{"label":"Euro","symbol":"€"}}'
+		);
+		self::ensureSetting('SHOP_CURRENCY', 'try');
+
+		if (!class_exists('Currency', false)) {
+			require_once dirname(__DIR__) . '/core/Currency.php';
+		}
+
+		Currency::ensureDefaults();
 		Order::ensureSchema();
 
 		if (!class_exists('Address', false)) {
@@ -87,6 +103,8 @@ class Schema
 		}
 
 		Address::ensureSchema();
+		Cms::ensureSchema();
+		Lang::ensureSchema();
 	}
 
 	private static function ensureSetting(string $key, string $default): void

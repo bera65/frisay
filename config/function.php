@@ -73,8 +73,11 @@
 		}
 		public static function displayPrice($price)
 		{
-			$price = number_format($price, 2, ',', '.');
-			return '₺'.$price;
+			if (!class_exists('Currency', false)) {
+				require_once dirname(__DIR__) . '/core/Currency.php';
+			}
+
+			return Currency::format((float) $price);
 		}
 		public static function formatNumber($price)
 		{
@@ -171,7 +174,7 @@
 			$fark = $oldPrice - $price;
 			$oran = ($fark * 100) / $oldPrice;
 
-			return number_format($oran, 2);
+			return number_format($oran, 0);
 		}
 	}
 	
@@ -339,8 +342,18 @@
 
 				// token rotate (güzel pratik)
 				self::issueRememberToken($idUser);
-			} else {
-				self::clearRememberCookie();
-			}
+		} else {
+			self::clearRememberCookie();
 		}
 	}
+}
+
+if (!function_exists('clearSQL')) {
+	function clearSQL($data)
+	{
+		$data = trim($data);
+		$data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+
+		return $data;
+	}
+}

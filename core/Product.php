@@ -88,6 +88,8 @@ class Product
 				 AFTER `cargo_day`"
 			);
 		}
+
+		VirtualProduct::ensureSchema();
 	}
 
 	public static function getLink(array $row): string
@@ -146,6 +148,18 @@ class Product
 
 	public static function getStock(array $product): int
 	{
+		if (VirtualProduct::isVirtualProduct($product)) {
+			$kind = VirtualProduct::getKind($product);
+
+			if ($kind === 'license') {
+				return VirtualProduct::countAvailableLicenses((int) ($product['id_product'] ?? 0));
+			}
+
+			$stock = (int) ($product['stock'] ?? 0);
+
+			return $stock > 0 ? $stock : 999999;
+		}
+
 		return max(0, (int) ($product['stock'] ?? 0));
 	}
 
@@ -160,6 +174,21 @@ class Product
 
 		if ($qty <= 0) {
 			return false;
+		}
+
+		$product = self::getByIdAdmin($idProduct);
+
+		if ($product && VirtualProduct::isVirtualProduct($product)) {
+			$kind = VirtualProduct::getKind($product);
+
+			if ($kind === 'license') {
+				return VirtualProduct::countAvailableLicenses($idProduct) >= $qty;
+			}
+
+			$stock = (int) ($product['stock'] ?? 0);
+			if ($stock <= 0) {
+				return true;
+			}
 		}
 
 		$stmt = $db->prepare(
@@ -247,9 +276,19 @@ class Product
 		$row['old_price'] = (float) ($row['old_price'] ?? 0);
 		$row['has_discount'] = $row['old_price'] > (float) $row['price'];
 		$row['label'] = trim((string) ($row['label'] ?? ''));
+		$row['is_virtual'] = VirtualProduct::isVirtualProduct($row);
+		$row['virtual_kind'] = VirtualProduct::getKind($row);
+		$row['virtual_kind_label'] = VirtualProduct::getKindLabel($row['virtual_kind']);
 
 		if ($row['has_discount']) {
 			$row['old_price_formatted'] = Tools::displayPrice($row['old_price']);
+		}
+
+		if (class_exists('Lang', false)) {
+			$row = Lang::applyProduct($row);
+			if (!empty($row['product_name'])) {
+				$row['url'] = self::getLink($row);
+			}
 		}
 
 		return $row;
@@ -539,10 +578,26 @@ class Product
 		return $product;
 	}
 
-	public static function isLinkUnique(string $link, int $excludeId = 0): bool
+	public static function isLinkUnique(string $link, int $excludeId = 0, ?string $lang = null): bool
 	{
-		$sql = 'SELECT COUNT(*) FROM products WHERE product_link = ?';
-		$params = [$link];
+		$lang = $lang ?: Lang::getDefault();
+
+		if ($lang === Lang::getDefault()) {
+			$sql = 'SELECT COUNT(*) FROM products WHERE product_link = ?';
+			$params = [$link];
+
+			if ($excludeId > 0) {
+				$sql .= ' AND id_product != ?';
+				$params[] = $excludeId;
+			}
+
+			if ((int) DB::getValue($sql, $params) > 0) {
+				return false;
+			}
+		}
+
+		$sql = 'SELECT COUNT(*) FROM product_lang WHERE product_link = ? AND lang = ?';
+		$params = [$link, $lang];
 
 		if ($excludeId > 0) {
 			$sql .= ' AND id_product != ?';
@@ -552,10 +607,56 @@ class Product
 		return (int) DB::getValue($sql, $params) === 0;
 	}
 
+	public static function getLangRows(int $idProduct): array
+	{
+		Lang::ensureSchema();
+
+		return Lang::getLangRowsMap('product_lang', 'id_product', $idProduct);
+	}
+
+	private static function saveLangRows(int $idProduct, array $langData): ?array
+	{
+		Lang::ensureSchema();
+
+		foreach (Lang::getAvailable() as $lang) {
+			$entry = is_array($langData[$lang] ?? null) ? $langData[$lang] : [];
+			$name = trim((string) ($entry['product_name'] ?? ''));
+			$link = trim((string) ($entry['product_link'] ?? ''));
+
+			if ($link === '' && $name !== '') {
+				$link = Tools::createSlug($name);
+			} elseif ($link !== '') {
+				$link = Tools::createSlug($link);
+			}
+
+			if ($link !== '' && !self::isLinkUnique($link, $idProduct, $lang)) {
+				return self::fail('Bu URL slug zaten kullanılıyor (' . Lang::label($lang) . ')');
+			}
+
+			Lang::saveLangRow('product_lang', 'id_product', $idProduct, $lang, [
+				'product_name' => mb_substr($name, 0, 128),
+				'product_link' => mb_substr($link, 0, 128),
+				'short_description' => mb_substr(trim(strip_tags((string) ($entry['short_description'] ?? ''))), 0, 512),
+				'description' => (string) ($entry['description'] ?? ''),
+				'meta_title' => mb_substr(trim(strip_tags((string) ($entry['meta_title'] ?? ''))), 0, 255),
+				'meta_description' => mb_substr(trim(strip_tags((string) ($entry['meta_description'] ?? ''))), 0, 512),
+			]);
+		}
+
+		return null;
+	}
+
 	public static function save(array $data, int $id = 0): array
 	{
-		$name 			= trim((string) ($data['product_name'] ?? ''));
-		$link 			= trim((string) ($data['product_link'] ?? ''));
+		self::ensureSchema();
+		Lang::ensureSchema();
+
+		$langData = is_array($data['langs'] ?? null) ? $data['langs'] : [];
+		$defaultLang = Lang::getDefault();
+		$defaultEntry = is_array($langData[$defaultLang] ?? null) ? $langData[$defaultLang] : $data;
+
+		$name 			= trim((string) ($defaultEntry['product_name'] ?? $data['product_name'] ?? ''));
+		$link 			= trim((string) ($defaultEntry['product_link'] ?? $data['product_link'] ?? ''));
 		$idCategory 	= (int) ($data['id_category'] ?? 0);
 		$idBrand 		= (int) ($data['id_brand'] ?? 0);
 		$stockCode 		= trim((string) ($data['stock_code'] ?? ''));
@@ -563,41 +664,32 @@ class Product
 		$desi 			= (int) ($data['desi'] ?? 0);
 		self::ensureSchema();
 
-		$shortDescription 	= trim(strip_tags((string) ($data['short_description'] ?? '')));
-		$metaTitle 			= trim(strip_tags((string) ($data['meta_title'] ?? '')));
-		$metaDescription 	= trim(strip_tags((string) ($data['meta_description'] ?? '')));
-		$description 		= (string) ($data['description'] ?? '');
+		$shortDescription 	= trim(strip_tags((string) ($defaultEntry['short_description'] ?? $data['short_description'] ?? '')));
+		$metaTitle 			= trim(strip_tags((string) ($defaultEntry['meta_title'] ?? $data['meta_title'] ?? '')));
+		$metaDescription 	= trim(strip_tags((string) ($defaultEntry['meta_description'] ?? $data['meta_description'] ?? '')));
+		$description 		= (string) ($defaultEntry['description'] ?? $data['description'] ?? '');
 		$price 				= (float) str_replace(',', '.', (string) ($data['price'] ?? 0));
 		$oldPrice 			= (float) str_replace(',', '.', (string) ($data['old_price'] ?? 0));
 		$vat 				= (float) str_replace(',', '.', (string) ($data['vat'] ?? 20));
 		$stock 				= (int) ($data['stock'] ?? 0);
 		$active 			= isset($data['active']) ? (int) $data['active'] : 0;
 		$productVideo 		= mb_substr(trim((string) ($data['product_video'] ?? '')), 0, 256);
-		$doviz 				= strtolower(trim((string) ($data['doviz'] ?? 'try')));
-		$dovizPrice 		= (float) str_replace(',', '.', (string) ($data['doviz_price'] ?? 0));
-		$dovizOldPrice		= (float) str_replace(',', '.', (string) ($data['doviz_old_price'] ?? 0));
-		$allowedCurrencies 	= ['try', 'usd', 'eur', 'xau'];
-		
-		if (!in_array($doviz, $allowedCurrencies, true)) {
-			$doviz = 'try';
-		}
-
-		if ($doviz === 'try') {
-			if ($dovizPrice <= 0 && $price > 0) {
-				$dovizPrice = $price;
-			}
-			if ($dovizOldPrice <= 0 && $oldPrice > 0) {
-				$dovizOldPrice = $oldPrice;
-			}
-			$price = $dovizPrice;
-			$oldPrice = $dovizOldPrice;
-		} else {
-			$price = self::kurPrice($dovizPrice, $doviz);
-			$oldPrice = self::kurPrice($dovizOldPrice, $doviz);
-		}
+		$shopCurrency 		= Currency::getShopCurrency();
 
 		$cargoDay = max(0, (int) ($data['cargo_day'] ?? $data['day'] ?? 0));
 		$label = mb_substr(trim(strip_tags((string) ($data['label'] ?? $data['tag'] ?? ''))), 0, 128);
+		$productType = (string) ($data['product_type'] ?? 'physical');
+		$productType = $productType === 'virtual' ? 'virtual' : 'physical';
+		$virtualKind = trim((string) ($data['virtual_kind'] ?? ''));
+		$allowedKinds = ['download', 'license', 'text'];
+
+		if ($productType !== 'virtual') {
+			$virtualKind = '';
+		} elseif (!in_array($virtualKind, $allowedKinds, true)) {
+			return self::fail('Sanal ürün için teslimat türü seçin');
+		}
+
+		$virtualText = trim((string) ($data['virtual_text'] ?? ''));
 
 		if ($name === '') {
 			return self::fail('Ürün adı zorunludur');
@@ -617,7 +709,7 @@ class Product
 			return self::fail('Geçerli bir URL slug girin');
 		}
 
-		if (!self::isLinkUnique($link, $id)) {
+		if (!self::isLinkUnique($link, $id, $defaultLang)) {
 			return self::fail('Bu URL slug zaten kullanılıyor');
 		}
 
@@ -635,9 +727,9 @@ class Product
 			'description' 		=> $description,
 			'product_link' 		=> $link,
 			'price' 			=> max(0, $price),
-			'doviz' 			=> $doviz,
-			'doviz_price'		=> $dovizPrice,
-			'doviz_old_price'	=> $dovizOldPrice,
+			'doviz' 			=> $shopCurrency,
+			'doviz_price'		=> max(0, $price),
+			'doviz_old_price'	=> max(0, $oldPrice),
 			'old_price' 		=> max(0, $oldPrice),
 			'vat' 				=> max(0, $vat),
 			'stock' 			=> max(0, $stock),
@@ -647,22 +739,66 @@ class Product
 			'stock_code' 		=> $stockCode,
 			'barcode' 			=> $barcode,
 			'desi' 				=> (int)$desi,
+			'product_type' 		=> $productType,
+			'virtual_kind' 		=> $virtualKind,
+			'virtual_text' 		=> $virtualText,
 			'active' 			=> $active,
 		];
 
 		if ($id > 0) {
 			$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
 
-			return $ok !== false
-				? ['success' => true, 'message' => 'Ürün güncellendi', 'id' => $id]
-				: self::fail('Ürün güncellenemedi');
+			if ($ok === false) {
+				return self::fail('Ürün güncellenemedi');
+			}
+
+			$langError = self::saveLangRows($id, $langData);
+
+			if ($langError) {
+				return $langError;
+			}
+
+			if ($productType === 'virtual' && $virtualKind === 'license' && isset($data['license_keys'])) {
+				VirtualProduct::saveLicenseKeys($id, (string) $data['license_keys']);
+			}
+
+			self::fireUpdatedHook($id, false);
+
+			return ['success' => true, 'message' => 'Ürün güncellendi', 'id' => $id];
 		}
 
 		$newId = DB::insert('products', $row);
 
-		return $newId
-			? ['success' => true, 'message' => 'Ürün eklendi', 'id' => (int) $newId]
-			: self::fail('Ürün eklenemedi');
+		if (!$newId) {
+			return self::fail('Ürün eklenemedi');
+		}
+
+		$newId = (int) $newId;
+
+		$langError = self::saveLangRows($newId, $langData);
+
+		if ($langError) {
+			return $langError;
+		}
+
+		if ($productType === 'virtual' && $virtualKind === 'license' && isset($data['license_keys'])) {
+			VirtualProduct::saveLicenseKeys($newId, (string) $data['license_keys']);
+		}
+
+		self::fireUpdatedHook($newId, true);
+
+		return ['success' => true, 'message' => 'Ürün eklendi', 'id' => $newId];
+	}
+
+	private static function fireUpdatedHook(int $idProduct, bool $isNew): void
+	{
+		if (!class_exists('Module', false)) {
+			return;
+		}
+
+		$product = self::getByIdAdmin($idProduct) ?: [];
+
+		Module::runHook('product.updated', [$idProduct, $product, $isNew]);
 	}
 
 	public static function uploadImage(int $idProduct, array $file): array
@@ -813,19 +949,20 @@ class Product
 			$row['active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 		}
 
-		if (array_key_exists('price', $data) || array_key_exists('doviz_price', $data)) {
-			$doviz = strtolower(trim((string) ($product['doviz'] ?? 'try')));
-			$dovizPrice = array_key_exists('doviz_price', $data)
-				? (float) str_replace(',', '.', (string) $data['doviz_price'])
-				: (float) str_replace(',', '.', (string) $data['price']);
+		if (array_key_exists('price', $data) || array_key_exists('old_price', $data)) {
+			$shopCurrency = Currency::getShopCurrency();
+			$newPrice = array_key_exists('price', $data)
+				? (float) str_replace(',', '.', (string) $data['price'])
+				: (float) ($product['price'] ?? 0);
+			$newOldPrice = array_key_exists('old_price', $data)
+				? (float) str_replace(',', '.', (string) $data['old_price'])
+				: (float) ($product['old_price'] ?? 0);
 
-			$row['doviz_price'] = max(0, $dovizPrice);
-
-			if ($doviz === 'try') {
-				$row['price'] = $row['doviz_price'];
-			} else {
-				$row['price'] = max(0, self::kurPrice($dovizPrice, $doviz));
-			}
+			$row['price'] = max(0, $newPrice);
+			$row['old_price'] = max(0, $newOldPrice);
+			$row['doviz'] = $shopCurrency;
+			$row['doviz_price'] = max(0, $newPrice);
+			$row['doviz_old_price'] = max(0, $newOldPrice);
 		}
 
 		if ($row === []) {
@@ -1252,38 +1389,7 @@ class Product
 	
 	public static function refreshCurrencyPrices(): int
 	{
-		self::ensureSchema();
-
-		$rows = DB::execute(
-			"SELECT id_product, doviz, doviz_price, doviz_old_price
-			FROM products
-			WHERE doviz IS NOT NULL AND doviz != '' AND doviz != 'try'"
-		) ?: [];
-
-		$updated = 0;
-
-		foreach ($rows as $row) {
-			$id = (int) $row['id_product'];
-			$currency = strtolower(trim((string) $row['doviz']));
-			$price = self::kurPrice((float) $row['doviz_price'], $currency);
-			$oldPrice = self::kurPrice((float) $row['doviz_old_price'], $currency);
-
-			$ok = DB::update(
-				'products',
-				[
-					'price' => max(0, $price),
-					'old_price' => max(0, $oldPrice),
-				],
-				'id_product = :where_id',
-				['where_id' => $id]
-			);
-
-			if ($ok !== false) {
-				$updated++;
-			}
-		}
-
-		return $updated;
+		return 0;
 	}
 
 	private static function kurPrice(float $price, string $currency): float

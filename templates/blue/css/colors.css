@@ -1,0 +1,12 @@
+:root {
+	--prime-primary: #213c8b;
+	--header-bg: #213c8b; 
+	--header-input-bg: rgba(255, 255, 255, 0.15);
+	--coral-color: #ff8b71;
+}
+body {
+	background-color: #f4f4f4;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	margin: 0;
+	padding: 0;
+}

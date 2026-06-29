@@ -17,12 +17,12 @@ class Cart
 
 		$product = Product::getById($idProduct);
 		if (!$product) {
-			return self::fail('Ürün bulunamadı');
+			return self::fail(translate('Product not found'));
 		}
 
 		$stock = Product::getStock($product);
 		if ($stock <= 0) {
-			return self::fail('Bu ürün stokta yok');
+			return self::fail(translate('Out of stock'));
 		}
 
 		$qty = max(1, $qty);
@@ -31,15 +31,15 @@ class Cart
 		$maxAllowed = $stock - $current;
 
 		if ($maxAllowed <= 0) {
-			return self::fail('Sepette zaten maksimum stok adedi var (' . $stock . ' adet)');
+			return self::fail(translate('You have reached the maximum number of products'));
 		}
 
 		$added = min($qty, $maxAllowed);
 		$_SESSION[self::SESSION_KEY][$id] = $current + $added;
 
 		$message = $added < $qty
-			? 'Sepete eklendi (stok sınırı: ' . $stock . ' adet)'
-			: 'Sepete eklendi';
+			? translate('Added to cart')
+			: translate('Added to cart');
 
 		return self::ok($message);
 	}
@@ -58,22 +58,22 @@ class Cart
 		if (!$product) {
 			unset($_SESSION[self::SESSION_KEY][$id]);
 
-			return self::fail('Ürün bulunamadı');
+			return self::fail(translate('Product not found'));
 		}
 
 		$stock = Product::getStock($product);
 		if ($stock <= 0) {
 			unset($_SESSION[self::SESSION_KEY][$id]);
 
-			return self::fail('Bu ürün stokta yok');
+			return self::fail(translate('Out of stock'));
 		}
 
 		$newQty = min($stock, max(1, $qty));
 		$_SESSION[self::SESSION_KEY][$id] = $newQty;
 
 		$message = $newQty < $qty
-			? 'Sepet güncellendi (stok sınırı: ' . $stock . ' adet)'
-			: 'Sepet güncellendi';
+			? translate('Cart Updated')
+			: translate('Cart Updated');
 
 		return self::ok($message);
 	}
@@ -83,14 +83,14 @@ class Cart
 		self::init();
 		unset($_SESSION[self::SESSION_KEY][(int) $idProduct]);
 
-		return self::ok('Ürün sepetten kaldırıldı');
+		return self::ok(translate('The product has been removed from the cart'));
 	}
 
 	public static function clear(): array
 	{
 		$_SESSION[self::SESSION_KEY] = [];
 
-		return self::ok('Sepet temizlendi');
+		return self::ok(translate('The cart has been emptied'));
 	}
 
 	public static function getSummary(): array
@@ -142,13 +142,61 @@ class Cart
 			$count += $qty;
 		}
 
+		$shippingAmount = 0.0;
+
+		if ($total > 0 && self::requiresShipping(['items' => $items])) {
+			$freeMin = (float) Settings::get('FREE_SHIPPING_MIN');
+			$fee = (float) Settings::get('SHIPPING_FEE');
+			$shippingAmount = $total >= $freeMin ? 0.0 : $fee;
+		}
+
+		$grandTotal = $total + $shippingAmount;
+
 		return [
 			'items' => $items,
 			'count' => $count,
+			'subtotal' => $total,
+			'subtotal_formatted' => Tools::displayPrice($total),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
+			'shipping' => $shippingAmount,
+			'shipping_formatted' => $shippingAmount > 0
+				? Tools::displayPrice($shippingAmount)
+				: translate('Free'),
+			'grand_total' => $grandTotal,
+			'grand_total_formatted' => Tools::displayPrice($grandTotal),
 			'empty' => empty($items),
 		];
+	}
+
+	public static function hasVirtualProducts(?array $cart = null): bool
+	{
+		$cart = $cart ?? self::getSummary();
+
+		foreach ($cart['items'] as $item) {
+			$product = Product::getById((int) ($item['id_product'] ?? 0));
+
+			if ($product && VirtualProduct::isVirtualProduct($product)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static function requiresShipping(?array $cart = null): bool
+	{
+		$cart = $cart ?? self::getSummary();
+
+		foreach ($cart['items'] as $item) {
+			$product = Product::getById((int) ($item['id_product'] ?? 0));
+
+			if (!$product || !VirtualProduct::isVirtualProduct($product)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static function ok(string $message): array

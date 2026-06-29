@@ -70,10 +70,7 @@ fshop/
 
 | Endpoint | Amaç |
 |----------|------|
-<<<<<<< HEAD
 | `GET/POST /api/v1/...` | Web API (sipariş, ürün, kategori, marka) — bkz. [docs/WEBAPI.md](docs/WEBAPI.md) |
-=======
->>>>>>> d7a4f86df62b57dd798983f9771a0d8d6c9dea1a
 | `POST /api/module.php?m={modul}&action={islem}` | Modül API |
 | `GET /api/cron.php?action=currency&token=SHOP_TOKEN` | Döviz fiyat güncelleme |
 
@@ -116,6 +113,20 @@ Tema dosyalarında tanımlı hook noktaları:
 | `order_payment` | `templates/default/checkout.tpl` |
 | `order_confirmation` | `templates/default/checkout-success.tpl` |
 
+### Admin display hook'lar (`{$adminHooks.*}`)
+
+| Hook | Şablon |
+|------|--------|
+| `admin_product_button` | `templates/admin/product.tpl` — Kaydet butonu yanı |
+| `admin_order_detail` | `templates/admin/order.tpl` — sipariş detay sağ sütun |
+| `admin_dashboard_top` | `templates/admin/dashboard.tpl` — hoş geldin altı |
+| `admin_dashboard_kpi` | `templates/admin/dashboard.tpl` — KPI kartları altı |
+| `admin_dashboard_main_left` | `templates/admin/dashboard.tpl` — sol sütun (son siparişler altı) |
+| `admin_dashboard_main_right` | `templates/admin/dashboard.tpl` — sağ sütun |
+| `admin_dashboard_bottom` | `templates/admin/dashboard.tpl` — sayfa altı |
+
+Admin şablonu: `modules/{ad}/assets/templates/admin/{hook}.tpl`
+
 Modülde:
 
 ```php
@@ -136,6 +147,8 @@ public function renderDisplayHook(string $hook, array $context = []): ?string
 - `smarty.assign` — Smarty değişkenleri
 - `head.assets` — CSS/JS
 - `order.placed` — sipariş sonrası
+- `product.updated` — ürün kaydedilince (admin + Web API)
+- `order.updated` — sipariş güncellenince (admin + Web API)
 
 ### Ayarlar
 

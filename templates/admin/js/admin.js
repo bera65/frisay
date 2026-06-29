@@ -1,20 +1,59 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Sayfa yenilendiğinde formun tekrar gönderilmesini önler
-    if (window.history.replaceState) {
-        window.history.replaceState(null, null, window.location.href);
-    }
+document.addEventListener('DOMContentLoaded', function () {
+	if (window.history.replaceState) {
+		window.history.replaceState(null, null, window.location.href);
+	}
 
-    // Mobil menü butonu tıklama olayı
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn'); // veya document.querySelector('#mobileMenuBtn')
-    
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', function() {
-            // .sidebar ve .header sınıflarına sahip elementleri seçip 'active' sınıfını değiştirir
-            document.querySelectorAll('.sidebar').forEach(el => el.classList.toggle('active'));
-            document.querySelectorAll('.header').forEach(el => el.classList.toggle('active'));
-            
-            // Tıklanan butonun kendisine 'open' sınıfını ekler/çıkarır
-            this.classList.toggle('open');
-        });
-    }
+	var mobileMenuBtn = document.getElementById('mobileMenuBtn');
+	var sidebar = document.getElementById('adminSidebar');
+	var backdrop = document.getElementById('sidebarBackdrop');
+
+	function openSidebar() {
+		if (!sidebar) {
+			return;
+		}
+		sidebar.classList.add('active');
+		if (backdrop) {
+			backdrop.hidden = false;
+		}
+		document.body.classList.add('admin-sidebar-open');
+	}
+
+	function closeSidebar() {
+		if (!sidebar) {
+			return;
+		}
+		sidebar.classList.remove('active');
+		if (backdrop) {
+			backdrop.hidden = true;
+		}
+		document.body.classList.remove('admin-sidebar-open');
+		if (mobileMenuBtn) {
+			mobileMenuBtn.classList.remove('open');
+		}
+	}
+
+	function toggleSidebar() {
+		if (sidebar && sidebar.classList.contains('active')) {
+			closeSidebar();
+		} else {
+			openSidebar();
+		}
+	}
+
+	if (mobileMenuBtn) {
+		mobileMenuBtn.addEventListener('click', function () {
+			this.classList.toggle('open');
+			toggleSidebar();
+		});
+	}
+
+	if (backdrop) {
+		backdrop.addEventListener('click', closeSidebar);
+	}
+
+	window.addEventListener('resize', function () {
+		if (window.innerWidth >= 992) {
+			closeSidebar();
+		}
+	});
 });

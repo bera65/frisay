@@ -12,13 +12,37 @@ error_reporting(E_ALL);
 
 	App::configureSession();
 
+	require_once dirname(__FILE__) . '/../core/Cms.php';
+	require_once dirname(__FILE__) . '/../core/Lang.php';
+	require_once dirname(__FILE__) . '/../core/AdminLang.php';
+
+	AdminLang::handleSwitchRequest();
+	$adminLang = AdminLang::current();
+
+	if (!function_exists('adminT')) {
+		function adminT($text)
+		{
+			return AdminLang::translate((string) $text);
+		}
+	}
+
+	if (!function_exists('translate')) {
+		function translate($text)
+		{
+			return AdminLang::translate((string) $text);
+		}
+	}
+
 	require_once dirname(__FILE__) . '/../core/Admin.php';
 	require_once dirname(__FILE__) . '/../core/Order.php';
 	require_once dirname(__FILE__) . '/../core/Contact.php';
 	require_once dirname(__FILE__) . '/../core/Product.php';
+	require_once dirname(__FILE__) . '/../core/VirtualProduct.php';
 	require_once dirname(__FILE__) . '/../core/Category.php';
 	require_once dirname(__FILE__) . '/../core/Brand.php';
 	require_once dirname(__FILE__) . '/../core/Cms.php';
+	require_once dirname(__FILE__) . '/../core/Lang.php';
+	require_once dirname(__FILE__) . '/../core/Currency.php';
 	require_once dirname(__FILE__) . '/../core/Customer.php';
 	require_once dirname(__FILE__) . '/../core/Address.php';
 	require_once dirname(__FILE__) . '/../core/Pagination.php';
@@ -49,14 +73,10 @@ error_reporting(E_ALL);
 	define('_ADMIN_CSS_DIR_', $domain . 'templates/admin/css/');
 
 	require_once dirname(__FILE__) . '/../libs/Smarty.class.php';
+	require_once dirname(__FILE__) . '/smarty_setup.php';
 	$smarty = new Smarty\Smarty;
 	$smarty->setTemplateDir(dirname(__FILE__) . '/../templates/');
-	$smarty->setCompileDir(dirname(__FILE__) . '/../cache/force/');
-	$smarty->setCacheDir(dirname(__FILE__) . '/../cache/cache/');
-	$smarty->setConfigDir(dirname(__FILE__) . '/../configs/');
-	$smarty->compile_check = App::isDebug();
-	$smarty->force_compile = App::isDebug();
-	$smarty->caching = false;
+	fshop_configure_smarty($smarty);
 
 	require_once dirname(__FILE__) . '/admin_page.php';
 
@@ -91,4 +111,7 @@ error_reporting(E_ALL);
 		'adminUseCharts' => false,
 		'adminUseEditor' => false,
 		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin'),
+		'adminLang' => $adminLang,
+		'adminLangSwitcher' => AdminLang::getSwitcherList(),
 	]);
+	$smarty->registerPlugin('modifier', 'adminT', 'adminT');

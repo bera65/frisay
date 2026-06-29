@@ -9,7 +9,7 @@
 	if (!$category) {
 		http_response_code(404);
 		$skipPageRender = true;
-		$page->add('404', 'Sayfa Bulunamadı');
+		$page->add('404', translate('Page Not Found'));
 		return;
 	}
 
@@ -41,9 +41,9 @@
 		'sort' => $sort !== '' ? $sort : 'newest',
 		'sortOptions' => Pagination::getSortOptions(),
 		'catalogBaseUrl' => $baseUrl,
-		'emptyMessage' => 'Bu kategoride henüz ürün yok.',
+		'emptyMessage' => translate('No products in this category yet.'),
 		'breadcrumb' => [
-			['name' => 'Anasayfa', 'url' => $domain],
+			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => $category['category_name'], 'url' => ''],
 		],
 	]);

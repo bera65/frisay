@@ -1,7 +1,8 @@
+			</div>
 		</div>
 	</div>
 </div>
-<script src="{$domain}templates/admin/js/admin.js"></script>
+<script src="{$domain}templates/admin/js/admin.js?v={$smarty.now}"></script>
 <script src="{$domain}templates/admin/js/popper.min.js"></script>
 <script src="{$domain}templates/admin/js/bootstrap.min.js"></script>
 {if $moduleAdminAssets.js|@count}
@@ -18,7 +19,7 @@
 <script src="{$domain}templates/admin/js/admin-editor.js?v={$smarty.now}"></script>
 {/if}
 <script type="text/javascript">
-if ( window.history.replaceState ) { window.history.replaceState( null, null, window.location.href ); }
+if (window.history.replaceState) { window.history.replaceState(null, null, window.location.href); }
 </script>
 </body>
 </html>

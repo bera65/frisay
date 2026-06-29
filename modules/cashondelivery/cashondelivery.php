@@ -40,6 +40,12 @@ class CashondeliveryModule extends ModuleBase
 			return null;
 		}
 
+		$cart = $context['cart'] ?? null;
+
+		if (is_array($cart) && Cart::hasVirtualProducts($cart)) {
+			return null;
+		}
+
 		$html = $this->renderFrontTemplate('order_payment', []);
 
 		return $html !== '' ? $html : null;

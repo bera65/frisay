@@ -4,7 +4,7 @@
 
 <div class="row g-4">
 	<div class="col-lg-4">
-		<div class="admin-panel p-3">
+		<div class="admin-panel p-3 h-100">
 			<h2 class="h6 mb-3">Aktif Tema</h2>
 			<form method="post">
 				<input type="hidden" name="saveTheme" value="1">
@@ -32,11 +32,14 @@
 	</div>
 
 	<div class="col-lg-8">
-		<div class="admin-panel p-3">
+		<div class="admin-panel p-3 mb-4">
 			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-				<h2 class="h6 mb-0">Tema Renkleri</h2>
+				<div>
+					<h2 class="h6 mb-1">Tema Özelleştirme</h2>
+					<p class="text-muted small mb-0">Header, yazı tipi ve site genişliği — kayıt <code>custom.css</code> dosyasına yazılır.</p>
+				</div>
 				<form method="get" class="d-flex align-items-center gap-2">
-					<label class="small text-muted mb-0">Düzenle:</label>
+					<label class="small text-muted mb-0">Tema:</label>
 					<select name="theme" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
 						{foreach $themes as $theme}
 						<option value="{$theme.name|escape}"{if $editTheme == $theme.name} selected{/if}>{$theme.label|escape}</option>
@@ -45,9 +48,51 @@
 				</form>
 			</div>
 
+			{if $themeOptionDefs|@count}
+			<form method="post" class="theme-options-form">
+				<input type="hidden" name="saveThemeOptions" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<input type="hidden" name="edit_theme" value="{$editTheme|escape}">
+
+				<div class="row g-3">
+					{foreach $themeOptionDefs as $optKey => $optMeta}
+					<div class="col-md-6">
+						<label class="form-label small mb-1" for="opt_{$optKey|escape}">{$optMeta.label|escape}</label>
+						{if $optMeta.type == 'select'}
+						<select name="opt_{$optKey|escape}" id="opt_{$optKey|escape}" class="form-select form-select-sm">
+							{foreach $optMeta.options as $val => $label}
+							<option value="{$val|escape}"{if $themeOptions[$optKey] == $val} selected{/if}>{$label|escape}</option>
+							{/foreach}
+						</select>
+						{/if}
+					</div>
+					{/foreach}
+				</div>
+
+				{if $headerVariants|@count}
+				<p class="text-muted small mt-3 mb-0">
+					Header varyantları <code>templates/{$editTheme|escape}/_mini/header*.tpl</code> dosyalarından otomatik algılanır.
+					Yeni header eklemek için <code>header4.tpl</code> gibi bir dosya oluşturmanız yeterli.
+				</p>
+				{/if}
+
+				<div class="d-flex flex-wrap gap-2 mt-3">
+					<button type="submit" class="btn btn-dark">Özelleştirmeyi Kaydet</button>
+					<a href="{$domain}?theme_preview={$editTheme|escape:url}" target="_blank" rel="noopener" class="btn btn-outline-dark">Siteyi Önizle</a>
+				</div>
+			</form>
+			{else}
+			<p class="text-muted small mb-0">Bu tema için özelleştirme seçeneği tanımlı değil.</p>
+			{/if}
+		</div>
+
+		<div class="admin-panel p-3">
+			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+				<h2 class="h6 mb-0">Tema Renkleri</h2>
+			</div>
+
 			<p class="text-muted small">
 				Kaydedince <code>templates/{$editTheme|escape}/css/colors.css</code> güncellenir.
-				<a href="{$domain}?theme_preview={$editTheme|escape:url}" target="_blank" rel="noopener">Siteyi önizle</a>
 			</p>
 
 			<form method="post" class="theme-colors-form">

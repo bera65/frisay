@@ -78,7 +78,8 @@ class Coupon
 		$discount = self::getDiscount($subtotal);
 		$coupon = self::getApplied();
 		$afterDiscount = max(0.0, $subtotal - $discount);
-		$shipping = Order::getShippingFee($afterDiscount);
+		$requiresShipping = Cart::requiresShipping();
+		$shipping = $requiresShipping ? Order::getShippingFee($afterDiscount) : 0.0;
 		$total = $afterDiscount + $shipping;
 
 		return [
@@ -89,10 +90,13 @@ class Coupon
 			'coupon_code' => $coupon['code'] ?? '',
 			'has_coupon' => $discount > 0,
 			'shipping' => $shipping,
-			'shipping_formatted' => Tools::displayPrice($shipping),
+			'shipping_formatted' => $requiresShipping && $shipping > 0
+				? Tools::displayPrice($shipping)
+				: ($requiresShipping ? 'Ücretsiz' : '—'),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
 			'free_shipping_min' => (float) (Settings::get('FREE_SHIPPING_MIN') ?: 1500),
+			'requires_shipping' => $requiresShipping,
 		];
 	}
 
