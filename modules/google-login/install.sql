@@ -1,0 +1,1 @@
+-- google_id kolonu modül kurulumunda Customer::ensureSchema() ile de eklenir.

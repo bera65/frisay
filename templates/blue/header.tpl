@@ -34,7 +34,7 @@
 	<link rel="stylesheet" href="{$themeOptions.google_font_url|escape}">
 	{/if}
 	<link rel="stylesheet" href="{$css_dir}style.css" />
-	<link rel="stylesheet" href="{$css_dir}pages.css?v={$minute}" />
+	<link rel="stylesheet" href="{$css_dir}pages.css" />
 	<link rel="stylesheet" href="{$css_dir}cart-modal.css" />
 	{if $css}
 	<link rel="stylesheet" href="{$css_dir}{$css}" />

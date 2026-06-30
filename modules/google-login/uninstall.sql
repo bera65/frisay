@@ -1,0 +1,1 @@
+-- google_id kolonu isteğe bağlı olarak manuel kaldırılabilir.

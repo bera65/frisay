@@ -204,6 +204,7 @@ CREATE TABLE `orders` (
   `payment_method` varchar(32) NOT NULL,
   `customer_name` varchar(128) NOT NULL,
   `customer_phone` varchar(20) NOT NULL,
+  `customer_email` varchar(128) NOT NULL DEFAULT '',
   `company_name` varchar(128) NOT NULL DEFAULT '',
   `tax_office` varchar(64) NOT NULL DEFAULT '',
   `tax_number` varchar(20) NOT NULL DEFAULT '',

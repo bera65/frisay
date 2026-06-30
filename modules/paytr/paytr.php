@@ -15,6 +15,7 @@ class PaytrModule extends ModuleBase
 	public string $author = 'FShop';
 
 	public bool $isPayment = true;
+	public bool $paysBeforeOrder = true;
 	public string $paymentMethodId = 'paytr';
 	public string $paymentMethodLabel = 'Kredi / Banka Kartı (PayTR)';
 
@@ -36,12 +37,23 @@ class PaytrModule extends ModuleBase
 
 	public function install(): bool
 	{
+		self::ensurePendingStorage();
+
 		return true;
 	}
 
 	public function uninstall(): bool
 	{
+		DB::execute('DROP TABLE IF EXISTS paytr_pending_checkouts');
+
 		return true;
+	}
+
+	public function getPaymentPageUrl(): string
+	{
+		global $domain;
+
+		return rtrim($domain, '/') . '/paytr-payment';
 	}
 
 	public function adminPage(): void
@@ -95,27 +107,6 @@ class PaytrModule extends ModuleBase
 		return $html !== '' ? $html : null;
 	}
 
-	public function processPayment(array $order): array
-	{
-		global $domain;
-
-		$idOrder = (int) ($order['id_order'] ?? 0);
-
-		if ($idOrder <= 0) {
-			return [
-				'success' => false,
-				'redirect' => '',
-				'message' => 'Sipariş bulunamadı',
-			];
-		}
-
-		return [
-			'success' => true,
-			'redirect' => rtrim($domain, '/') . '/paytr-payment?id=' . $idOrder,
-			'message' => '',
-		];
-	}
-
 	public static function isConfigured(): bool
 	{
 		return trim((string) Settings::get('PAYTR_MERCHANT_ID')) !== ''
@@ -141,7 +132,7 @@ class PaytrModule extends ModuleBase
 		global $domain;
 
 		$merchantOid = (string) $order['reference'];
-		$email = self::resolveCustomerEmail((int) $order['id_user']);
+		$email = self::resolveCustomerEmail($order);
 		$paymentAmount = (int) round((float) $order['total'] * 100);
 		$userBasket = self::buildUserBasket($order);
 		$userIp = self::getClientIp();
@@ -165,8 +156,8 @@ class PaytrModule extends ModuleBase
 			'user_name' => (string) $order['customer_name'],
 			'user_address' => self::formatAddress($order),
 			'user_phone' => (string) $order['customer_phone'],
-			'merchant_ok_url' => rtrim($domain, '/') . '/checkout-success?id=' . (int) $order['id_order'],
-			'merchant_fail_url' => rtrim($domain, '/') . '/paytr-payment?id=' . (int) $order['id_order'] . '&fail=1',
+			'merchant_ok_url' => rtrim($domain, '/') . '/checkout-success?ref=' . rawurlencode($merchantOid),
+			'merchant_fail_url' => rtrim($domain, '/') . '/paytr-payment?fail=1',
 			'timeout_limit' => '30',
 			'currency' => $currency,
 			'test_mode' => $testMode,
@@ -222,19 +213,196 @@ class PaytrModule extends ModuleBase
 			exit('PAYTR notification failed: bad hash');
 		}
 
-		$order = DB::getRowSafe('orders', 'reference = ?', [(string) $post['merchant_oid']]);
-
-		if (!$order) {
-			echo 'OK';
-			exit;
-		}
+		$reference = (string) $post['merchant_oid'];
 
 		if ((string) $post['status'] === 'success') {
-			self::markOrderPaid($order, (int) $post['total_amount']);
+			self::completeOrderAfterPayment($reference, (int) $post['total_amount']);
 		}
 
 		echo 'OK';
 		exit;
+	}
+
+	public static function ensurePendingStorage(): void
+	{
+		static $ready = false;
+
+		if ($ready) {
+			return;
+		}
+
+		$ready = true;
+
+		DB::execute(
+			'CREATE TABLE IF NOT EXISTS paytr_pending_checkouts (
+				reference VARCHAR(16) NOT NULL,
+				payload LONGTEXT NOT NULL,
+				date_add DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (reference)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+		);
+	}
+
+	public static function persistPendingCheckout(string $reference, array $checkoutData, array $cart): void
+	{
+		self::ensurePendingStorage();
+
+		$payload = json_encode([
+			'checkout' => $checkoutData,
+			'cart' => $cart,
+			'coupon_code' => (string) ($_SESSION[Coupon::SESSION_KEY] ?? ''),
+			'id_user' => Customer::getId(),
+		], JSON_UNESCAPED_UNICODE);
+
+		DB::execute(
+			'INSERT INTO paytr_pending_checkouts (reference, payload) VALUES (?, ?)
+			 ON DUPLICATE KEY UPDATE payload = VALUES(payload), date_add = CURRENT_TIMESTAMP',
+			[$reference, $payload]
+		);
+	}
+
+	/** @return array{checkout: array, cart: array, coupon_code: string, id_user: int}|null */
+	public static function loadPendingCheckout(string $reference): ?array
+	{
+		self::ensurePendingStorage();
+
+		$row = DB::getRowSafe('paytr_pending_checkouts', 'reference = ?', [$reference]);
+
+		if (!$row || empty($row['payload'])) {
+			return null;
+		}
+
+		$data = json_decode((string) $row['payload'], true);
+
+		return is_array($data) ? $data : null;
+	}
+
+	public static function deletePendingCheckout(string $reference): void
+	{
+		self::ensurePendingStorage();
+		DB::execute('DELETE FROM paytr_pending_checkouts WHERE reference = ?', [$reference]);
+	}
+
+	/** Ödeme onayı sonrası siparişi oluşturur veya mevcut siparişi günceller. */
+	public static function completeOrderAfterPayment(string $reference, int $totalAmountKurus): void
+	{
+		$order = DB::getRowSafe('orders', 'reference = ?', [$reference]);
+
+		if ($order) {
+			self::markOrderPaid($order, $totalAmountKurus);
+
+			return;
+		}
+
+		$pending = self::loadPendingCheckout($reference);
+
+		if (!$pending) {
+			error_log('PayTR: pending checkout not found for ' . $reference);
+
+			return;
+		}
+
+		$checkout = is_array($pending['checkout'] ?? null) ? $pending['checkout'] : [];
+		$cart = is_array($pending['cart'] ?? null) ? $pending['cart'] : [];
+
+		if ($cart === [] || !empty($cart['empty'])) {
+			error_log('PayTR: empty cart snapshot for ' . $reference);
+
+			return;
+		}
+
+		$checkout['_payment_done'] = 1;
+		$checkout['_reference'] = $reference;
+		$checkout['_cart_snapshot'] = $cart;
+		$checkout['_stored_id_user'] = (int) ($pending['id_user'] ?? 0);
+		$checkout['_stored_coupon_code'] = (string) ($pending['coupon_code'] ?? '');
+
+		$result = Order::place($checkout);
+
+		if (!$result['success']) {
+			error_log('PayTR: order create failed for ' . $reference . ' — ' . ($result['message'] ?? ''));
+
+			return;
+		}
+
+		$idOrder = (int) ($result['id_order'] ?? 0);
+
+		if ($idOrder > 0) {
+			$created = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+			if ($created) {
+				self::markOrderPaid($created, $totalAmountKurus);
+			}
+		}
+
+		self::deletePendingCheckout($reference);
+	}
+
+	/** Checkout öncesi PayTR iframe için sipariş önizlemesi */
+	public static function buildPreviewOrder(array $pendingData, array $cart): array
+	{
+		$name = trim((string) ($pendingData['customer_name'] ?? ''));
+		$phone = Customer::normalizePhone((string) ($pendingData['customer_phone'] ?? ''));
+		$customerEmail = strtolower(trim((string) ($pendingData['customer_email'] ?? '')));
+		$city = trim((string) ($pendingData['address_city'] ?? ''));
+		$district = trim((string) ($pendingData['address_district'] ?? ''));
+		$address = trim((string) ($pendingData['address_text'] ?? ''));
+		$idUser = Customer::getId();
+		$idAddress = (int) ($pendingData['id_address'] ?? 0);
+
+		if ($idAddress > 0 && $idUser > 0) {
+			$savedAddress = Address::getForUser($idAddress, $idUser);
+
+			if ($savedAddress) {
+				$name = $savedAddress['full_name'];
+				$phone = $savedAddress['phone'];
+				$city = $savedAddress['city'];
+				$district = $savedAddress['district'];
+				$address = $savedAddress['address_text'];
+			}
+		}
+
+		if ($idUser > 0 && $customerEmail === '') {
+			$current = Customer::getCurrent();
+			$customerEmail = strtolower(trim((string) ($current['email'] ?? '')));
+		}
+
+		$subtotal = (float) $cart['total'];
+		$summary = Coupon::getCheckoutSummary($subtotal);
+		$items = [];
+
+		foreach ($cart['items'] as $item) {
+			$lineTotal = (float) $item['line_total'];
+			$items[] = [
+				'product_name' => (string) $item['product_name'],
+				'price' => (float) $item['price'],
+				'qty' => (int) $item['qty'],
+				'total' => $lineTotal,
+				'total_formatted' => Tools::displayPrice($lineTotal),
+			];
+		}
+
+		$reference = (string) ($pendingData['_paytr_reference'] ?? '');
+
+		return [
+			'id_order' => 0,
+			'reference' => $reference,
+			'id_user' => $idUser,
+			'customer_name' => $name,
+			'customer_phone' => $phone,
+			'customer_email' => $customerEmail,
+			'address_text' => $address,
+			'address_district' => $district,
+			'address_city' => $city,
+			'items' => $items,
+			'subtotal' => (float) $summary['subtotal'],
+			'subtotal_formatted' => (string) $summary['subtotal_formatted'],
+			'shipping' => (float) $summary['shipping'],
+			'shipping_formatted' => (string) $summary['shipping_formatted'],
+			'coupon_discount' => (float) $summary['discount'],
+			'total' => (float) $summary['total'],
+			'total_formatted' => (string) $summary['total_formatted'],
+		];
 	}
 
 	private static function markOrderPaid(array $order, int $totalAmountKurus): void
@@ -290,8 +458,15 @@ class PaytrModule extends ModuleBase
 		return $parts !== [] ? implode(', ', $parts) : 'Türkiye';
 	}
 
-	private static function resolveCustomerEmail(int $idUser): string
+	private static function resolveCustomerEmail(array $order): string
 	{
+		$email = strtolower(trim((string) ($order['customer_email'] ?? '')));
+
+		if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return $email;
+		}
+
+		$idUser = (int) ($order['id_user'] ?? 0);
 		$email = trim((string) DB::getValue('SELECT email FROM users WHERE id_user = ? LIMIT 1', [$idUser]));
 
 		if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -300,7 +475,7 @@ class PaytrModule extends ModuleBase
 
 		$domain = parse_url(Settings::get('DOMAIN') ?: '', PHP_URL_HOST) ?: 'fshop.local';
 
-		return 'musteri' . $idUser . '@' . $domain;
+		return 'musteri' . max(0, $idUser) . '@' . $domain;
 	}
 
 	public static function getClientIp(): string

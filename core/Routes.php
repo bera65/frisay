@@ -31,10 +31,6 @@ class Routes
 			'orders',
 			'order',
 			'favorites',
-			'checkout',
-			'checkout-success',
-			'paytr-payment',
-			'card-payment',
 		];
 	}
 

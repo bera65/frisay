@@ -3,13 +3,7 @@
 		exit;
 	}
 
-	// Kart sayfası: sadece giriş yapmış ve checkout'tan yönlendirilmiş müşteri görebilir
-	if (!Customer::isLoggedIn()) {
-		$_SESSION['auth_redirect'] = $domain . 'checkout';
-		header('Location: ' . $domain . 'login');
-		exit;
-	}
-
+	// Kart sayfası: checkout'tan yönlendirilmiş müşteri (üye veya misafir)
 	if (!Order::hasPendingPayment() || $cart['empty']) {
 		header('Location: ' . $domain . 'checkout');
 		exit;

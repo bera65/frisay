@@ -5,8 +5,7 @@
             <!-- 1. Kolon: Marka ve Hakkında -->
             <div class="col-lg-4 col-md-6">
                 <div class="d-flex align-items-center gap-2 text-white fw-bold h4 mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-                    <h2 class="footerTitle"><a href="{$domain}" title="{$siteName|escape}">{$siteName|escape}</a></h2>
+                    <img src="{$domain}img/logoFooter.png" alt="{$siteName|escape}" height="65px"/>
                 </div>
                 <p class="mb-4 text-secondary small">
                     {'Footer description'|translate}

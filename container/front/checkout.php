@@ -11,6 +11,13 @@
 		exit;
 	}
 
+	Order::ensureSchema();
+	Customer::ensureSchema();
+
+	if (!Customer::isLoggedIn()) {
+		$_SESSION['auth_redirect'] = $domain . 'checkout';
+	}
+
 	$checkoutTotals = Coupon::getCheckoutSummary((float) $cart['total']);
 	$orderError = '';
 	$idUser = Customer::getId();
@@ -21,6 +28,7 @@
 	$formData = [
 		'customer_name' => $customer['user_full_name'] ?? '',
 		'customer_phone' => $customer['phone'] ?? '',
+		'customer_email' => $customer['email'] ?? '',
 		'company_name' => '',
 		'tax_office' => '',
 		'tax_number' => '',
@@ -51,6 +59,7 @@
 			$formData = [
 				'customer_name' => (string) Tools::getValue('customer_name'),
 				'customer_phone' => (string) Tools::getValue('customer_phone'),
+				'customer_email' => (string) Tools::getValue('customer_email'),
 				'company_name' => (string) Tools::getValue('company_name'),
 				'tax_office' => (string) Tools::getValue('tax_office'),
 				'tax_number' => (string) Tools::getValue('tax_number'),
@@ -66,6 +75,7 @@
 				'id_address' => $selectedAddressId,
 				'customer_name' => $formData['customer_name'],
 				'customer_phone' => $formData['customer_phone'],
+				'customer_email' => $formData['customer_email'],
 				'company_name' => $formData['company_name'],
 				'tax_office' => $formData['tax_office'],
 				'tax_number' => $formData['tax_number'],

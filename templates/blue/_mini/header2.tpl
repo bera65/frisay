@@ -11,7 +11,7 @@
 			</button>
 			<div class="logo ps-2 mobileLogoDiv">
 				<a href="{$domain}" class="site-logo-img mobileLogo" title="{$siteName}">
-					<img src="{$domain}img/logoShop.png" alt="{$siteName}"/>
+					<img src="{$domain}img/logo.png" alt="{$siteName}"/>
 				</a>
 			</div>
 			<div class="top-actions">
@@ -50,7 +50,7 @@
 		<div class="container d-flex align-items-center justify-content-between w-full">
 			<div class="logo-area">
 				<a href="{$domain}" class="site-logo-img" title="{$siteName}">
-					<img src="{$domain}img/logoShop.png" alt="{$siteName}" width="60%"/>
+					<img src="{$domain}img/logo.png" alt="{$siteName}" width="60%"/>
 				</a>
 			</div>
 			<ul class="categories-menu d-none d-xl-flex">

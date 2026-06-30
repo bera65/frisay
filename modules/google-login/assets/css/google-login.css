@@ -1,0 +1,53 @@
+.auth-social { margin-top: 1rem; }
+
+.auth-social--compact {
+	margin-top: 12px;
+	width: 100%;
+}
+
+.auth-social--compact .auth-social__btn {
+	font-size: 13px;
+	padding: 10px 12px;
+}
+
+.auth-social__divider {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+	color: #94a3b8;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.auth-social__divider::before,
+.auth-social__divider::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: #e2e8f0;
+}
+
+.auth-social__btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	width: 100%;
+	padding: 11px 14px;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	background: #fff;
+	color: #334155;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-social__btn:hover {
+	border-color: #cbd5e1;
+	box-shadow: 0 4px 14px -6px rgba(15, 23, 42, 0.2);
+	color: #17345f;
+}

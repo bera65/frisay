@@ -19,7 +19,8 @@ class Order
 		self::$schemaReady = true;
 
 		$columns = [
-			'company_name' => "varchar(128) NOT NULL DEFAULT '' AFTER `customer_phone`",
+			'customer_email' => "varchar(128) NOT NULL DEFAULT '' AFTER `customer_phone`",
+			'company_name' => "varchar(128) NOT NULL DEFAULT '' AFTER `customer_email`",
 			'tax_office' => "varchar(64) NOT NULL DEFAULT '' AFTER `company_name`",
 			'tax_number' => "varchar(20) NOT NULL DEFAULT '' AFTER `tax_office`",
 			'cargo_company' => "varchar(64) NOT NULL DEFAULT '' AFTER `status`",
@@ -109,17 +110,27 @@ class Order
 	{
 		self::ensureSchema();
 
-		if (!Customer::isLoggedIn()) {
-			return self::fail(translate('Must login to order'));
+		$usingCartSnapshot = !empty($data['_payment_done'])
+			&& !empty($data['_cart_snapshot'])
+			&& is_array($data['_cart_snapshot']);
+
+		if ($usingCartSnapshot) {
+			$cart = $data['_cart_snapshot'];
+		} else {
+			$cart = Cart::getSummary();
 		}
 
-		$cart = Cart::getSummary();
-		if ($cart['empty']) {
+		if (!empty($cart['empty'])) {
 			return self::fail(translate('Cart is empty order'));
+		}
+
+		if (!empty($data['_stored_coupon_code'])) {
+			$_SESSION[Coupon::SESSION_KEY] = (string) $data['_stored_coupon_code'];
 		}
 
 		$name = trim((string) ($data['customer_name'] ?? ''));
 		$phone = Customer::normalizePhone((string) ($data['customer_phone'] ?? ''));
+		$customerEmail = strtolower(trim((string) ($data['customer_email'] ?? '')));
 		$city = trim((string) ($data['address_city'] ?? ''));
 		$district = trim((string) ($data['address_district'] ?? ''));
 		$address = trim((string) ($data['address_text'] ?? ''));
@@ -129,10 +140,14 @@ class Order
 		$taxNumber = preg_replace('/\D+/', '', (string) ($data['tax_number'] ?? ''));
 		$taxNumber = mb_substr($taxNumber, 0, 20);
 		$payment = (string) ($data['payment_method'] ?? '');
-		$idUser = Customer::getId();
+		$idUser = isset($data['_stored_id_user']) ? (int) $data['_stored_id_user'] : Customer::getId();
 		$idAddress = (int) ($data['id_address'] ?? 0);
 
 		if ($idAddress > 0) {
+			if ($idUser <= 0) {
+				return self::fail(translate('Address not found'));
+			}
+
 			$savedAddress = Address::getForUser($idAddress, $idUser);
 
 			if (!$savedAddress) {
@@ -158,6 +173,19 @@ class Order
 
 		if (!Validate::isName($name)) {
 			return self::fail(translate('Please enter a valid full name'));
+		}
+
+		if ($idUser > 0 && $customerEmail === '') {
+			$current = Customer::getCurrent();
+			$customerEmail = strtolower(trim((string) ($current['email'] ?? '')));
+		}
+
+		if ($idUser <= 0) {
+			if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+				return self::fail(translate('Please enter a valid email'));
+			}
+		} elseif ($customerEmail !== '' && !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+			return self::fail(translate('Please enter a valid email'));
 		}
 
 		if (!Customer::isValidPhone($phone)) {
@@ -218,7 +246,23 @@ class Order
 		$appliedCoupon = Coupon::getApplied();
 		$couponCode = $appliedCoupon ? (string) $appliedCoupon['code'] : '';
 		$totals = self::getCheckoutTotals($subtotal, $couponDiscount, $cart);
-		$reference = self::generateReference();
+
+		if (!empty($data['_reference'])) {
+			$reference = (string) $data['_reference'];
+			$existingId = (int) DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
+
+			if ($existingId > 0) {
+				return [
+					'success' => true,
+					'message' => translate('Order placed'),
+					'id_order' => $existingId,
+					'reference' => $reference,
+					'redirect' => '',
+				];
+			}
+		} else {
+			$reference = self::generateReference();
+		}
 
 		global $db;
 
@@ -244,6 +288,7 @@ class Order
 				'payment_method' => $payment,
 				'customer_name' => $name,
 				'customer_phone' => $phone,
+				'customer_email' => $customerEmail,
 				'company_name' => $companyName,
 				'tax_office' => $taxOffice,
 				'tax_number' => $taxNumber,
@@ -287,7 +332,11 @@ class Order
 
 			Notification::orderPlaced($idUser, $reference, (float) $totals['total']);
 
-			if ($idAddress === 0 && !empty($data['save_address'])) {
+			if ($idUser <= 0) {
+				self::grantGuestOrderAccess((int) $idOrder);
+			}
+
+			if ($idAddress === 0 && $idUser > 0 && !empty($data['save_address'])) {
 				Address::save($idUser, [
 					'label' => isset($data['address_label']) ? $data['address_label'] : '',
 					'full_name' => $name,
@@ -372,6 +421,52 @@ class Order
 		unset($_SESSION['pending_order_data']);
 	}
 
+	public static function grantGuestOrderAccess(int $idOrder): void
+	{
+		if ($idOrder <= 0 || session_status() !== PHP_SESSION_ACTIVE) {
+			return;
+		}
+
+		if (!isset($_SESSION['guest_order_ids']) || !is_array($_SESSION['guest_order_ids'])) {
+			$_SESSION['guest_order_ids'] = [];
+		}
+
+		$_SESSION['guest_order_ids'][$idOrder] = time();
+
+		if (count($_SESSION['guest_order_ids']) > 5) {
+			asort($_SESSION['guest_order_ids']);
+			$_SESSION['guest_order_ids'] = array_slice($_SESSION['guest_order_ids'], -5, null, true);
+		}
+	}
+
+	public static function guestCanViewOrder(int $idOrder): bool
+	{
+		return $idOrder > 0
+			&& session_status() === PHP_SESSION_ACTIVE
+			&& !empty($_SESSION['guest_order_ids'][$idOrder]);
+	}
+
+	public static function getByIdForViewer(int $idOrder): ?array
+	{
+		$idUser = Customer::getId();
+
+		if ($idUser > 0) {
+			return self::getByIdForUser($idOrder, $idUser);
+		}
+
+		if (!self::guestCanViewOrder($idOrder)) {
+			return null;
+		}
+
+		$order = DB::getRowSafe('orders', 'id_order = ? AND id_user = 0', [$idOrder]);
+
+		if (!$order) {
+			return null;
+		}
+
+		return self::hydrateCustomerOrder($order, 0);
+	}
+
 	public static function getByIdForUser(int $idOrder, int $idUser): ?array
 	{
 		$order = DB::getRowSafe('orders', 'id_order = ? AND id_user = ?', [$idOrder, $idUser]);
@@ -379,6 +474,13 @@ class Order
 		if (!$order) {
 			return null;
 		}
+
+		return self::hydrateCustomerOrder($order, $idUser);
+	}
+
+	private static function hydrateCustomerOrder(array $order, int $idUser): array
+	{
+		$idOrder = (int) $order['id_order'];
 
 		$order['status_label'] = self::getStatusLabel((int) $order['status']);
 		$order['payment_label'] = self::getPaymentLabel($order['payment_method']);
@@ -803,6 +905,11 @@ class Order
 			'success' => true,
 			'message' => $message,
 		];
+	}
+
+	public static function reserveReference(): string
+	{
+		return self::generateReference();
 	}
 
 	private static function generateReference(): string

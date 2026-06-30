@@ -10,12 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	exit;
 }
 
-if (!Customer::isLoggedIn()) {
-	http_response_code(401);
-	echo json_encode(['success' => false, 'message' => 'Giriş yapmalısınız']);
-	exit;
-}
-
 $token = Tools::getValue('token') ?: ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
 
 if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {

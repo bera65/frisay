@@ -490,4 +490,100 @@ class Customer
 			'user' => null,
 		];
 	}
+
+	private static bool $schemaReady = false;
+
+	public static function ensureSchema(): void
+	{
+		if (self::$schemaReady) {
+			return;
+		}
+
+		self::$schemaReady = true;
+
+		$googleId = DB::execute("SHOW COLUMNS FROM `users` LIKE 'google_id'");
+
+		if (empty($googleId)) {
+			DB::execute(
+				"ALTER TABLE `users`
+				 ADD COLUMN `google_id` varchar(64) DEFAULT NULL AFTER `email`,
+				 ADD UNIQUE KEY `google_id` (`google_id`)"
+			);
+		}
+	}
+
+	public static function authWithGoogle(string $googleId, string $email, string $fullName): array
+	{
+		self::ensureSchema();
+
+		$googleId = trim($googleId);
+		$email = strtolower(trim($email));
+		$fullName = trim($fullName);
+
+		if ($googleId === '') {
+			return self::fail(translate('Invalid request, please refresh and try again'));
+		}
+
+		if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return self::fail(translate('Please enter a valid email'));
+		}
+
+		if ($fullName === '') {
+			$fullName = strstr($email, '@', true) ?: 'Google User';
+		}
+
+		$user = DB::getRowSafe('users', 'google_id = ? AND active = 1', [$googleId]);
+
+		if ($user) {
+			self::loginSession((int) $user['id_user'], true);
+
+			return self::ok(translate('Login successful'));
+		}
+
+		$user = DB::getRowSafe('users', 'email = ? AND active = 1', [$email]);
+
+		if ($user) {
+			DB::execute(
+				'UPDATE users SET google_id = ?, user_full_name = IF(user_full_name = "", ?, user_full_name) WHERE id_user = ?',
+				[$googleId, $fullName, (int) $user['id_user']]
+			);
+			self::loginSession((int) $user['id_user'], true);
+
+			return self::ok(translate('Login successful'));
+		}
+
+		$phone = self::generateGooglePlaceholderPhone($googleId);
+		$id = DB::insert('users', [
+			'user_full_name' => mb_substr($fullName, 0, 128),
+			'phone' => $phone,
+			'email' => $email,
+			'google_id' => $googleId,
+			'password' => self::hashPassword(bin2hex(random_bytes(16))),
+			'active' => 1,
+		]);
+
+		if (!$id) {
+			return self::fail(translate('Register failed'));
+		}
+
+		self::loginSession((int) $id, true);
+		Notification::welcome((int) $id, $fullName);
+		Mail::sendWelcome($email, $fullName);
+
+		return self::ok(translate('Register successful'));
+	}
+
+	private static function generateGooglePlaceholderPhone(string $googleId): string
+	{
+		$base = '05' . str_pad((string) (abs(crc32($googleId)) % 1000000000), 9, '0', STR_PAD_LEFT);
+		$phone = $base;
+		$attempt = 0;
+
+		while (DB::getValue('SELECT id_user FROM users WHERE phone = ? LIMIT 1', [$phone]) && $attempt < 20) {
+			$phone = '05' . str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT);
+			$attempt++;
+		}
+
+		return $phone;
+	}
 }

@@ -3,7 +3,7 @@
 {include file='./plugin/schema-jsonld.tpl'}
 {include file='./_mini/footer1.tpl'}
 {include file='./plugin/cart.tpl'}
-
+{include file='./plugin/auth-modal.tpl'}
 <script type="text/javascript" src="{$js_dir}jquery-3.2.1.min.js"></script>
 <script type="text/javascript" src="{$js_dir}bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="{$js_dir}style.js"></script>
@@ -12,6 +12,9 @@
 {/foreach}
 {if $js}
 	<script src="{$js_dir}{$js}"></script>
+{/if}
+{if !$isLoggedIn}
+<script src="{$js_dir}auth-modal.js"></script>
 {/if}
 {include file='./_mini/priceAllert.tpl'}
 <div id="tostAlert" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">

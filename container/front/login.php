@@ -1,68 +1,142 @@
-<?php
-	if (!defined('IN_SCRIPT')) {
-		exit;
-	}
-
-	if (Customer::isLoggedIn()) {
-		$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
-		unset($_SESSION['auth_redirect']);
-		header('Location: ' . $redirect);
-		exit;
-	}
-
-	$css = 'pages.css';
-	$authNotice = '';
-	$authError = '';
-	$formData = [
-		'phone' => '',
-	];
-
-	if (!empty($_SESSION['auth_redirect'])) {
-		$target = (string) $_SESSION['auth_redirect'];
-
-		if (strpos($target, 'checkout') !== false) {
-			$authNotice = translate('Checkout login notice');
-		}
-	}
-
-	if (Tools::isSubmit('loginUser')) {
-		$postToken = (string) Tools::getValue('token');
-
-		$formData = [
-			'phone' => (string) Tools::getValue('phone'),
-		];
-
-		if (!hash_equals($token, $postToken)) {
-			$authError = translate('Invalid request, please refresh and try again');
-		} else {
-			$remember = Tools::getValue('remember') !== '0';
-			$result = Customer::login(
-				$formData['phone'],
-				(string) Tools::getValue('password'),
-				$remember
-			);
-
-			if ($result['success']) {
-				$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
-				unset($_SESSION['auth_redirect']);
-				header('Location: ' . $redirect);
-				exit;
-			}
-
-			$authError = $result['message'];
-		}
-	}
-
-	$pageTitle = translate('Login page title');
-	$pageDesc = translate('Login page description');
-
-	$smarty->assign([
-		'authNotice' => $authNotice,
-		'authError' => $authError,
-		'formData' => $formData,
-		'authMode' => 'login',
-		'breadcrumb' => [
-			['name' => translate('Home Page'), 'url' => $domain],
-			['name' => translate('Sign In'), 'url' => ''],
-		],
-	]);
+<?php
+
+	if (!defined('IN_SCRIPT')) {
+
+		exit;
+
+	}
+
+
+
+	if (Customer::isLoggedIn()) {
+
+		$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
+
+		unset($_SESSION['auth_redirect']);
+
+		header('Location: ' . $redirect);
+
+		exit;
+
+	}
+
+
+
+	$css = 'pages.css';
+
+	$authNotice = '';
+
+	$authError = '';
+
+	$formData = [
+
+		'phone' => '',
+
+	];
+
+
+
+	if (!empty($_SESSION['auth_redirect'])) {
+
+		$target = (string) $_SESSION['auth_redirect'];
+
+
+
+		if (strpos($target, 'checkout') !== false) {
+
+			$authNotice = translate('Checkout login notice');
+
+		}
+
+	}
+
+	if (Tools::getValue('google_error') === 'config') {
+		$authError = translate('Google login not configured');
+	} elseif (Tools::getValue('google_error') === '1') {
+		$authError = translate('Google login failed');
+	}
+
+
+
+	if (Tools::isSubmit('loginUser')) {
+
+		$postToken = (string) Tools::getValue('token');
+
+
+
+		$formData = [
+
+			'phone' => (string) Tools::getValue('phone'),
+
+		];
+
+
+
+		if (!hash_equals($token, $postToken)) {
+
+			$authError = translate('Invalid request, please refresh and try again');
+
+		} else {
+
+			$remember = Tools::getValue('remember') !== '0';
+
+			$result = Customer::login(
+
+				$formData['phone'],
+
+				(string) Tools::getValue('password'),
+
+				$remember
+
+			);
+
+
+
+			if ($result['success']) {
+
+				$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
+
+				unset($_SESSION['auth_redirect']);
+
+				header('Location: ' . $redirect);
+
+				exit;
+
+			}
+
+
+
+			$authError = $result['message'];
+
+		}
+
+	}
+
+
+
+	$pageTitle = translate('Login page title');
+
+	$pageDesc = translate('Login page description');
+
+
+
+	$smarty->assign([
+
+		'authNotice' => $authNotice,
+
+		'authError' => $authError,
+
+		'formData' => $formData,
+
+		'authMode' => 'login',
+
+		'breadcrumb' => [
+
+			['name' => translate('Home Page'), 'url' => $domain],
+
+			['name' => translate('Sign In'), 'url' => ''],
+
+		],
+
+	]);
+

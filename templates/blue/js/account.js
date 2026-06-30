@@ -204,7 +204,10 @@
 			$('#checkoutDiscountRow').addClass('d-none');
 		}
 		if (data.shipping_formatted) $('#checkoutShipping').text(data.shipping_formatted);
-		if (data.total_formatted) $('#checkoutTotal').text(data.total_formatted);
+		if (data.total_formatted) {
+			$('#checkoutTotal').text(data.total_formatted);
+			$('#checkoutSubmitTotal').text(data.total_formatted);
+		}
 	}
 
 	$('#applyCouponBtn').on('click', function () {

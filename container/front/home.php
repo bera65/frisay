@@ -5,9 +5,6 @@
 		exit;
 	}
 
-	$js = 'home.js';
-	$css = 'home.css';
-
 	$homeSeo = Seo::resolvePage('home');
 	$pageTitle = $homeSeo['title'];
 	$pageDesc = $homeSeo['description'];

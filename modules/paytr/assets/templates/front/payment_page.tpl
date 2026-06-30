@@ -3,7 +3,7 @@
 		<div class="col-lg-7">
 			<div class="page-card p-4">
 				<h1 class="fs-5 mb-1">Kart ile Ödeme</h1>
-				<p class="text-muted small mb-3">Sipariş no: <strong>{$order.reference|escape}</strong></p>
+				<p class="text-muted small mb-3">Referans: <strong>{$order.reference|escape}</strong></p>
 
 				{if $paymentError}
 				<div class="alert alert-danger">{$paymentError|escape}</div>
