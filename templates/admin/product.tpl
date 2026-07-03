@@ -95,10 +95,11 @@
 							<option value="text"{if $product.virtual_kind|default:'' == 'text'} selected{/if}>Metin teslimatı</option>
 						</select>
 					</div>
-					<div class="col-md-3">
+					<div class="col-md-3" id="mainStockWrap">
 						<label class="form-label">Stok</label>
 						<input type="number" name="stock" id="productStock" class="form-control" value="{$product.stock|escape}" min="0">
 						<div class="form-text" id="virtualStockHint" style="display:none;">Lisans ürünlerinde stok, kullanılabilir anahtar sayısıdır. 0 = sınırsız (indirme/metin).</div>
+						<div class="form-text" id="variationStockHint" style="display:none;">Varyasyonlu ürünlerde toplam stok otomatik hesaplanır.</div>
 					</div>
 					<div class="col-md-3">
 						<label class="form-label">Stok Kodu *</label>
@@ -107,6 +108,106 @@
 					<div class="col-md-3">
 						<label class="form-label">Barkod</label>
 						<input type="text" name="barcode" class="form-control" value="{$product.barcode|escape}">
+					</div>
+					<div class="col-12" id="variationsWrap">
+						<div class="border rounded p-3 bg-light-subtle">
+							<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+								<div>
+									<h3 class="h6 mb-1">Ürün Varyasyonları</h3>
+									<p class="text-muted small mb-0">Her satır bir kombinasyondur (ör. Kırmızı + M). Mağazada müşteri önce Renk, sonra Beden seçer. Aynı seçenek adını ve yazımı tüm satırlarda aynı kullanın.</p>
+								</div>
+								<div class="form-check form-switch mb-0">
+									<input type="hidden" name="has_variations" value="0">
+									<input class="form-check-input" type="checkbox" id="hasVariations" name="has_variations" value="1"{if $hasVariations} checked{/if}>
+									<label class="form-check-label" for="hasVariations">Varyasyon kullan</label>
+								</div>
+							</div>
+
+							<div id="variationsPanel"{if !$hasVariations} style="display:none"{/if}>
+								<div class="table-responsive">
+									<table class="table table-sm table-bordered align-middle mb-2 variation-table">
+										<thead class="table-light">
+											<tr>
+												<th>Seçenek 1</th>
+												<th>Değer</th>
+												<th>Seçenek 2</th>
+												<th>Değer</th>
+												<th>Stok Kodu</th>
+												<th>Barkod</th>
+												<th>Fiyat</th>
+												<th>Stok</th>
+												<th>Aktif</th>
+												<th class="text-end" style="width:48px;"></th>
+											</tr>
+										</thead>
+										<tbody id="variationsBody">
+											{foreach $variationRows as $idx => $var}
+											<tr class="variation-row">
+												<td><input type="text" name="variations[{$idx}][option1_name]" class="form-control form-control-sm" value="{$var.option1_name|escape}" placeholder="Renk"></td>
+												<td><input type="text" name="variations[{$idx}][option1_value]" class="form-control form-control-sm" value="{$var.option1_value|escape}" placeholder="Kırmızı"></td>
+												<td><input type="text" name="variations[{$idx}][option2_name]" class="form-control form-control-sm" value="{$var.option2_name|escape}" placeholder="Beden"></td>
+												<td><input type="text" name="variations[{$idx}][option2_value]" class="form-control form-control-sm" value="{$var.option2_value|escape}" placeholder="M"></td>
+												<td><input type="text" name="variations[{$idx}][sku]" class="form-control form-control-sm" value="{$var.sku|escape}"></td>
+												<td><input type="text" name="variations[{$idx}][barcode]" class="form-control form-control-sm" value="{$var.barcode|escape}"></td>
+												<td><input type="text" name="variations[{$idx}][price]" class="form-control form-control-sm" value="{$var.price|escape}" placeholder="Boş = ana fiyat"></td>
+												<td><input type="number" name="variations[{$idx}][stock]" class="form-control form-control-sm variation-stock-input" value="{$var.stock|escape}" min="0"></td>
+												<td class="text-center">
+													<input type="hidden" name="variations[{$idx}][id_variation]" value="{$var.id_variation|escape}">
+													<input type="checkbox" name="variations[{$idx}][active]" value="1" class="form-check-input"{if $var.active} checked{/if}>
+												</td>
+												<td class="text-end">
+													<button type="button" class="btn btn-sm btn-outline-danger variation-remove" title="Satırı sil">&times;</button>
+												</td>
+											</tr>
+											{/foreach}
+										</tbody>
+									</table>
+								</div>
+								<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+									<button type="button" class="btn btn-sm btn-outline-dark" id="addVariationRow">+ Varyasyon Ekle</button>
+									<span class="small text-muted">Toplam stok: <strong id="variationStockTotal">0</strong></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-12" id="productOptionsWrap">
+						<input type="hidden" name="option_groups_present" value="1">
+						<div class="border rounded p-3 bg-light-subtle">
+							<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+								<div>
+									<h3 class="h6 mb-1">Ürün Seçenekleri</h3>
+									<p class="text-muted small mb-0">Stok etkilemez; müşteri ürün sayfasında seçer (ör. Boyut, İçecek, Acı). Her satır bir seçim grubudur; değerleri alt alta yazın.</p>
+								</div>
+								<button type="button" class="btn btn-sm btn-outline-dark" id="addOptionGroup">+ Seçenek Grubu Ekle</button>
+							</div>
+							<div id="optionGroupsBody">
+								{foreach $optionRows as $idx => $opt}
+								<div class="option-group-row border rounded p-3 mb-2 bg-white">
+									<div class="row g-2 align-items-start">
+										<div class="col-md-4">
+											<label class="form-label small mb-1">Grup adı</label>
+											<input type="text" name="option_groups[{$idx}][name]" class="form-control form-control-sm" value="{$opt.name|escape}" placeholder="Boyut">
+										</div>
+										<div class="col-md-2">
+											<label class="form-label small mb-1">Zorunlu</label>
+											<div class="form-check mt-1">
+												<input type="hidden" name="option_groups[{$idx}][required]" value="0">
+												<input type="checkbox" name="option_groups[{$idx}][required]" value="1" class="form-check-input"{if $opt.required} checked{/if}>
+											</div>
+										</div>
+										<div class="col-md-5">
+											<label class="form-label small mb-1">Değerler (her satıra bir tane)</label>
+											<textarea name="option_groups[{$idx}][values_text]" class="form-control form-control-sm" rows="3" placeholder="1&#10;1.5&#10;2">{$opt.values_text|escape}</textarea>
+										</div>
+										<div class="col-md-1 text-end">
+											<label class="form-label small mb-1 d-block">&nbsp;</label>
+											<button type="button" class="btn btn-sm btn-outline-danger option-group-remove" title="Grubu sil">&times;</button>
+										</div>
+									</div>
+								</div>
+								{/foreach}
+							</div>
+						</div>
 					</div>
 					<div class="col-md-3">
 						<label class="form-label">Desi</label>
@@ -285,6 +386,8 @@
 </div>
 {/if}
 
+<script src="{$domain}templates/admin/js/product-variations.js?v={$smarty.now}"></script>
+<script src="{$domain}templates/admin/js/product-options.js?v={$smarty.now}"></script>
 <script>
 (function () {
 	var typeEl = document.getElementById('productType');
@@ -307,6 +410,10 @@
 		if (stockHint) stockHint.style.display = isVirtual ? '' : 'none';
 		if (stockInput) {
 			stockInput.readOnly = isVirtual && kind === 'license';
+		}
+
+		if (window.ProductVariations) {
+			window.ProductVariations.refreshForProductType(isVirtual);
 		}
 	}
 

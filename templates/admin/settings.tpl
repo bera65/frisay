@@ -168,7 +168,7 @@
 				<li>PATCH <code>/api/v1/orders/&#123;id&#125;</code> — <code>status</code>, <code>cargoCompany</code>, <code>trackingNumber</code></li>
 				<li>GET <code>/api/v1/categories</code> · GET <code>/api/v1/brands</code></li>
 				<li>GET/POST/PATCH/DELETE <code>/api/v1/products</code> — <code>category</code> / <code>brand</code> adı ile</li>
-				<li>PATCH <code>/api/v1/products/&#123;id&#125;/quick</code> — sadece fiyat, stok, active</li>
+				<li>PATCH <code>/api/v1/products/&#123;id&#125;/quick</code> — fiyat, old_price, stok, active</li>
 				<li>POST <code>/api/v1/products/&#123;id&#125;/image</code> — dosya veya <code>image_url</code></li>
 				<li><code>description_html</code> — HTML ürün açıklaması</li>
 			</ul>
@@ -177,7 +177,7 @@
 			<h2 class="h6 mb-3">E-posta Bilgisi</h2>
 			<ul class="small text-muted mb-0 ps-3">
 				<li><strong>PHP mail():</strong> Hosting sunucusunun mail() fonksiyonu</li>
-				<li><strong>SMTP:</strong> eczhanem.com gibi harici sunucu</li>
+				<li><strong>SMTP:</strong> frisay.com gibi harici sunucu</li>
 				<li>Test hatası artık detaylı gösterilir</li>
 				<li>SSL için genelde port 465 kullanılır</li>
 			</ul>

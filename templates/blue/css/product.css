@@ -27,6 +27,59 @@
 	font-weight: 700;
 	font-size: 20px;
 }
+.product-variation-label {
+	display: flex;
+	align-items: baseline;
+	gap: 0.25rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+	color: #334155;
+}
+.product-variation-selected {
+	font-weight: 500;
+	color: #64748b;
+}
+.product-variation-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+.product-variation-option {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.75rem;
+	min-height: 2.5rem;
+	padding: 0.4rem 0.9rem;
+	border: 1.5px solid #e2e8f0;
+	border-radius: 8px;
+	background: #fff;
+	color: #334155;
+	font-size: 0.875rem;
+	font-weight: 500;
+	line-height: 1.2;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.product-variation-option:hover:not(:disabled):not(.active) {
+	border-color: #94a3b8;
+	background: #f8fafc;
+}
+.product-variation-option.active {
+	background: #0f172a;
+	border-color: #0f172a;
+	color: #fff;
+	box-shadow: 0 0 0 1px #0f172a;
+}
+.product-variation-option:disabled {
+	opacity: 0.38;
+	cursor: not-allowed;
+	text-decoration: line-through;
+}
+.product-variation-summary {
+	color: #475569;
+}
 .old-price { text-decoration: line-through; color: #94a3b8; font-size: 16px; }
 .current-price { font-size: 1.5rem;line-height: 1.2; color: #c33514}
 .product-label-badge {position:absolute;top:5.71px;left:5.71px;padding:3px 8px;border-radius:5.71px;background:#333;color:#fff;z-index:2}
@@ -113,3 +166,4 @@
 	height: 100%;
 	object-fit: contain;
 }
+.product-variation-group {width:50%;float:left}

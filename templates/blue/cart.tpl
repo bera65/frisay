@@ -24,7 +24,7 @@
 
 			{foreach $cart.items as $item}
 
-			<div class="prime-cart-page__item cart-item" data-id="{$item.id_product}" data-max-qty="{$item.max_qty|default:$item.stock|default:99}">
+			<div class="prime-cart-page__item cart-item" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-max-qty="{$item.max_qty|default:$item.stock|default:99}">
 
 				<a href="{$item.url}" class="prime-cart-page__thumb cart-item-image">
 
@@ -40,13 +40,13 @@
 
 					<div class="prime-cart-page__qty cart-item-actions">
 
-						<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}">−</button>
+						<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}">−</button>
 
 						<span class="cart-qty-value">{$item.qty}</span>
 
-						<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}">+</button>
+						<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}">+</button>
 
-						<button type="button" class="prime-cart-page__remove cart-remove-btn" data-id="{$item.id_product}">{'Delete'|translate}</button>
+						<button type="button" class="prime-cart-page__remove cart-remove-btn" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}">{'Delete'|translate}</button>
 
 					</div>
 

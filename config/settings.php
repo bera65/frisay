@@ -25,6 +25,8 @@ ini_set('display_errors', 1);
 
 	require_once(dirname(__FILE__).'/../lang/lang.php');
 	require_once(dirname(__FILE__).'/../core/Product.php');
+	require_once(dirname(__FILE__).'/../core/ProductVariation.php');
+	require_once(dirname(__FILE__).'/../core/ProductOption.php');
 	require_once(dirname(__FILE__).'/../core/VirtualProduct.php');
 	require_once(dirname(__FILE__).'/../core/Cart.php');
 	require_once(dirname(__FILE__).'/../core/Customer.php');
@@ -124,6 +126,9 @@ ini_set('display_errors', 1);
 		'clearConfirm' => translate('Remove all items from the cart?'),
 		'connectionError' => translate('Could not connect to the server'),
 		'genericError' => translate('An error occurred'),
+		'selectVariation' => translate('Select product options'),
+		'required' => translate('Required'),
+		'addToCart' => translate('Add To Cart'),
 	];
 	
 	$smarty->assign(array(

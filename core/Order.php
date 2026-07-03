@@ -270,13 +270,14 @@ class Order
 			$db->beginTransaction();
 
 			foreach ($cart['items'] as $item) {
+				$idVariation = (int) ($item['id_variation'] ?? 0);
 				$product = Product::getById((int) $item['id_product']);
 
-				if (!$product || !Product::isInStock($product, (int) $item['qty'])) {
+				if (!$product || !Product::isInStock($product, (int) $item['qty'], $idVariation)) {
 					throw new RuntimeException('Sepette stokta olmayan ürün var: ' . ($item['product_name'] ?? ''));
 				}
 
-				if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'])) {
+				if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation)) {
 					throw new RuntimeException('Stok yetersiz: ' . ($item['product_name'] ?? ''));
 				}
 			}
@@ -311,7 +312,9 @@ class Order
 				$ok = DB::insert('order_detail', [
 					'id_order' => (int) $idOrder,
 					'id_product' => (int) $item['id_product'],
+					'id_variation' => (int) ($item['id_variation'] ?? 0),
 					'product_name' => $item['product_name'],
+					'variation_label' => (string) ($item['variation_label'] ?? ''),
 					'price' => (float) $item['price'],
 					'qty' => (int) $item['qty'],
 					'total' => (float) $item['line_total'],
@@ -334,6 +337,12 @@ class Order
 
 			if ($idUser <= 0) {
 				self::grantGuestOrderAccess((int) $idOrder);
+			}
+
+			$placedOrder = self::getByIdAdmin((int) $idOrder);
+
+			if ($placedOrder && class_exists('Module', false)) {
+				Module::runHook('order.placed', [$placedOrder]);
 			}
 
 			if ($idAddress === 0 && $idUser > 0 && !empty($data['save_address'])) {

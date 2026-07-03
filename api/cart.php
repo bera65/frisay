@@ -21,17 +21,28 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
 
 $action = Tools::getValue('action');
 $idProduct = (int) Tools::getValue('id_product');
+$idVariation = (int) Tools::getValue('id_variation');
 $qty = (int) Tools::getValue('qty', 1);
+$cartKey = trim((string) Tools::getValue('cart_key'));
+$optionsRaw = Tools::getValue('options');
+$options = [];
+
+if (is_string($optionsRaw) && $optionsRaw !== '') {
+	$decoded = json_decode($optionsRaw, true);
+	$options = is_array($decoded) ? $decoded : [];
+} elseif (is_array($optionsRaw)) {
+	$options = $optionsRaw;
+}
 
 switch ($action) {
 	case 'add':
-		echo json_encode(Cart::add($idProduct, $qty));
+		echo json_encode(Cart::add($idProduct, $qty, $idVariation, $options));
 		break;
 	case 'update':
-		echo json_encode(Cart::update($idProduct, $qty));
+		echo json_encode(Cart::update($idProduct, $qty, $idVariation, $cartKey));
 		break;
 	case 'remove':
-		echo json_encode(Cart::remove($idProduct));
+		echo json_encode(Cart::remove($idProduct, $idVariation, $cartKey));
 		break;
 	case 'clear':
 		echo json_encode(Cart::clear());

@@ -45,6 +45,8 @@
 
 	$globalCargoDay = max(0, (int) Settings::get('CARGO_DAY'));
 	$productCargoDay = max(0, (int) ($product['cargo_day'] ?? 0));
+	$variationData = ProductVariation::getForStorefront($idProduct, (float) $product['price']);
+	$optionData = ProductOption::getForStorefront($idProduct);
 
 	$relatedProducts = [];
 	$idBrand = (int) ($product['id_brand'] ?? 0);
@@ -84,6 +86,14 @@
 		'havale'			=> (float)Settings::get('HAVALE'),
 		'isFavorite' 		=> Favorite::isFavorite($idProduct),
 		'relatedProducts'	=> $relatedProducts,
+		'hasVariations'     => !empty($variationData['has_variations']),
+		'variationGroups'   => $variationData['groups'],
+		'variationItemsJson' => json_encode($variationData['items'], JSON_UNESCAPED_UNICODE),
+		'hasOptions'        => !empty($optionData['has_options']),
+		'optionGroups'      => $optionData['groups'],
+		'requiredOptionGroups' => count(array_filter($optionData['groups'], static function (array $group): bool {
+			return !empty($group['required']);
+		})),
 		'breadcrumb' => [
 			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => $product['category_name'], 'url' => $domain . $product['category_link']],

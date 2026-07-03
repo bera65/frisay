@@ -90,6 +90,7 @@ class Product
 		}
 
 		VirtualProduct::ensureSchema();
+		ProductVariation::ensureSchema();
 	}
 
 	public static function getLink(array $row): string
@@ -146,8 +147,24 @@ class Product
 		return '';
 	}
 
-	public static function getStock(array $product): int
+	public static function getStock(array $product, int $idVariation = 0): int
 	{
+		$idProduct = (int) ($product['id_product'] ?? 0);
+
+		if ($idVariation > 0) {
+			$variation = ProductVariation::getById($idVariation);
+
+			if (!$variation || (int) $variation['id_product'] !== $idProduct || (int) $variation['active'] !== 1) {
+				return 0;
+			}
+
+			return max(0, (int) $variation['stock']);
+		}
+
+		if ($idProduct > 0 && ProductVariation::hasVariations($idProduct)) {
+			return ProductVariation::getTotalStock($idProduct);
+		}
+
 		if (VirtualProduct::isVirtualProduct($product)) {
 			$kind = VirtualProduct::getKind($product);
 
@@ -163,16 +180,24 @@ class Product
 		return max(0, (int) ($product['stock'] ?? 0));
 	}
 
-	public static function isInStock(array $product, int $qty = 1): bool
+	public static function isInStock(array $product, int $qty = 1, int $idVariation = 0): bool
 	{
-		return self::getStock($product) >= max(1, $qty);
+		return self::getStock($product, $idVariation) >= max(1, $qty);
 	}
 
-	public static function decreaseStock(int $idProduct, int $qty): bool
+	public static function decreaseStock(int $idProduct, int $qty, int $idVariation = 0): bool
 	{
 		global $db;
 
 		if ($qty <= 0) {
+			return false;
+		}
+
+		if ($idVariation > 0) {
+			return ProductVariation::decreaseStock($idVariation, $qty, $idProduct);
+		}
+
+		if (ProductVariation::hasVariations($idProduct)) {
 			return false;
 		}
 
@@ -199,9 +224,15 @@ class Product
 		return $stmt->rowCount() > 0;
 	}
 
-	public static function increaseStock(int $idProduct, int $qty): void
+	public static function increaseStock(int $idProduct, int $qty, int $idVariation = 0): void
 	{
 		if ($qty <= 0) {
+			return;
+		}
+
+		if ($idVariation > 0) {
+			ProductVariation::increaseStock($idVariation, $qty, $idProduct);
+
 			return;
 		}
 
@@ -234,7 +265,7 @@ class Product
 		$rows = array_map([self::class, 'enrich'], $rows);
 
 		if (!$rows || !self::reviewsEnabled()) {
-			return $rows;
+			return self::attachVariationFlags($rows ?: []);
 		}
 
 		$ids = array_map('intval', array_column($rows, 'id_product'));
@@ -261,7 +292,80 @@ class Product
 		}
 		unset($row);
 
+		return self::attachVariationFlags($rows);
+	}
+
+	/** Liste kartlarında varyasyonlu ürün bayrağı (tek sorgu) */
+	public static function attachVariationFlags(array $rows): array
+	{
+		if ($rows === []) {
+			return $rows;
+		}
+
+		$ids = array_values(array_unique(array_map('intval', array_column($rows, 'id_product'))));
+
+		if ($ids === []) {
+			return $rows;
+		}
+
+		$placeholders = implode(',', array_fill(0, count($ids), '?'));
+		$withVariations = DB::execute(
+			'SELECT DISTINCT id_product FROM product_variations WHERE active = 1 AND id_product IN (' . $placeholders . ')',
+			$ids
+		) ?: [];
+		$map = [];
+
+		foreach ($withVariations as $entry) {
+			$map[(int) $entry['id_product']] = true;
+		}
+
+		foreach ($rows as &$row) {
+			$row['has_variations'] = !empty($map[(int) ($row['id_product'] ?? 0)]);
+		}
+		unset($row);
+
 		return $rows;
+	}
+
+	public static function getQuickView(int $idProduct): ?array
+	{
+		$product = self::getById($idProduct);
+
+		if (!$product) {
+			return null;
+		}
+
+		$variationData = ProductVariation::getForStorefront($idProduct, (float) $product['price']);
+		$optionData = ProductOption::getForStorefront($idProduct);
+		$shortDescription = trim(strip_tags((string) ($product['short_description'] ?? '')));
+
+		if ($shortDescription === '') {
+			$shortDescription = trim(strip_tags((string) ($product['description'] ?? '')));
+			if (Tools::strlen($shortDescription) > 200) {
+				$shortDescription = mb_substr($shortDescription, 0, 197, 'UTF-8') . '...';
+			}
+		}
+
+		return [
+			'id_product' => (int) $product['id_product'],
+			'product_name' => (string) $product['product_name'],
+			'url' => (string) $product['url'],
+			'image_url' => (string) $product['image_url'],
+			'short_description' => $shortDescription,
+			'price' => (float) $product['price'],
+			'old_price' => (float) ($product['old_price'] ?? 0),
+			'price_formatted' => (string) $product['price_formatted'],
+			'old_price_formatted' => (string) ($product['old_price_formatted'] ?? ''),
+			'has_discount' => !empty($product['has_discount']),
+			'in_stock' => !empty($product['in_stock']),
+			'stock' => (int) ($product['stock'] ?? 0),
+			'category_name' => (string) ($product['category_name'] ?? ''),
+			'has_variations' => !empty($variationData['has_variations']),
+			'variation_groups' => $variationData['groups'],
+			'variation_items' => $variationData['items'],
+			'has_options' => !empty($optionData['has_options']),
+			'option_groups' => $optionData['groups'],
+		];
 	}
 
 	public static function enrich(array $row): array
@@ -283,6 +387,12 @@ class Product
 		if ($row['has_discount']) {
 			$row['old_price_formatted'] = Tools::displayPrice($row['old_price']);
 		}
+
+		$listExcerpt = trim(strip_tags((string) ($row['short_description'] ?? '')));
+		if ($listExcerpt === '') {
+			$listExcerpt = trim((string) ($row['category_name'] ?? ''));
+		}
+		$row['list_excerpt'] = $listExcerpt;
 
 		if (class_exists('Lang', false)) {
 			$row = Lang::applyProduct($row);
@@ -393,6 +503,37 @@ class Product
 		}
 
 		return self::enrichList($rows);
+	}
+
+	/** Yorum puanına göre öne çıkan ürünler; yorum yoksa en yeniler */
+	public static function getTopRatedList(int $limit = 8, int $offset = 0): array
+	{
+		self::ensureSchema();
+
+		$limit = max(1, min(48, $limit));
+		$offset = max(0, $offset);
+
+		if (self::reviewsEnabled()) {
+			$sql = 'SELECT p.*, b.brand_name, b.brand_link, c.category_name, c.category_link, i.id_image,
+				COALESCE(rs.avg_rating, 0) AS avg_rating, COALESCE(rs.review_count, 0) AS review_count
+				FROM products p
+				INNER JOIN brands b ON p.id_brand = b.id_brand
+				INNER JOIN categories c ON p.id_category = c.id_category
+				LEFT JOIN images i ON p.id_product = i.id_product AND i.cover = 1
+				LEFT JOIN (
+					SELECT id_product, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+					FROM product_reviews WHERE active = 1 GROUP BY id_product
+				) rs ON rs.id_product = p.id_product
+				WHERE p.active = 1
+				ORDER BY (COALESCE(rs.review_count, 0) > 0) DESC, rs.avg_rating DESC, rs.review_count DESC, p.id_product DESC
+				LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+			$rows = DB::execute($sql) ?: [];
+
+			return self::enrichList($rows);
+		}
+
+		return self::getActiveList(null, $limit, $offset, 'newest');
 	}
 
 	public static function search(string $query, int $limit = 24, int $offset = 0, string $sort = 'newest'): array
@@ -655,6 +796,26 @@ class Product
 		$defaultLang = Lang::getDefault();
 		$defaultEntry = is_array($langData[$defaultLang] ?? null) ? $langData[$defaultLang] : $data;
 
+		if (!empty($data['variations']) && is_array($data['variations'])) {
+			$data['variations'] = ProductVariation::parseFormRows($data['variations']);
+		} elseif (!empty($data['variations_json']) && empty($data['variations'])) {
+			$decoded = json_decode((string) $data['variations_json'], true);
+
+			if (is_array($decoded)) {
+				$data['variations'] = $decoded;
+			}
+		}
+
+		if (array_key_exists('has_variations', $data) && (string) $data['has_variations'] !== '1') {
+			$data['variations'] = [];
+		}
+
+		if (!empty($data['option_groups']) && is_array($data['option_groups'])) {
+			$data['option_groups'] = ProductOption::parseFormRows($data['option_groups']);
+		} elseif (!empty($data['option_groups_present'])) {
+			$data['option_groups'] = [];
+		}
+
 		$name 			= trim((string) ($defaultEntry['product_name'] ?? $data['product_name'] ?? ''));
 		$link 			= trim((string) ($defaultEntry['product_link'] ?? $data['product_link'] ?? ''));
 		$idCategory 	= (int) ($data['id_category'] ?? 0);
@@ -691,6 +852,44 @@ class Product
 
 		$virtualText = trim((string) ($data['virtual_text'] ?? ''));
 
+		if ($id > 0) {
+			$existing = self::getByIdAdmin($id);
+
+			if ($existing) {
+				if ($name === '') {
+					$name = (string) ($existing['product_name'] ?? '');
+				}
+
+				if ($link === '') {
+					$link = (string) ($existing['product_link'] ?? '');
+				}
+
+				if ($shortDescription === '') {
+					$shortDescription = (string) ($existing['short_description'] ?? '');
+				}
+
+				if ($metaTitle === '') {
+					$metaTitle = (string) ($existing['meta_title'] ?? '');
+				}
+
+				if ($metaDescription === '') {
+					$metaDescription = (string) ($existing['meta_description'] ?? '');
+				}
+
+				if ($description === '') {
+					$description = (string) ($existing['description'] ?? '');
+				}
+
+				if ($idCategory <= 0) {
+					$idCategory = (int) ($existing['id_category'] ?? 0);
+				}
+
+				if ($idBrand <= 0) {
+					$idBrand = (int) ($existing['id_brand'] ?? 0);
+				}
+			}
+		}
+
 		if ($name === '') {
 			return self::fail('Ürün adı zorunludur');
 		}
@@ -716,6 +915,15 @@ class Product
 		if ($productVideo !== '' && self::extractYoutubeId($productVideo) === '') {
 			return self::fail('Geçerli bir YouTube video linki girin');
 		}
+
+		$langData[$defaultLang] = array_merge([
+			'product_name' => $name,
+			'product_link' => $link,
+			'short_description' => $shortDescription,
+			'description' => $description,
+			'meta_title' => $metaTitle,
+			'meta_description' => $metaDescription,
+		], is_array($langData[$defaultLang] ?? null) ? $langData[$defaultLang] : []);
 
 		$row = [
 			'id_category' 		=> $idCategory,
@@ -762,6 +970,22 @@ class Product
 				VirtualProduct::saveLicenseKeys($id, (string) $data['license_keys']);
 			}
 
+			if (array_key_exists('variations', $data) && is_array($data['variations'])) {
+				$variationError = ProductVariation::saveForProduct($id, $data['variations'], (float) $row['price']);
+
+				if ($variationError) {
+					return $variationError;
+				}
+			}
+
+			if (!empty($data['option_groups_present']) || array_key_exists('option_groups', $data)) {
+				$optionError = ProductOption::saveForProduct($id, $data['option_groups'] ?? []);
+
+				if ($optionError) {
+					return $optionError;
+				}
+			}
+
 			self::fireUpdatedHook($id, false);
 
 			return ['success' => true, 'message' => 'Ürün güncellendi', 'id' => $id];
@@ -783,6 +1007,29 @@ class Product
 
 		if ($productType === 'virtual' && $virtualKind === 'license' && isset($data['license_keys'])) {
 			VirtualProduct::saveLicenseKeys($newId, (string) $data['license_keys']);
+		}
+
+		if (array_key_exists('variations', $data) && is_array($data['variations'])) {
+			$variationError = ProductVariation::saveForProduct($newId, $data['variations'], (float) $row['price']);
+
+			if ($variationError) {
+				ProductVariation::deleteByProduct($newId);
+				DB::execute('DELETE FROM products WHERE id_product = ?', [$newId]);
+
+				return $variationError;
+			}
+		}
+
+		if (!empty($data['option_groups_present']) || array_key_exists('option_groups', $data)) {
+			$optionError = ProductOption::saveForProduct($newId, $data['option_groups'] ?? []);
+
+			if ($optionError) {
+				ProductOption::deleteByProduct($newId);
+				ProductVariation::deleteByProduct($newId);
+				DB::execute('DELETE FROM products WHERE id_product = ?', [$newId]);
+
+				return $optionError;
+			}
 		}
 
 		self::fireUpdatedHook($newId, true);
@@ -949,14 +1196,19 @@ class Product
 			$row['active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 		}
 
-		if (array_key_exists('price', $data) || array_key_exists('old_price', $data)) {
+		if (array_key_exists('price', $data) || array_key_exists('old_price', $data)
+			|| array_key_exists('doviz_price', $data) || array_key_exists('doviz_old_price', $data)) {
 			$shopCurrency = Currency::getShopCurrency();
 			$newPrice = array_key_exists('price', $data)
 				? (float) str_replace(',', '.', (string) $data['price'])
-				: (float) ($product['price'] ?? 0);
+				: (array_key_exists('doviz_price', $data)
+					? (float) str_replace(',', '.', (string) $data['doviz_price'])
+					: (float) ($product['price'] ?? 0));
 			$newOldPrice = array_key_exists('old_price', $data)
 				? (float) str_replace(',', '.', (string) $data['old_price'])
-				: (float) ($product['old_price'] ?? 0);
+				: (array_key_exists('doviz_old_price', $data)
+					? (float) str_replace(',', '.', (string) $data['doviz_old_price'])
+					: (float) ($product['old_price'] ?? 0));
 
 			$row['price'] = max(0, $newPrice);
 			$row['old_price'] = max(0, $newOldPrice);
@@ -1001,6 +1253,7 @@ class Product
 			self::deleteImage((int) $image['id_image']);
 		}
 
+		ProductVariation::deleteByProduct($id);
 		DB::execute('DELETE FROM products WHERE id_product = ?', [$id]);
 
 		return ['success' => true, 'message' => 'Ürün silindi', 'id' => $id];

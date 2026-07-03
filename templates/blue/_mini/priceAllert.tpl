@@ -8,13 +8,14 @@
 		</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-	  <form action="" method="POST">
+	  <form action="#" id="alertPrice" data-api-url="{$domain}api/module.php?m=alert-price&action=subscribe" method="POST">
       <div class="modal-body">
+		<div id="alertPriceMessage"></div>
         <div id="userEmail" class="mb-3">
           <label class="form-label">{'Your Email'|translate}</label>
           <input type="email" name="userEmail" class="form-control" id="emailInput" placeholder="email@mail.com" required>
         </div>
-		<div id="userEmail" class="mb-1">
+		<div id="price" class="mb-1">
           <label class="form-label">{'Target Price'|translate}</label>
           <input type="text" name="price" class="form-control" id="price" placeholder="{'eg : 249.99'|translate}" required>
         </div>

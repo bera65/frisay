@@ -68,7 +68,7 @@ class AlertPriceModule extends ModuleBase
             'cronUrl' => rtrim($domain, '/') . '/api/module.php?m=alert-price&action=cron&token=' . rawurlencode($cronToken),
         ]);
     }
-
+/*
     public function renderDisplayHook(string $hook, array $context = []): ?string
     {
         if ($hook !== 'product_inf') {
@@ -106,7 +106,7 @@ class AlertPriceModule extends ModuleBase
 
         return $html !== '' ? $html : null;
     }
-
+*/
     // ─────────────────────────────────────────────────────────────
     // STATIC METHODS
     // ─────────────────────────────────────────────────────────────
@@ -118,27 +118,27 @@ class AlertPriceModule extends ModuleBase
         $targetPrice = (float) $targetPrice;
 
         if ($idProduct <= 0) {
-            return ['success' => false, 'message' => 'Geçersiz ürün'];
+            return ['success' => false, 'message' => translate('Invalid Product')];
         }
 
         $product = Product::getById($idProduct);
 
         if (!$product) {
-            return ['success' => false, 'message' => 'Ürün bulunamadı'];
+            return ['success' => false, 'message' => translate('Product Not Found')];
         }
 
         if (!Validate::isEmail($email)) {
-            return ['success' => false, 'message' => 'Geçerli bir e-posta adresi giriniz'];
+            return ['success' => false, 'message' => translate('Invalid E-Mail')];
         }
 
         if ($targetPrice <= 0) {
-            return ['success' => false, 'message' => 'Hedef fiyat 0\'dan büyük olmalıdır'];
+            return ['success' => false, 'message' => translate('The price must be greater than 0')];
         }
 
         $currentPrice = (float) ($product['price'] ?? 0);
 
         if ($targetPrice >= $currentPrice) {
-            return ['success' => false, 'message' => 'Hedef fiyat mevcut fiyattan düşük olmalıdır'];
+            return ['success' => false, 'message' => translate('The price must be lower than the current price.')];
         }
 
         $existing = DB::getRowSafe('alert_price_subscriptions', 'id_product = ? AND email = ? AND is_sent = 0', [
@@ -147,7 +147,7 @@ class AlertPriceModule extends ModuleBase
         ]);
 
         if ($existing) {
-            return ['success' => false, 'message' => 'Bu ürün için zaten aktif bir bildirim talebiniz var'];
+            return ['success' => false, 'message' => translate('You have a pending request.')];
         }
 
         $productUrl = $product['url'] ?? Product::getLink($product);
@@ -165,12 +165,12 @@ class AlertPriceModule extends ModuleBase
         ]);
 
         if (!$id) {
-            return ['success' => false, 'message' => 'Kayıt yapılamadı'];
+            return ['success' => false, 'message' => translate('Data could not be added.')];
         }
 
         return [
             'success' => true,
-            'message' => 'Bildirim talebiniz alındı. Fiyat ' . Tools::displayPrice($targetPrice) . ' veya altına düştüğünde e-posta gönderilecektir.',
+            'message' => translate('Your request has been received.'),
         ];
     }
 

@@ -10,7 +10,18 @@
 	$pageDesc = $homeSeo['description'];
 
 	$featuredProducts = Product::getActiveList(null, 12);
+	$topRatedProducts = Product::getTopRatedList(8);
 	$categoryBlocks = [];
+	$homeCategories = [];
+	$foodIcons = ['🍔', '🍕', '🍢', '🍣', '🥗', '🍰', '☕', '🍝', '🥙', '🌮', '🍲', '🥘'];
+
+	foreach (Category::getMenuList() as $index => $cat) {
+		$homeCategories[] = [
+			'category' => $cat,
+			'url' => Category::getUrl($cat),
+			'icon' => $foodIcons[$index % count($foodIcons)],
+		];
+	}
 
 	foreach (Category::getMenuList() as $cat) {
 		$products = Product::getActiveList((int) $cat['id_category'], 8);
@@ -28,5 +39,7 @@
 
 	$smarty->assign([
 		'featuredProducts' => $featuredProducts,
+		'topRatedProducts' => $topRatedProducts,
+		'homeCategories' => $homeCategories,
 		'categoryBlocks' => $categoryBlocks,
 	]);

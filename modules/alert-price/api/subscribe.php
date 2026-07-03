@@ -20,9 +20,9 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
     exit;
 }
 
-$idProduct = (int) Tools::getValue('id_product', 0);
-$email = trim((string) Tools::getValue('email', ''));
-$targetPrice = (float) Tools::getValue('target_price', 0);
+$idProduct 		= (int) Tools::getValue('idProduct', 0);
+$email 			= trim((string) Tools::getValue('email', ''));
+$targetPrice 	= (float) Tools::getValue('price', 0);
 
 $idUser = Customer::isLoggedIn() ? Customer::getId() : null;
 

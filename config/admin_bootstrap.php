@@ -37,6 +37,8 @@ error_reporting(E_ALL);
 	require_once dirname(__FILE__) . '/../core/Order.php';
 	require_once dirname(__FILE__) . '/../core/Contact.php';
 	require_once dirname(__FILE__) . '/../core/Product.php';
+	require_once dirname(__FILE__) . '/../core/ProductVariation.php';
+	require_once dirname(__FILE__) . '/../core/ProductOption.php';
 	require_once dirname(__FILE__) . '/../core/VirtualProduct.php';
 	require_once dirname(__FILE__) . '/../core/Category.php';
 	require_once dirname(__FILE__) . '/../core/Brand.php';

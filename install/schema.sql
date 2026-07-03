@@ -104,6 +104,20 @@ CREATE TABLE `product_license_keys` (
   UNIQUE KEY `product_key` (`id_product`, `license_key`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `product_variations` (
+  `id_variation` int(11) NOT NULL AUTO_INCREMENT,
+  `id_product` int(11) NOT NULL,
+  `sku` varchar(64) NOT NULL DEFAULT '',
+  `barcode` varchar(64) NOT NULL DEFAULT '',
+  `options_json` varchar(1024) NOT NULL DEFAULT '{}',
+  `price` decimal(20,2) DEFAULT NULL,
+  `stock` int(11) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_variation`),
+  KEY `id_product` (`id_product`),
+  UNIQUE KEY `product_sku` (`id_product`, `sku`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `cms_pages` (
   `id_cms` int(11) NOT NULL AUTO_INCREMENT,
   `slug` varchar(128) NOT NULL,
@@ -227,7 +241,9 @@ CREATE TABLE `order_detail` (
   `id_order_detail` int(11) NOT NULL AUTO_INCREMENT,
   `id_order` int(11) NOT NULL,
   `id_product` int(11) NOT NULL,
+  `id_variation` int(11) NOT NULL DEFAULT 0,
   `product_name` varchar(128) NOT NULL,
+  `variation_label` varchar(255) NOT NULL DEFAULT '',
   `price` decimal(20,2) NOT NULL,
   `qty` int(11) NOT NULL,
   `total` decimal(20,2) NOT NULL,

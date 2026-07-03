@@ -394,10 +394,13 @@ Gönderdiğin alanlar güncellenir; diğerleri aynı kalır.
 ```json
 {
   "price": 149.90,
+  "old_price": 199.90,
   "stock": 25,
   "active": 1
 }
 ```
+
+`old_price` isteğe bağlıdır; gönderilmezse mevcut değer korunur. Pazaryeri entegrasyonları için `list_price` alanı da `old_price` ile aynı kabul edilir.
 
 Sadece stok örneği:
 

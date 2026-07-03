@@ -21,7 +21,7 @@
 			</div>
 			{else}
 			{foreach $cart.items as $item}
-			<div class="blue-cart-item cart-item" data-id="{$item.id_product}" data-max-qty="{$item.max_qty|default:$item.stock}">
+			<div class="blue-cart-item cart-item" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-max-qty="{$item.max_qty|default:$item.stock}">
 				<a href="{$item.url}" class="blue-cart-item__thumb cart-item-image">
 					<img src="{$item.image_url}" alt="{$item.product_name|escape}">
 				</a>
@@ -34,7 +34,7 @@
 							{else}
 							<span class="blue-cart-item__stock blue-cart-item__stock--out">{'Out of Stock'|translate}</span>
 							{/if}
-							<button type="button" class="blue-cart-item__remove cart-remove-btn" data-id="{$item.id_product}">
+							<button type="button" class="blue-cart-item__remove cart-remove-btn" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}">
 								{'Delete'|translate}
 							</button>
 						</div>
@@ -43,9 +43,9 @@
 					<div class="blue-cart-item__bottom">
 						<span class="blue-cart-item__line cart-item-total">{'Total'|translate}: {$item.line_total_formatted}</span>
 						<div class="blue-cart-item__qty cart-item-actions">
-							<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}" aria-label="{'Down'|translate}">−</button>
+							<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" aria-label="{'Down'|translate}">−</button>
 							<span class="cart-qty-value">{$item.qty}</span>
-							<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}" aria-label="{'Up'|translate}">+</button>
+							<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" aria-label="{'Up'|translate}">+</button>
 						</div>
 					</div>
 				</div>

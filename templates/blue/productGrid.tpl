@@ -22,9 +22,11 @@
 							 style="max-height: 100%; object-fit: contain;"
 							 alt="{$p.product_name|escape}">
 					</a>
-					<button class="btn favoriteBell" data-bs-toggle="modal" data-bs-target="#priceModal" data-id="{$p.id_product}" data-price="{$p.price}">
-						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-icon lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-					</button>
+					<div class="imageButtons">
+						<button class="btn priceAllertButton alertButton" data-bs-toggle="modal" data-bs-target="#priceModal" data-id="{$p.id_product}" data-price="{$p.price}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-icon lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+						</button>
+					</div>
 					<div class="product-info d-flex flex-column flex-grow-1">
 						{if $p.review_count > 0}
 							<div class="rating mb-2 d-flex align-items-center gap-1">

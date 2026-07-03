@@ -183,9 +183,23 @@
 		];
 	}
 
+	$variationRows = [];
+	$hasVariations = false;
+	$optionRows = [];
+
+	if (!$isNew) {
+		$rawVariations = ProductVariation::getByProduct($id);
+		$hasVariations = $rawVariations !== [];
+		$variationRows = array_map([ProductVariation::class, 'formatFormRow'], $rawVariations);
+		$optionRows = array_map([ProductOption::class, 'formatFormRow'], ProductOption::getByProduct($id));
+	}
+
 	$smarty->assign([
 		'product' 			=> $form,
 		'productLangForms' 	=> $langForms,
+		'variationRows'     => $variationRows,
+		'hasVariations'     => $hasVariations,
+		'optionRows'        => $optionRows,
 		'shopLanguages' 	=> Lang::getAvailable(),
 		'idProduct' 		=> $id,
 		'isNew' 			=> $isNew,

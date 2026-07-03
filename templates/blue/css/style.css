@@ -872,7 +872,7 @@ outline-offset: 4px;
 .story-item.read .story-ring {
     background: #cbd5e1;
 }
-.favoriteBell {position:absolute;padding:4px;color:#777;line-height:10px;right:5px;background:#fcfcfc;border-radius:20px;box-shadow:0 0 3px rgba(0,0,0, .3)}
+/*.alertButton {position:absolute;padding:4px;color:#777;line-height:10px;right:5px;background:#fcfcfc;border-radius:20px;box-shadow:0 0 3px rgba(0,0,0, .3)}*/
 .campaign-section {
     margin: 0px 0 10px;
 }
@@ -1076,9 +1076,9 @@ outline-offset: 4px;
   background: #eef4ff;
 }
 
-.imageButtons {position: absolute;top: 0;right: 0;width: 30px;}
-.imageButtons .btn {background:#fdfdfd;box-shadow:0 0 3px rgba(0,0,0, .25);color:#333;line-height:20px;padding:0px;text-align:center;border-radius:40px;width:30px;height:30px;margin-bottom:10px}
-.imageButtons .btn:hover, .favoriteBell:hover {background:#0f172a;color:#fff}
+.imageButtons {position: absolute;top: 5px;right: 5px;width: 30px;}
+.imageButtons .btn {background:#fdfdfd;box-shadow:0 0 3px rgba(0,0,0, .25);color:#333;line-height:20px;padding:0px;text-align:center;border-radius:40px;width:30px;height:30px;margin-bottom:10px;position:relative}
+.imageButtons .btn:hover, .alertButton:hover {background:#0f172a;color:#fff}
 .imageButtons svg {vertical-align:sub}
 .categoryImage {display: block;background: #EEAECA;background: radial-gradient(circle, rgba(238, 174, 202, 1) 0%, rgba(148, 187, 233, 1) 100%);padding: 45px 0px;text-align: center;font-size: 22px;}
 .miniLogos {padding:8px}

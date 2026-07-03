@@ -45,6 +45,7 @@ class Theme
 		$labels = [
 			'default' => 'Varsayılan Tema',
 			'blue' => 'Blue',
+			'restoran' => 'Restoran',
 			'chapan' => 'Chapan',
 			'dress' => 'Dress',
 			'prime' => 'Prime',

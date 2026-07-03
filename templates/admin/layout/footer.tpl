@@ -2,6 +2,9 @@
 		</div>
 	</div>
 </div>
+<p class="text-center">
+	<a href="https://frisay.com/" target="_blank">Copyriht FriSay Ecommerce V2</a>
+</p>
 <script src="{$domain}templates/admin/js/admin.js?v={$smarty.now}"></script>
 <script src="{$domain}templates/admin/js/popper.min.js"></script>
 <script src="{$domain}templates/admin/js/bootstrap.min.js"></script>

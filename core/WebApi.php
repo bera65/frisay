@@ -338,6 +338,7 @@ class WebApi
 
 	private static function listProducts(): void
 	{
+		$lang = self::resolveRequestLang();
 		$query = trim((string) Tools::getValue('q'));
 		$idCategory = max(0, (int) Tools::getValue('category'));
 		$idBrand = max(0, (int) Tools::getValue('brand'));
@@ -351,7 +352,10 @@ class WebApi
 
 		self::respond(200, [
 			'success' => true,
-			'data' => array_map([self::class, 'formatProduct'], $rows),
+			'lang' => $lang,
+			'data' => array_map(static function (array $row) use ($lang): array {
+				return self::formatProduct($row, false, $lang);
+			}, $rows),
 			'meta' => [
 				'total' => $total,
 				'page' => $page,
@@ -363,6 +367,7 @@ class WebApi
 
 	private static function getProduct(int $id): void
 	{
+		$lang = self::resolveRequestLang();
 		$product = Product::getByIdAdmin($id);
 
 		if (!$product) {
@@ -371,7 +376,8 @@ class WebApi
 
 		self::respond(200, [
 			'success' => true,
-			'data' => self::formatProduct($product, true),
+			'lang' => $lang,
+			'data' => self::formatProduct($product, true, $lang),
 		]);
 	}
 
@@ -389,7 +395,8 @@ class WebApi
 		self::respond(201, [
 			'success' => true,
 			'message' => $result['message'],
-			'data' => $product ? self::formatProduct($product, true) : null,
+			'lang' => self::resolveRequestLang($input),
+			'data' => $product ? self::formatProduct($product, true, self::resolveRequestLang($input)) : null,
 		]);
 	}
 
@@ -399,7 +406,7 @@ class WebApi
 			self::respond(404, ['success' => false, 'message' => 'Ürün bulunamadı']);
 		}
 
-		$input = self::mapProductInput(self::getInput());
+		$input = self::mapProductInput(self::getInput(), $id);
 		$result = Product::save($input, $id);
 
 		if (empty($result['success'])) {
@@ -494,6 +501,16 @@ class WebApi
 			$payload['doviz_price'] = $input['doviz_price'];
 		}
 
+		if (array_key_exists('old_price', $input)) {
+			$payload['old_price'] = $input['old_price'];
+		} elseif (array_key_exists('list_price', $input)) {
+			$payload['old_price'] = $input['list_price'];
+		}
+
+		if (array_key_exists('doviz_old_price', $input)) {
+			$payload['doviz_old_price'] = $input['doviz_old_price'];
+		}
+
 		if (array_key_exists('stock', $input)) {
 			$payload['stock'] = $input['stock'];
 		}
@@ -513,11 +530,28 @@ class WebApi
 		self::respond(200, [
 			'success' => true,
 			'message' => $result['message'],
-			'data' => $product ? self::formatProduct($product, true) : null,
+			'lang' => self::resolveRequestLang($input),
+			'data' => $product ? self::formatProduct($product, true, self::resolveRequestLang($input)) : null,
 		]);
 	}
 
-	private static function mapProductInput(array $input): array
+	private static function resolveRequestLang(?array $input = null): string
+	{
+		$input = $input ?? [];
+		$lang = strtolower(trim((string) ($input['lang'] ?? Tools::getValue('lang') ?? '')));
+
+		if ($lang === '') {
+			$lang = strtolower(trim((string) ($_SERVER['HTTP_X_LANG'] ?? '')));
+		}
+
+		if ($lang !== '' && in_array($lang, Lang::getAvailable(), true)) {
+			return $lang;
+		}
+
+		return Lang::getDefault();
+	}
+
+	private static function mapProductInput(array $input, int $existingId = 0): array
 	{
 		$map = [
 			'name' => 'product_name',
@@ -562,6 +596,87 @@ class WebApi
 		if (array_key_exists('active', $input)) {
 			$input['active'] = filter_var($input['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 		}
+
+		$lang = self::resolveRequestLang($input);
+		$translatableMap = [
+			'name' => 'product_name',
+			'slug' => 'product_link',
+			'short_description' => 'short_description',
+			'description' => 'description',
+			'description_html' => 'description',
+			'meta_title' => 'meta_title',
+			'meta_description' => 'meta_description',
+		];
+
+		if (!empty($input['translations']) && is_array($input['translations'])) {
+			$input['langs'] = $input['translations'];
+		}
+
+		if (empty($input['langs']) || !is_array($input['langs'])) {
+			$langRow = [];
+
+			foreach ($translatableMap as $from => $to) {
+				if (array_key_exists($from, $input)) {
+					$langRow[$to] = $input[$from];
+				} elseif (array_key_exists($to, $input)) {
+					$langRow[$to] = $input[$to];
+				}
+			}
+
+			if ($langRow !== []) {
+				$input['langs'] = $existingId > 0 ? Product::getLangRows($existingId) : [];
+
+				if (!is_array($input['langs'])) {
+					$input['langs'] = [];
+				}
+
+				$input['langs'][$lang] = array_merge($input['langs'][$lang] ?? [], $langRow);
+			}
+		} else {
+			foreach ($input['langs'] as $langCode => $row) {
+				if (!is_array($row)) {
+					continue;
+				}
+
+				foreach ($translatableMap as $from => $to) {
+					if (array_key_exists($from, $row) && !array_key_exists($to, $row)) {
+						$row[$to] = $row[$from];
+					}
+				}
+
+				$input['langs'][$langCode] = $row;
+			}
+		}
+
+		if (!empty($input['langs'][$lang]) && is_array($input['langs'][$lang])) {
+			foreach ($translatableMap as $from => $to) {
+				if (!empty($input['langs'][$lang][$to]) && empty($input[$to])) {
+					$input[$to] = $input['langs'][$lang][$to];
+				}
+			}
+		}
+
+		if ($existingId <= 0 && $lang !== Lang::getDefault() && !empty($input['langs'][$lang]) && is_array($input['langs'][$lang])) {
+			foreach ($translatableMap as $from => $to) {
+				if (!empty($input['langs'][$lang][$to]) && empty($input[$to])) {
+					$input[$to] = $input['langs'][$lang][$to];
+				}
+			}
+		}
+
+		if ($existingId > 0) {
+			$existing = Product::getByIdAdmin($existingId);
+
+			if ($existing) {
+				foreach (['id_category', 'id_brand', 'stock_code', 'barcode', 'price', 'old_price', 'vat', 'stock', 'active'] as $field) {
+					if (!array_key_exists($field, $input)) {
+						$input[$field] = $existing[$field] ?? $input[$field] ?? null;
+					}
+				}
+			}
+		}
+
+		$input['lang'] = $lang;
 
 		return $input;
 	}
@@ -760,11 +875,13 @@ class WebApi
 		return $map[$status] ?? 'Unknown';
 	}
 
-	private static function formatProduct(array $product, bool $detailed = false): array
+	private static function formatProduct(array $product, bool $detailed = false, ?string $lang = null): array
 	{
-		$enriched = Product::enrich($product);
+		$lang = $lang ?: self::resolveRequestLang();
+		$enriched = Product::enrich(Lang::applyProductForLang($product, $lang));
 		$data = [
 			'id' => (int) $enriched['id_product'],
+			'lang' => $lang,
 			'name' => (string) $enriched['product_name'],
 			'slug' => (string) $enriched['product_link'],
 			'url' => (string) $enriched['url'],
@@ -780,6 +897,7 @@ class WebApi
 			'id_brand' => (int) ($enriched['id_brand'] ?? 0),
 			'brand_name' => (string) ($enriched['brand_name'] ?? ''),
 			'image_url' => (string) ($enriched['image_url'] ?? ''),
+			'has_variations' => ProductVariation::hasVariations((int) $enriched['id_product']),
 		];
 
 		if (!$detailed) {
@@ -806,6 +924,33 @@ class WebApi
 				'cover' => (int) ($image['cover'] ?? 0) === 1,
 			];
 		}, $product['images'] ?? Product::getImages((int) $enriched['id_product']));
+
+		$variations = ProductVariation::getByProduct((int) $enriched['id_product']);
+		$data['has_variations'] = $variations !== [];
+		$data['variations'] = array_map(static function (array $variation) use ($enriched): array {
+			$formatted = ProductVariation::formatForApi($variation);
+			$formatted['price'] = ProductVariation::getEffectivePrice($variation, (float) $enriched['price']);
+
+			return $formatted;
+		}, $variations);
+
+		if ($detailed) {
+			$langRows = Product::getLangRows((int) $enriched['id_product']);
+			$data['translations'] = [];
+
+			foreach (Lang::getAvailable() as $langCode) {
+				$row = $langRows[$langCode] ?? [];
+				$data['translations'][$langCode] = [
+					'name' => (string) ($row['product_name'] ?? ''),
+					'slug' => (string) ($row['product_link'] ?? ''),
+					'short_description' => (string) ($row['short_description'] ?? ''),
+					'description' => (string) ($row['description'] ?? ''),
+					'description_html' => (string) ($row['description'] ?? ''),
+					'meta_title' => (string) ($row['meta_title'] ?? ''),
+					'meta_description' => (string) ($row['meta_description'] ?? ''),
+				];
+			}
+		}
 
 		return $data;
 	}

@@ -539,20 +539,54 @@ class Lang
 
 	public static function applyProduct(array $row): array
 	{
+		return self::applyProductForLang($row, self::current());
+	}
+
+	public static function applyProductForLang(array $row, string $lang): array
+	{
 		$id = (int) ($row['id_product'] ?? 0);
 
 		if ($id <= 0) {
 			return $row;
 		}
 
-		$localized = self::getLocalizedRow('product_lang', 'id_product', $id, [
+		$lang = strtolower(trim($lang));
+		$default = self::getDefault();
+		$fields = [
 			'product_name',
 			'product_link',
 			'short_description',
 			'description',
 			'meta_title',
 			'meta_description',
-		]);
+		];
+		$localized = [];
+
+		foreach ([$lang, $default] as $tryLang) {
+			if ($tryLang === '' || !in_array($tryLang, self::getAvailable(), true) || isset($localized['_resolved'])) {
+				continue;
+			}
+
+			$dbRow = DB::getRowSafe('product_lang', 'id_product = ? AND lang = ?', [$id, $tryLang]);
+
+			if (!$dbRow) {
+				continue;
+			}
+
+			foreach ($fields as $field) {
+				$value = trim((string) ($dbRow[$field] ?? ''));
+
+				if ($value !== '' && empty($localized[$field])) {
+					$localized[$field] = $value;
+				}
+			}
+
+			if ($localized !== []) {
+				$localized['_resolved'] = true;
+			}
+		}
+
+		unset($localized['_resolved']);
 
 		foreach ($localized as $field => $value) {
 			$row[$field] = $value;
