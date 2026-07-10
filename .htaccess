@@ -16,6 +16,9 @@ RewriteRule ^(sw\.js|manifest\.json|favicon\.ico|robots\.txt)$ - [L]
 # 4b. Sitemap
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
+# 4b2. RSS haber beslemesi
+RewriteRule ^rss\.xml$ rss.php [L]
+
 # 4c. Döviz cron
 RewriteRule ^api/cron$ api/cron.php [L,QSA]
 

@@ -73,14 +73,6 @@
 						</select>
 					</div>
 					<div class="col-md-3">
-						<label class="form-label">KDV</label>
-						<select name="vat" class="form-select">
-							<option value="1"{if $product.vat == 1} selected{/if}>%1</option>
-							<option value="10"{if $product.vat == 10} selected{/if}>%10</option>
-							<option value="20"{if $product.vat == 20} selected{/if}>%20</option>
-						</select>
-					</div>
-					<div class="col-md-3">
 						<label class="form-label">Ürün Türü</label>
 						<select name="product_type" id="productType" class="form-select">
 							<option value="physical"{if $product.product_type|default:'physical' != 'virtual'} selected{/if}>Fiziksel ürün</option>
@@ -262,21 +254,17 @@
 					</div>
 				</div>
 
-				<div class="mt-4 d-flex gap-2">
+				<div class="ms-auto adminSaveButton">
 					{if !$isNew && $pLink}
 						<a href="{$pLink}" class="btn btn-warning" target="_blank">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
 							Ürüne Bak
 						</a>
 					{/if}
-
-					<div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
-						{if $adminHooks.admin_product_button}{$adminHooks.admin_product_button nofilter}{/if}
-						<button type="submit" class="btn btn-dark">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
-							Kaydet
-						</button>
-					</div>
+					<button type="submit" class="btn btn-dark">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+						Kaydet
+					</button>
 				</div>
 			</div>
 		</div>
@@ -292,6 +280,10 @@
 				<h2 class="h6 mb-3">Fiyat ({$shopCurrencyLabel|escape})</h2>
 				<div class="row g-3">
 					<div class="col-6">
+						<label class="form-label" for="costPrice">Alış Fiyatı</label>
+						<input type="text" id="costPrice" name="cost" class="form-control" value="{$product.cost|escape}">
+					</div>
+					<div class="col-6">
 						<label class="form-label" for="productPrice">Satış Fiyatı</label>
 						<input type="text" id="productPrice" name="price" class="form-control" value="{$product.price|escape}">
 					</div>
@@ -299,11 +291,19 @@
 						<label class="form-label" for="productOldPrice">Eski Fiyat</label>
 						<input type="text" id="productOldPrice" name="old_price" class="form-control" value="{$product.old_price|escape}">
 					</div>
-					<div class="col-12">
-						<p class="small text-muted mb-0">Mağaza para birimi: <strong>{$shopCurrencyLabel|escape}</strong>. Fiyatlar kur çevrimi olmadan doğrudan bu birimde kaydedilir.</p>
+					<div class="col-6">
+						<label class="form-label">KDV</label>
+						<select name="vat" class="form-select">
+							<option value="1"{if $product.vat == 1} selected{/if}>%1</option>
+							<option value="10"{if $product.vat == 10} selected{/if}>%10</option>
+							<option value="20"{if $product.vat == 20} selected{/if}>%20</option>
+						</select>
 					</div>
 				</div>
 			</div>
+			{if $adminHooks.admin_product_button}
+				<div class="admin-panel mb-4">{$adminHooks.admin_product_button nofilter}</div>
+			{/if}
 		</div>
 	</div>
 </form>

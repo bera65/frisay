@@ -117,6 +117,7 @@
 		'Discount Rate' => 'Discount Rate',
 		'Best Price' => 'Best Price',
 		'Other Products' => 'Other Products',
+		'Recommended products' => 'Recommended Products',
 		'About Product' => 'About Product',
 		'No related products' => 'No related products',
 		'Welcome back' => 'Welcome back',

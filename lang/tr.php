@@ -2,6 +2,9 @@
 
 	return [
 		'My Account' => 'Hesabım',
+		'Login' => 'Giriş Yap',
+		'My Favorites' => 'Favorilerim',
+		'Search product..' => 'Ara..',
 		'Contact Us' => 'İletişim',
 		'Order Traking' => 'Kargo Takip',
 		'Cart' => 'Sepet',
@@ -117,6 +120,7 @@
 		'Discount Rate' => 'İndirim Oranı',
 		'Best Price' => 'En Uygun Fiyat',
 		'Other Products' => 'Diğer Ürünler',
+		'Recommended products' => 'Önerilen Ürünler',
 		'About Product' => 'Ürün Hakkında',
 		'No related products' => 'Benzer ürün bulunamadı',
 		'Welcome back' => 'Tekrar hoş geldiniz',
@@ -314,4 +318,5 @@
 		'Checkout success description' => 'Siparişiniz başarıyla oluşturuldu',
 		'Invalid or expired reset link' => 'Geçersiz veya süresi dolmuş bağlantı.',
 		'Complete delivery address' => 'Teslimat adresini eksiksiz doldurun.',
+		'Contact' => 'İletişim',
 	];

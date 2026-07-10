@@ -1,3 +1,8 @@
 <Files "env.php">
 	Require all denied
 </Files>
+
+# Block direct web access to bootstrap PHP files (class definitions only, but must not be reachable).
+<FilesMatch "\.php$">
+	Require all denied
+</FilesMatch>

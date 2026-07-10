@@ -868,27 +868,307 @@
 }
 
 /* Cart page */
-.prime-cart-page { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
-.prime-cart-page__item {
-	display: grid; grid-template-columns: 80px 1fr auto; gap: 12px;
-	padding: 12px 0; border-bottom: 1px solid #e2e8f0; align-items: center;
+.prime-cart__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	margin-bottom: 1.5rem;
 }
-.prime-cart-page__thumb img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; }
-.prime-cart-page__name { color: #2d2d2d; text-decoration: none; font-weight: 600; display: block; margin-bottom: 4px; }
-.prime-cart-page__qty { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.prime-cart-page__remove { border: none; background: none; color: #dc3545; font-size: 13px; margin-left: 8px; }
-.prime-cart-page__summary {
-	background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;
-	height: fit-content; position: sticky; top: 16px;
+
+.prime-cart-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 340px;
+	gap: 24px;
+	align-items: start;
 }
-.prime-cart-page__total { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 12px; }
-.prime-cart-page__ship { font-size: 13px; color: #7a8a95; margin-bottom: 12px; }
+
+.prime-cart-box,
+.prime-cart-summary__card {
+	background: #fff;
+	border: 1px solid #e8edf3;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(23, 52, 95, 0.05);
+}
+
+.prime-cart-box__head,
+.prime-cart-section__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.prime-cart-box__title,
+.prime-cart-section__title,
+.prime-cart-summary__title {
+	font-size: 1.05rem;
+	font-weight: 700;
+	color: #17345f;
+	margin: 0;
+}
+
+.prime-cart-box {
+	padding: 1.25rem;
+}
+
+.prime-cart-list {
+	display: grid;
+	gap: 1rem;
+}
+
+.prime-cart-card {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr) auto;
+	gap: 1rem;
+	padding: 1rem;
+	border: 1px solid #edf2f7;
+	border-radius: 14px;
+	background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
+	align-items: center;
+}
+
+.prime-cart-card__thumb {
+	display: block;
+	width: 96px;
+	height: 96px;
+	border-radius: 12px;
+	overflow: hidden;
+	background: #f8fafc;
+	border: 1px solid #edf2f7;
+}
+
+.prime-cart-card__thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.prime-cart-card__name {
+	color: #17345f;
+	text-decoration: none;
+	font-weight: 700;
+	font-size: 0.98rem;
+	line-height: 1.35;
+	display: block;
+	margin-bottom: 0.25rem;
+}
+
+.prime-cart-card__name:hover {
+	color: #f58220;
+}
+
+.prime-cart-card__meta {
+	margin: 0 0 0.35rem;
+	font-size: 0.82rem;
+	color: #64748b;
+}
+
+.prime-cart-card__unit {
+	font-size: 0.92rem;
+	color: #475569;
+	margin-bottom: 0.75rem;
+}
+
+.prime-cart-card__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.prime-cart-qty {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.2rem;
+	border: 1px solid #e2e8f0;
+	border-radius: 999px;
+	background: #fff;
+}
+
+.prime-cart-card__remove {
+	border: none;
+	background: none;
+	color: #dc3545;
+	font-size: 0.85rem;
+	padding: 0;
+}
+
+.prime-cart-card__total {
+	text-align: right;
+	min-width: 88px;
+}
+
+.prime-cart-card__total-label {
+	display: block;
+	font-size: 0.75rem;
+	color: #94a3b8;
+	margin-bottom: 0.15rem;
+}
+
+.prime-cart-card__total strong {
+	font-size: 1rem;
+	color: #17345f;
+}
+
+.prime-cart-section {
+	margin-top: 2rem;
+}
+
+.prime-cart-section__desc {
+	margin: 0.25rem 0 0;
+	font-size: 0.88rem;
+	color: #64748b;
+}
+
+.prime-cart-section__link {
+	font-size: 0.88rem;
+	color: #17345f;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.prime-cart-section__link:hover {
+	color: #f58220;
+}
+
+.prime-cart-note {
+	padding: 1rem 1.1rem;
+	border: 1px dashed #dbe4ee;
+	border-radius: 12px;
+	background: #f8fafc;
+}
+
+.prime-cart-summary__card {
+	padding: 1.35rem;
+	position: sticky;
+	top: 16px;
+}
+
+.prime-cart-summary__row {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.55rem 0;
+	font-size: 0.92rem;
+	color: #475569;
+}
+
+.prime-cart-summary__row--promo {
+	color: #15803d;
+	font-size: 0.9rem;
+}
+
+.prime-cart-summary__row--total {
+	border-top: 1px solid #e8edf3;
+	margin-top: 0.35rem;
+	padding-top: 0.9rem;
+	font-size: 1rem;
+	color: #17345f;
+}
+
+.prime-cart-summary__ship {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	margin: 0.85rem 0 1rem;
+	padding: 0.75rem 0.85rem;
+	border-radius: 10px;
+	background: #f0f7ff;
+	color: #17345f;
+	font-size: 0.82rem;
+	line-height: 1.45;
+}
+
+.prime-cart-summary__checkout {
+	margin-top: 0.25rem;
+	font-size: 1rem;
+	padding: 0.85rem 1rem;
+}
+
+.prime-cart-summary__continue {
+	display: block;
+	text-align: center;
+	margin-top: 0.85rem;
+	font-size: 0.88rem;
+	color: #64748b;
+	text-decoration: none;
+}
+
+.prime-cart-summary__continue:hover {
+	color: #17345f;
+}
+
+.prime-cart-empty {
+	text-align: center;
+	padding: 3rem 1.5rem;
+	background: #fff;
+	border: 1px solid #e8edf3;
+	border-radius: 16px;
+}
+
+.prime-cart-empty__icon {
+	color: #94a3b8;
+	margin-bottom: 1rem;
+}
+
+.prime-cart-empty__title {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: #17345f;
+	margin-bottom: 0.5rem;
+}
+
+.prime-cart-empty__text {
+	color: #64748b;
+	margin-bottom: 1.25rem;
+}
+
 .cart-qty-btn {
-	width: 32px; height: 32px; border: 1px solid #e2e8f0; background: #fff; border-radius: 6px;
+	width: 32px;
+	height: 32px;
+	border: none;
+	background: transparent;
+	border-radius: 999px;
+	font-size: 1rem;
+	line-height: 1;
+	color: #17345f;
+}
+
+.cart-qty-btn:hover {
+	background: #f1f5f9;
 }
 
 @media (max-width: 991.98px) {
-	.prime-cart-page { grid-template-columns: 1fr; }
-	.dress-account-stats { grid-template-columns: 1fr; }
+	.prime-cart-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.prime-cart-summary__card {
+		position: static;
+	}
+
+	.prime-cart-card {
+		grid-template-columns: 80px minmax(0, 1fr);
+	}
+
+	.prime-cart-card__total {
+		grid-column: 1 / -1;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		text-align: left;
+		padding-top: 0.35rem;
+		border-top: 1px dashed #e2e8f0;
+	}
+
+	.prime-cart-card__thumb {
+		width: 80px;
+		height: 80px;
+	}
+
 	.prime-page__title { font-size: 1.4rem; }
 }

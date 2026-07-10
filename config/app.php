@@ -37,6 +37,23 @@ class App
 
 	public static function isDebug(): bool
 	{
+		if (class_exists('Settings', false) && isset($GLOBALS['db'])) {
+			$perfDebug = Settings::get('PERF_DEBUG');
+
+			if ($perfDebug === '1') {
+				return true;
+			}
+
+			if ($perfDebug === '0') {
+				return false;
+			}
+		}
+
+		return self::isDebugFromEnv();
+	}
+
+	public static function isDebugFromEnv(): bool
+	{
 		if (self::isProduction()) {
 			return (bool) self::env('APP_DEBUG', false);
 		}
@@ -77,13 +94,29 @@ class App
 		ini_set('session.cookie_httponly', '1');
 		ini_set('session.use_only_cookies', '1');
 
-		if (self::isProduction()) {
-			ini_set('session.cookie_samesite', 'Lax');
+		// Banka / PSP dönüşleri (cross-site POST) için SameSite=None + Secure gerekir.
+		// HTTPS yoksa Lax kalır (siteler localhost HTTP'te test ederken).
+		$domain = Settings::get('DOMAIN');
+		$secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+			|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+			|| (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+			|| (is_string($domain) && strpos($domain, 'https://') === 0);
+
+		$sameSite = $secure ? 'None' : 'Lax';
+
+		if (PHP_VERSION_ID >= 70300) {
+			session_set_cookie_params([
+				'lifetime' => 0,
+				'path' => '/',
+				'secure' => $secure,
+				'httponly' => true,
+				'samesite' => $sameSite,
+			]);
 		}
 
-		$domain = Settings::get('DOMAIN');
+		ini_set('session.cookie_samesite', $sameSite);
 
-		if (self::isProduction() && is_string($domain) && strpos($domain, 'https://') === 0) {
+		if ($secure) {
 			ini_set('session.cookie_secure', '1');
 		}
 	}

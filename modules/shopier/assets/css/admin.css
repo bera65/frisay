@@ -1,0 +1,21 @@
+.shopier-product-actions .shopier-action-msg {
+	min-width: 120px;
+}
+
+.shopier-category-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.shopier-category-pill {
+	border: 1px solid #dee2e6;
+	background: #f8f9fa;
+	border-radius: 999px;
+	padding: 0.15rem 0.55rem;
+	cursor: pointer;
+}
+
+.shopier-category-pill:hover {
+	background: #e9ecef;
+}

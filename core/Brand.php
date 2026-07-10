@@ -98,6 +98,16 @@ class Brand
 		return DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1 ORDER BY brand_name ASC') ?: [];
 	}
 
+	/** @return array<int, array<string, mixed>> */
+	public static function getPublicList(int $limit = 12): array
+	{
+		self::ensureSchema();
+
+		return DB::execute(
+			'SELECT id_brand, brand_name, brand_link FROM brands WHERE active = 1 ORDER BY brand_name ASC LIMIT ' . (int) $limit
+		) ?: [];
+	}
+
 	public static function isLinkUnique(string $link, int $excludeId = 0, ?string $lang = null): bool
 	{
 		$lang = $lang ?: Lang::getDefault();

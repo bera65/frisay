@@ -106,27 +106,5 @@
 {else}
 	<div class="p-4 text-muted">Henüz modül bulunamadı. <code>modules/</code> klasörüne modül ekleyin.</div>
 {/if}
+	<div class="p-4 text-muted d-none" id="moduleListEmpty">Arama veya filtreye uygun modül bulunamadı.</div>
 </div>
-
-<script>
-(function () {
-	var search = document.getElementById('moduleSearch');
-	var filter = document.getElementById('moduleStatusFilter');
-	var rows = document.querySelectorAll('#moduleList .module-row');
-
-	function applyFilters() {
-		var q = (search && search.value || '').toLowerCase().trim();
-		var status = filter ? filter.value : 'all';
-		rows.forEach(function (row) {
-			var text = (row.getAttribute('data-module-search') || '').toLowerCase();
-			var rowStatus = row.getAttribute('data-module-status') || '';
-			var matchQ = !q || text.indexOf(q) !== -1;
-			var matchS = status === 'all' || rowStatus === status;
-			row.style.display = matchQ && matchS ? '' : 'none';
-		});
-	}
-
-	if (search) search.addEventListener('input', applyFilters);
-	if (filter) filter.addEventListener('change', applyFilters);
-})();
-</script>

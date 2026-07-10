@@ -297,8 +297,8 @@ body.cart-modal-open {
 }
 
 .blue-cart-checkout {
-	background: var(--prime-primary, #213c8b) !important;
-	border-color: var(--prime-primary, #213c8b) !important;
+	background: var(--brand-primary, #213c8b) !important;
+	border-color: var(--brand-primary, #213c8b) !important;
 	font-weight: 600;
 	padding: 12px 20px;
 	border-radius: 10px;

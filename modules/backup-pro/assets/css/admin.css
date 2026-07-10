@@ -1,0 +1,171 @@
+/* Backup & Restore Manager Pro Design System */
+#backup-pro-app {
+    font-family: inherit;
+}
+
+#backup-pro-app .nav-pills {
+    background: #f8fafc;
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    gap: 4px;
+}
+
+#backup-pro-app .nav-pills .nav-link {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+#backup-pro-app .nav-pills .nav-link:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+#backup-pro-app .nav-pills .nav-link.active {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+#backup-pro-app .stat-card {
+    background: #ffffff;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+#backup-pro-app .stat-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#backup-pro-app .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 4px;
+}
+
+#backup-pro-app .card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+#backup-pro-app .card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 14px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+#backup-pro-app .badge-status-completed {
+    background-color: #dcfce7;
+    color: #15803d;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#backup-pro-app .badge-status-in_progress {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#backup-pro-app .badge-status-failed {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#backup-pro-app .live-log-box {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 16px;
+    border-radius: 8px;
+    height: 340px;
+    overflow-y: auto;
+}
+
+/* Modern Progress Bar Styles */
+#backup-pro-app .progress {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+    height: 22px !important; /* Slightly taller for text legibility */
+    position: relative;
+    overflow: hidden;
+}
+
+#backup-pro-app .progress-bar {
+    border-radius: 0;
+    height: 100%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Centered Percentage Text Overlay */
+#backup-pro-app .progress-pct-centered {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    left: 0;
+    top: 0;
+    line-height: 20px; /* Aligns vertically with 22px height */
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 10;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* Blue Gradient & Glow (Primary) */
+#backup-pro-app .progress-bar.bg-primary {
+    background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%) !important;
+}
+
+/* Green Gradient & Glow (Success) */
+#backup-pro-app .progress-bar.bg-success {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+}
+
+/* Red Gradient & Glow (Danger) */
+#backup-pro-app .progress-bar.bg-danger {
+    background: linear-gradient(90deg, #f87171 0%, #ef4444 100%) !important;
+}
+
+/* Soft micro-animation for progress bar texture */
+#backup-pro-app .progress-bar-animated {
+    animation: progress-bar-stripes-modern 1.5s linear infinite;
+}
+
+@keyframes progress-bar-stripes-modern {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 40px 0;
+    }
+}

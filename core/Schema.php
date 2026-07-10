@@ -96,6 +96,11 @@ class Schema
 		}
 
 		Currency::ensureDefaults();
+
+		if (class_exists('CartPromotion', false)) {
+			CartPromotion::ensureSchema();
+		}
+
 		Order::ensureSchema();
 
 		if (!class_exists('Address', false)) {

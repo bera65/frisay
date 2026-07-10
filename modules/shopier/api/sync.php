@@ -1,0 +1,36 @@
+<?php
+
+if (!defined('IN_SCRIPT')) {
+	exit;
+}
+
+if (!class_exists('Admin')) {
+	require_once dirname(__DIR__, 3) . '/core/Admin.php';
+}
+
+header('Content-Type: application/json; charset=utf-8');
+
+if (!Admin::isLoggedIn()) {
+	echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+require_once dirname(__DIR__) . '/lib/ShopierApi.php';
+require_once dirname(__DIR__) . '/lib/ProductSyncService.php';
+
+$idProduct = (int) Tools::getValue('id_product', 0);
+
+if ($idProduct <= 0) {
+	echo json_encode(['success' => false, 'message' => 'Ürün ID gerekli'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+$result = Shopier\ProductSyncService::sync($idProduct);
+
+echo json_encode([
+	'success' => $result['ok'],
+	'message' => $result['message'],
+	'shopier_id' => $result['shopier_id'] ?? '',
+	'shopier_url' => $result['shopier_url'] ?? '',
+], JSON_UNESCAPED_UNICODE);
+exit;

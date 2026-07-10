@@ -13,13 +13,14 @@
 	$topRatedProducts = Product::getTopRatedList(8);
 	$categoryBlocks = [];
 	$homeCategories = [];
-	$foodIcons = ['🍔', '🍕', '🍢', '🍣', '🥗', '🍰', '☕', '🍝', '🥙', '🌮', '🍲', '🥘'];
+	$categoryIcons = ['📱', '💄', '💊', '🏷️', '👕', '⌚', '🎧', '🏠', '⚽', '📦', '✨', '🛒'];
 
 	foreach (Category::getMenuList() as $index => $cat) {
 		$homeCategories[] = [
 			'category' => $cat,
 			'url' => Category::getUrl($cat),
-			'icon' => $foodIcons[$index % count($foodIcons)],
+			'icon' => $categoryIcons[$index % count($categoryIcons)],
+			'initial' => mb_strtoupper(mb_substr((string) $cat['category_name'], 0, 1)),
 		];
 	}
 
@@ -37,9 +38,19 @@
 		];
 	}
 
+	$dealProducts = Product::getDiscountedList(12);
+	$newProducts = Product::getActiveList(null, 8, 0, 'newest');
+	$homeBrands = Brand::getPublicList(12);
+	$cmsBlogLinks = array_slice(Cms::getFooterLinks(), 0, 3);
+
 	$smarty->assign([
 		'featuredProducts' => $featuredProducts,
 		'topRatedProducts' => $topRatedProducts,
+		'dealProducts' => $dealProducts,
+		'newProducts' => $newProducts,
+		'homeBrands' => $homeBrands,
+		'cmsBlogLinks' => $cmsBlogLinks,
 		'homeCategories' => $homeCategories,
 		'categoryBlocks' => $categoryBlocks,
+		'activeOrders' => Order::getActiveOrdersForViewer(3),
 	]);

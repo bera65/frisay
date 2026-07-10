@@ -13,6 +13,9 @@ class Routes
 			'sifremi-unuttum' => 'forgot-password',
 			'sifre-sifirla' => 'reset-password',
 			'odeme-paytr' => 'paytr-payment',
+			'odeme-nkolaypay' => 'nkolaypay-payment',
+			'odeme-esnekpos' => 'esnekpos-payment',
+			'odeme-parampos' => 'parampos-payment',
 			'odeme-karti' => 'card-payment',
 		];
 	}

@@ -536,6 +536,141 @@ class Product
 		return self::getActiveList(null, $limit, $offset, 'newest');
 	}
 
+	/**
+	 * @param int[] $categoryIds
+	 * @param int[] $excludeProductIds
+	 */
+	public static function getListInCategories(
+		array $categoryIds,
+		array $excludeProductIds = [],
+		int $limit = 12,
+		string $sort = 'newest'
+	): array {
+		$categoryIds = array_values(array_unique(array_filter(array_map('intval', $categoryIds))));
+		if ($categoryIds === []) {
+			return [];
+		}
+
+		$limit = max(1, min(48, $limit));
+		$excludeProductIds = array_values(array_unique(array_filter(array_map('intval', $excludeProductIds))));
+
+		$catPlaceholders = implode(',', array_fill(0, count($categoryIds), '?'));
+		$sql = 'SELECT p.*, b.brand_name, b.brand_link, c.category_name, c.category_link, i.id_image
+			FROM products p
+			INNER JOIN brands b ON p.id_brand = b.id_brand
+			INNER JOIN categories c ON p.id_category = c.id_category
+			LEFT JOIN images i ON p.id_product = i.id_product AND i.cover = 1
+			WHERE p.active = 1 AND p.id_category IN (' . $catPlaceholders . ')';
+		$params = $categoryIds;
+
+		if ($excludeProductIds !== []) {
+			$excludePlaceholders = implode(',', array_fill(0, count($excludeProductIds), '?'));
+			$sql .= ' AND p.id_product NOT IN (' . $excludePlaceholders . ')';
+			$params = array_merge($params, $excludeProductIds);
+		}
+
+		$sql .= ' ORDER BY ' . Pagination::resolveSort($sort);
+		$sql .= ' LIMIT ' . (int) $limit;
+
+		$rows = DB::execute($sql, $params);
+
+		if (!$rows) {
+			return [];
+		}
+
+		return self::enrichList($rows);
+	}
+
+	/**
+	 * @return array{products: array<int, array>, title: string, source: string}
+	 */
+	public static function getRelatedForProduct(array $product, int $limit = 4): array
+	{
+		$idProduct = (int) ($product['id_product'] ?? 0);
+		$idCategory = (int) ($product['id_category'] ?? 0);
+		$idBrand = (int) ($product['id_brand'] ?? 0);
+		$limit = max(1, min(12, $limit));
+		$exclude = [$idProduct];
+		$found = [];
+
+		if ($idCategory > 0) {
+			$items = self::getListInCategories([$idCategory], $exclude, $limit);
+
+			foreach ($items as $item) {
+				$found[] = $item;
+				$exclude[] = (int) $item['id_product'];
+
+				if (count($found) >= $limit) {
+					return [
+						'products' => $found,
+						'title' => translate('Other Products') . ' — ' . (string) ($product['category_name'] ?? ''),
+						'source' => 'category',
+					];
+				}
+			}
+		}
+
+		if ($idBrand > 0 && count($found) < $limit) {
+			$need = $limit - count($found);
+			$items = self::getActiveList(null, $need + count($exclude) + 2, 0, 'newest', $idBrand);
+
+			foreach ($items as $item) {
+				$itemId = (int) ($item['id_product'] ?? 0);
+
+				if ($itemId <= 0 || in_array($itemId, $exclude, true)) {
+					continue;
+				}
+
+				$found[] = $item;
+				$exclude[] = $itemId;
+
+				if (count($found) >= $limit) {
+					return [
+						'products' => $found,
+						'title' => translate('Other Products') . ' — ' . (string) ($product['brand_name'] ?? ''),
+						'source' => 'brand',
+					];
+				}
+			}
+		}
+
+		if (count($found) < $limit) {
+			$items = self::getActiveList(null, $limit + count($exclude) + 4, 0, 'newest');
+
+			foreach ($items as $item) {
+				$itemId = (int) ($item['id_product'] ?? 0);
+
+				if ($itemId <= 0 || in_array($itemId, $exclude, true)) {
+					continue;
+				}
+
+				$found[] = $item;
+
+				if (count($found) >= $limit) {
+					break;
+				}
+			}
+		}
+
+		$title = translate('Other Products');
+
+		if (count($found) > 0) {
+			if ($idCategory > 0 && ($found[0]['id_category'] ?? 0) == $idCategory) {
+				$title .= ' — ' . (string) ($product['category_name'] ?? '');
+			} elseif ($idBrand > 0) {
+				$title .= ' — ' . (string) ($product['brand_name'] ?? '');
+			} else {
+				$title = translate('Recommended products');
+			}
+		}
+
+		return [
+			'products' => $found,
+			'title' => $title,
+			'source' => count($found) > 0 ? 'store' : 'none',
+		];
+	}
+
 	public static function search(string $query, int $limit = 24, int $offset = 0, string $sort = 'newest'): array
 	{
 		$query = trim($query);
@@ -568,20 +703,126 @@ class Product
 
 	public static function countActive(?int $idCategory = null, ?int $idBrand = null): int
 	{
-		$sql = 'SELECT COUNT(*) FROM products WHERE active = 1';
-		$params = [];
+		return self::countFiltered(
+			$idCategory ? [$idCategory] : [],
+			$idBrand
+		);
+	}
 
-		if ($idCategory) {
-			$sql .= ' AND id_category = ?';
-			$params[] = $idCategory;
+	/**
+	 * @param int[] $categoryIds
+	 */
+	public static function countFiltered(
+		array $categoryIds = [],
+		?int $idBrand = null,
+		?float $priceMin = null,
+		?float $priceMax = null
+	): int {
+		$sql = 'SELECT COUNT(*) FROM products p WHERE p.active = 1';
+		$params = [];
+		self::appendFilterSql($sql, $params, $categoryIds, $idBrand, $priceMin, $priceMax);
+
+		return (int) DB::getValue($sql, $params);
+	}
+
+	/**
+	 * @param int[] $categoryIds
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function getFilteredList(
+		array $categoryIds = [],
+		int $limit = 24,
+		int $offset = 0,
+		string $sort = 'newest',
+		?int $idBrand = null,
+		?float $priceMin = null,
+		?float $priceMax = null
+	): array {
+		$sql = 'SELECT p.*, b.brand_name, b.brand_link, c.category_name, c.category_link, i.id_image
+			FROM products p
+			INNER JOIN brands b ON p.id_brand = b.id_brand
+			INNER JOIN categories c ON p.id_category = c.id_category
+			LEFT JOIN images i ON p.id_product = i.id_product AND i.cover = 1
+			WHERE p.active = 1';
+		$params = [];
+		self::appendFilterSql($sql, $params, $categoryIds, $idBrand, $priceMin, $priceMax);
+
+		$sql .= ' ORDER BY ' . Pagination::resolveSort($sort);
+		$sql .= ' LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+		$rows = DB::execute($sql, $params);
+
+		if (!$rows) {
+			return [];
+		}
+
+		return self::enrichList($rows);
+	}
+
+	/**
+	 * @param int[] $categoryIds
+	 * @param array<int, scalar> $params
+	 */
+	private static function appendFilterSql(
+		string &$sql,
+		array &$params,
+		array $categoryIds,
+		?int $idBrand,
+		?float $priceMin,
+		?float $priceMax
+	): void {
+		$categoryIds = array_values(array_filter(array_map('intval', $categoryIds)));
+
+		if ($categoryIds !== []) {
+			$placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+			$sql .= ' AND p.id_category IN (' . $placeholders . ')';
+			foreach ($categoryIds as $id) {
+				$params[] = $id;
+			}
 		}
 
 		if ($idBrand) {
-			$sql .= ' AND id_brand = ?';
+			$sql .= ' AND p.id_brand = ?';
 			$params[] = $idBrand;
 		}
 
-		return (int) DB::getValue($sql, $params);
+		if ($priceMin !== null) {
+			$sql .= ' AND p.price >= ?';
+			$params[] = $priceMin;
+		}
+
+		if ($priceMax !== null) {
+			$sql .= ' AND p.price <= ?';
+			$params[] = $priceMax;
+		}
+	}
+
+	/**
+	 * @param int[] $categoryIds
+	 * @return array{min: float, max: float}
+	 */
+	public static function getPriceRangeForCategories(array $categoryIds): array
+	{
+		$categoryIds = array_values(array_filter(array_map('intval', $categoryIds)));
+
+		if ($categoryIds === []) {
+			return ['min' => 0.0, 'max' => 0.0];
+		}
+
+		$placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+		$row = DB::execute(
+			'SELECT MIN(p.price) AS min_price, MAX(p.price) AS max_price
+			 FROM products p
+			 WHERE p.active = 1 AND p.id_category IN (' . $placeholders . ')',
+			$categoryIds
+		);
+
+		$stats = is_array($row) && isset($row[0]) ? $row[0] : null;
+
+		return [
+			'min' => (float) ($stats['min_price'] ?? 0),
+			'max' => (float) ($stats['max_price'] ?? 0),
+		];
 	}
 
 	public static function countDiscounted(): int
@@ -830,6 +1071,7 @@ class Product
 		$metaDescription 	= trim(strip_tags((string) ($defaultEntry['meta_description'] ?? $data['meta_description'] ?? '')));
 		$description 		= (string) ($defaultEntry['description'] ?? $data['description'] ?? '');
 		$price 				= (float) str_replace(',', '.', (string) ($data['price'] ?? 0));
+		$cost 				= (float) str_replace(',', '.', (string) ($data['cost'] ?? 0));
 		$oldPrice 			= (float) str_replace(',', '.', (string) ($data['old_price'] ?? 0));
 		$vat 				= (float) str_replace(',', '.', (string) ($data['vat'] ?? 20));
 		$stock 				= (int) ($data['stock'] ?? 0);
@@ -935,6 +1177,7 @@ class Product
 			'description' 		=> $description,
 			'product_link' 		=> $link,
 			'price' 			=> max(0, $price),
+			'cost' 				=> max(0, $cost),
 			'doviz' 			=> $shopCurrency,
 			'doviz_price'		=> max(0, $price),
 			'doviz_old_price'	=> max(0, $oldPrice),
@@ -1194,6 +1437,10 @@ class Product
 
 		if (array_key_exists('active', $data)) {
 			$row['active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+		}
+
+		if (array_key_exists('cost', $data)) {
+			$row['cost'] = (float) str_replace(',', '.', (string) $data['cost']);
 		}
 
 		if (array_key_exists('price', $data) || array_key_exists('old_price', $data)

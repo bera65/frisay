@@ -279,6 +279,28 @@
 					<span>{'Subtotal'|translate}</span>
 					<span id="checkoutSubtotal">{$checkoutTotals.subtotal_formatted}</span>
 				</div>
+				{if $checkoutTotals.has_promotion}
+				<div class="checkout-summary__row checkout-summary__row--discount" id="checkoutPromotionRow">
+					<span>{$checkoutTotals.promotion_name|escape}</span>
+					<span id="checkoutPromotion">-{$checkoutTotals.promotion_discount_formatted}</span>
+				</div>
+				{else}
+				<div class="checkout-summary__row checkout-summary__row--discount d-none" id="checkoutPromotionRow">
+					<span id="checkoutPromotionName"></span>
+					<span id="checkoutPromotion"></span>
+				</div>
+				{/if}
+				{if $checkoutTotals.has_coupon}
+				<div class="checkout-summary__row checkout-summary__row--discount" id="checkoutCouponDiscountRow">
+					<span>{'Coupon'|translate}: {$checkoutTotals.coupon_code|escape}</span>
+					<span id="checkoutCouponDiscount">-{$checkoutTotals.coupon_discount_formatted}</span>
+				</div>
+				{else}
+				<div class="checkout-summary__row checkout-summary__row--discount d-none" id="checkoutCouponDiscountRow">
+					<span id="checkoutCouponLabel"></span>
+					<span id="checkoutCouponDiscount"></span>
+				</div>
+				{/if}
 				{if $checkoutTotals.discount > 0}
 				<div class="checkout-summary__row checkout-summary__row--discount" id="checkoutDiscountRow">
 					<span>{'Discount'|translate}</span>

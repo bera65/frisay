@@ -19,7 +19,8 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
 }
 
 $action = Tools::getValue('action');
-$subtotal = (float) Cart::getSummary()['total'];
+$cart = Cart::getSummary();
+$subtotal = (float) $cart['total'];
 
 switch ($action) {
 	case 'apply':
@@ -27,11 +28,11 @@ switch ($action) {
 		break;
 
 	case 'remove':
-		echo json_encode(array_merge(Coupon::remove(), Coupon::getCheckoutSummary($subtotal)));
+		echo json_encode(array_merge(Coupon::remove(), Coupon::getCheckoutSummary($subtotal, $cart)));
 		break;
 
 	case 'summary':
-		echo json_encode(array_merge(['success' => true], Coupon::getCheckoutSummary($subtotal)));
+		echo json_encode(array_merge(['success' => true], Coupon::getCheckoutSummary($subtotal, $cart)));
 		break;
 
 	default:

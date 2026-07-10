@@ -110,7 +110,7 @@ class Installer
 			$adminLang = 'tr';
 		}
 
-		if (!in_array($theme, ['default', 'blue', 'prime'], true)) {
+		if (!in_array($theme, ['default', 'blue', 'nova', 'prime'], true)) {
 			$theme = 'blue';
 		}
 

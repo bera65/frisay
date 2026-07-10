@@ -237,6 +237,35 @@
 			</div>
 			{/if}
 
+			<div class="dash-panel mb-4">
+				<div class="dash-panel__head dash-panel__head--split">
+					<h2 class="dash-panel__title">{'Haberler'|adminT}</h2>
+					<a href="{$frisayNewsUrl|escape}" class="dash-panel__link" target="_blank" rel="noopener">RSS</a>
+				</div>
+				<div class="dash-panel__body p-0">
+					{if $frisayNews|@count}
+					<ul class="dash-news-list">
+						{foreach $frisayNews as $news}
+						<li class="dash-news-list__item">
+							<div class="dash-news-list__meta">
+								<span class="dash-news-list__category">{$news.category|escape}</span>
+								<span class="dash-news-list__date">{$news.date_label|escape}</span>
+							</div>
+							<a href="{$news.link|escape}" class="dash-news-list__title" target="_blank" rel="noopener">
+								{$news.title|escape}
+							</a>
+							{if $news.description}
+							<p class="dash-news-list__desc">{$news.description|escape}</p>
+							{/if}
+						</li>
+						{/foreach}
+					</ul>
+					{else}
+					<p class="text-muted p-4 mb-0">{'Haber beslemesi yüklenemedi.'|adminT}</p>
+					{/if}
+				</div>
+			</div>
+
 			{if $adminHooks.admin_dashboard_main_right}
 			<div class="dash-hook dash-hook--main-right">
 				{$adminHooks.admin_dashboard_main_right nofilter}

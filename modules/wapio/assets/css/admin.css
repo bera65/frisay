@@ -1,0 +1,5 @@
+.wapio-message-preview {
+	max-width: 320px;
+	white-space: pre-wrap;
+	font-size: 0.8rem;
+}

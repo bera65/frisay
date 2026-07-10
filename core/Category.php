@@ -71,6 +71,93 @@ class Category
 		return array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
 	}
 
+	/** Menü + alt kategoriler (mega menu için) */
+	public static function getMenuListWithChildren(): array
+	{
+		$menu = self::getMenuList();
+
+		foreach ($menu as &$cat) {
+			$children = DB::execute(
+				'SELECT * FROM categories WHERE active = 1 AND id_parent = ? ORDER BY category_name ASC',
+				[(int) $cat['id_category']]
+			) ?: [];
+			$cat['subcategories'] = array_map(static fn(array $row): array => Lang::applyCategory($row), $children);
+		}
+		unset($cat);
+
+		return $menu;
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	public static function getChildren(int $idParent): array
+	{
+		if ($idParent <= 0) {
+			return [];
+		}
+
+		$rows = DB::execute(
+			'SELECT * FROM categories WHERE active = 1 AND id_parent = ? ORDER BY category_name ASC',
+			[$idParent]
+		) ?: [];
+
+		return array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
+	}
+
+	/** @return int[] */
+	public static function getScopeIds(int $idCategory): array
+	{
+		if ($idCategory <= 0) {
+			return [];
+		}
+
+		$ids = [$idCategory];
+		$queue = [$idCategory];
+
+		while ($queue !== []) {
+			$parentId = array_shift($queue);
+			foreach (self::getChildren((int) $parentId) as $child) {
+				$childId = (int) ($child['id_category'] ?? 0);
+
+				if ($childId <= 0 || in_array($childId, $ids, true)) {
+					continue;
+				}
+
+				$ids[] = $childId;
+				$queue[] = $childId;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * @param int[] $categoryIds
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function getBrandsInCategories(array $categoryIds): array
+	{
+		$categoryIds = array_values(array_filter(array_map('intval', $categoryIds)));
+
+		if ($categoryIds === []) {
+			return [];
+		}
+
+		$placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+
+		$rows = DB::execute(
+			'SELECT b.*, COUNT(p.id_product) AS product_count
+			 FROM brands b
+			 INNER JOIN products p ON p.id_brand = b.id_brand AND p.active = 1
+			 WHERE b.active = 1 AND p.id_category IN (' . $placeholders . ')
+			 GROUP BY b.id_brand
+			 HAVING product_count > 0
+			 ORDER BY b.brand_name ASC',
+			$categoryIds
+		) ?: [];
+
+		return array_map(static fn(array $row): array => Lang::applyBrand($row), $rows);
+	}
+
 	public static function getUrl(array $category): string
 	{
 		global $domain;

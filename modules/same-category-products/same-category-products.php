@@ -27,7 +27,7 @@ class SameCategoryProductsModule extends ModuleBase
 		}
 
 		if (Settings::get('SAME_CATEGORY_LIMIT') === '') {
-			Settings::set('SAME_CATEGORY_LIMIT', '8');
+			Settings::set('SAME_CATEGORY_LIMIT', '4');
 		}
 
 		if (Settings::get('SAME_CATEGORY_SORT') === '') {

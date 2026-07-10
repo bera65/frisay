@@ -25,10 +25,10 @@
 						<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
 					</svg>
 				</a>
-				<button type="button" class="action-icon cart-open-btn" title="{'Cart'|translate}">
+				<a href="{$domain}cart" class="action-icon" title="{'Cart'|translate}">
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-basket-icon lucide-shopping-basket"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
 					{if $cart.count|default:0 > 0}<span class="cart-badge" id="cartCount">{$cart.count}</span>{else}<span class="cart-badge d-none" id="cartCount">0</span>{/if}
-				</button>
+				</a>
 			</div>
 		</div>
 		<div class="search-overlay" id="searchOverlay">

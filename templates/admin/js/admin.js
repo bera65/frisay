@@ -56,4 +56,69 @@ document.addEventListener('DOMContentLoaded', function () {
 			closeSidebar();
 		}
 	});
+
+	initModuleListFilters();
 });
+
+function initModuleListFilters() {
+	var list = document.getElementById('moduleList');
+	var search = document.getElementById('moduleSearch');
+	var filter = document.getElementById('moduleStatusFilter');
+	var emptyState = document.getElementById('moduleListEmpty');
+
+	if (!list) {
+		return;
+	}
+
+	function normalize(value) {
+		return (value || '').toLocaleLowerCase('tr-TR').trim();
+	}
+
+	function matchesStatus(rowStatus, statusFilter) {
+		if (statusFilter === 'all') {
+			return true;
+		}
+
+		if (statusFilter === 'installed') {
+			return rowStatus === 'installed' || rowStatus === 'active';
+		}
+
+		return rowStatus === statusFilter;
+	}
+
+	function applyFilters() {
+		var query = normalize(search ? search.value : '');
+		var status = filter ? filter.value : 'all';
+		var rows = list.querySelectorAll('.module-row');
+		var visibleCount = 0;
+
+		rows.forEach(function (row) {
+			var text = normalize(row.getAttribute('data-module-search'));
+			var rowStatus = row.getAttribute('data-module-status') || '';
+			var matchQuery = query === '' || text.indexOf(query) !== -1;
+			var matchStatus = matchesStatus(rowStatus, status);
+			var visible = matchQuery && matchStatus;
+
+			row.classList.toggle('d-none', !visible);
+
+			if (visible) {
+				visibleCount++;
+			}
+		});
+
+		if (emptyState) {
+			emptyState.classList.toggle('d-none', visibleCount > 0 || rows.length === 0);
+		}
+	}
+
+	if (search) {
+		search.addEventListener('input', applyFilters);
+		search.addEventListener('search', applyFilters);
+	}
+
+	if (filter) {
+		filter.addEventListener('change', applyFilters);
+	}
+
+	applyFilters();
+}

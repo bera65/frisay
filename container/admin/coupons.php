@@ -16,9 +16,21 @@
 		}
 	}
 
+	if (Tools::isSubmit('deletePromotion')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+		} else {
+			$result = CartPromotion::delete((int) Tools::getValue('id_promotion'));
+			$flash = $result['message'];
+		}
+	}
+
 	$smarty->assign([
 		'coupons' => Coupon::getAdminList(),
+		'promotions' => CartPromotion::getAdminList(),
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('coupons', 'Kuponlar');
+	AdminPage::add('coupons', 'Kuponlar & Kampanyalar');

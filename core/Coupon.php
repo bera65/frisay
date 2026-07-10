@@ -30,7 +30,10 @@ class Coupon
 			return self::fail('Kupon kodu girin');
 		}
 
-		$validation = self::validate($code, $subtotal);
+		$cart = Cart::getSummary();
+		$promoDiscount = (float) (CartPromotion::calculate($cart)['discount'] ?? 0);
+		$effectiveSubtotal = max(0.0, $subtotal - $promoDiscount);
+		$validation = self::validate($code, $effectiveSubtotal);
 
 		if (!$validation['success']) {
 			return $validation;
@@ -38,7 +41,9 @@ class Coupon
 
 		$_SESSION[self::SESSION_KEY] = $code;
 
-		return self::ok('Kupon uygulandı', $subtotal);
+		$cart = Cart::getSummary();
+
+		return self::ok('Kupon uygulandı', (float) $cart['total'], $cart);
 	}
 
 	public static function remove(): array
@@ -54,7 +59,7 @@ class Coupon
 		];
 	}
 
-	public static function getDiscount(float $subtotal): float
+	public static function getDiscount(float $subtotal, ?array $cart = null): float
 	{
 		$coupon = self::getApplied();
 
@@ -62,7 +67,11 @@ class Coupon
 			return 0.0;
 		}
 
-		$validation = self::validate($coupon['code'], $subtotal);
+		$cart = $cart ?? Cart::getSummary();
+		$promoDiscount = (float) (CartPromotion::calculate($cart)['discount'] ?? 0);
+		$effectiveSubtotal = max(0.0, $subtotal - $promoDiscount);
+
+		$validation = self::validate($coupon['code'], $effectiveSubtotal);
 
 		if (!$validation['success']) {
 			unset($_SESSION[self::SESSION_KEY]);
@@ -73,22 +82,33 @@ class Coupon
 		return (float) $validation['discount'];
 	}
 
-	public static function getCheckoutSummary(float $subtotal): array
+	public static function getCheckoutSummary(float $subtotal, ?array $cart = null): array
 	{
-		$discount = self::getDiscount($subtotal);
+		$cart = $cart ?? Cart::getSummary();
+		$promotion = CartPromotion::calculate($cart);
+		$promotionDiscount = (float) ($promotion['discount'] ?? 0);
+		$couponDiscount = self::getDiscount($subtotal, $cart);
+		$totalDiscount = $promotionDiscount + $couponDiscount;
 		$coupon = self::getApplied();
-		$afterDiscount = max(0.0, $subtotal - $discount);
-		$requiresShipping = Cart::requiresShipping();
+		$afterDiscount = max(0.0, $subtotal - $totalDiscount);
+		$requiresShipping = Cart::requiresShipping($cart);
 		$shipping = $requiresShipping ? Order::getShippingFee($afterDiscount) : 0.0;
 		$total = $afterDiscount + $shipping;
 
 		return [
 			'subtotal' => $subtotal,
 			'subtotal_formatted' => Tools::displayPrice($subtotal),
-			'discount' => $discount,
-			'discount_formatted' => Tools::displayPrice($discount),
+			'promotion_discount' => $promotionDiscount,
+			'promotion_discount_formatted' => Tools::displayPrice($promotionDiscount),
+			'promotion_name' => $promotion['name'] ?? '',
+			'promotion_label' => $promotion['label'] ?? '',
+			'has_promotion' => $promotionDiscount > 0,
+			'coupon_discount' => $couponDiscount,
+			'coupon_discount_formatted' => Tools::displayPrice($couponDiscount),
+			'discount' => $totalDiscount,
+			'discount_formatted' => Tools::displayPrice($totalDiscount),
 			'coupon_code' => $coupon['code'] ?? '',
-			'has_coupon' => $discount > 0,
+			'has_coupon' => $couponDiscount > 0,
 			'shipping' => $shipping,
 			'shipping_formatted' => $requiresShipping && $shipping > 0
 				? Tools::displayPrice($shipping)
@@ -305,9 +325,9 @@ class Coupon
 		return $row;
 	}
 
-	private static function ok(string $message, float $subtotal = 0.0): array
+	private static function ok(string $message, float $subtotal = 0.0, ?array $cart = null): array
 	{
-		$summary = $subtotal > 0 ? self::getCheckoutSummary($subtotal) : [];
+		$summary = $subtotal > 0 ? self::getCheckoutSummary($subtotal, $cart) : [];
 
 		return array_merge([
 			'success' => true,

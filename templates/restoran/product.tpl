@@ -30,6 +30,7 @@
 						</div>
 					</div>
 					{if $hooks.product_inf}<div class="mb-3">{$hooks.product_inf nofilter}</div>{/if}
+					{if $hooks.product_detail}<div class="mb-3">{$hooks.product_detail nofilter}</div>{/if}
 					{include file='./plugin/productConfigurator.tpl'}
 				</div>
 			</div>
@@ -63,11 +64,11 @@
 
 	{if $relatedProducts|@count}
 	<section class="mb-4">
-		<h3 class="h5 fw-bold mb-3">{'Other Products'|translate}</h3>
+		<h3 class="h5 fw-bold mb-3">{$relatedProductsTitle|escape}</h3>
 		<div class="row g-4">
 			{foreach from=$relatedProducts item=rp}
 			<div class="col-md-6 col-lg-3">
-				{include file='./plugin/productCard.tpl' product=$rp}
+				{include file='./plugin/productCardList.tpl' product=$rp}
 			</div>
 			{/foreach}
 		</div>

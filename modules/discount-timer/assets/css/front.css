@@ -1,0 +1,97 @@
+.discount-timer-banner {
+	margin-bottom: 1rem;
+	border-radius: 12px;
+	overflow: hidden;
+	background: #fe6838;
+	color: #fff;
+}
+
+.discount-timer-banner.is-top {
+	margin: 0 0 1rem;
+}
+
+.discount-timer-banner__inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.85rem 1.1rem;
+	flex-wrap: wrap;
+}
+
+.discount-timer-banner__title {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	font-size: 1.05rem;
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.discount-timer-banner__pct {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.1rem 0.45rem;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.2);
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
+.discount-timer-banner__subtitle {
+	margin-top: 0.2rem;
+	font-size: 0.82rem;
+	opacity: 0.92;
+}
+
+.discount-timer-banner__clock {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 0.25rem;
+}
+
+.discount-timer-banner__clock-label {
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	opacity: 0.9;
+}
+
+.discount-timer-banner__digits {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.discount-timer-digit {
+	min-width: 2.4rem;
+	padding: 0.35rem 0.45rem;
+	border-radius: 8px;
+	background: #fff;
+	color: #111827;
+	font-size: 1rem;
+	font-weight: 800;
+	line-height: 1;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+
+.discount-timer-sep {
+	font-weight: 800;
+	font-size: 1rem;
+	opacity: 0.95;
+}
+
+@media (max-width: 575.98px) {
+	.discount-timer-banner__inner {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.discount-timer-banner__clock {
+		align-items: flex-start;
+		width: 100%;
+	}
+}

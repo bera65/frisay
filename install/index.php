@@ -199,6 +199,7 @@ $guessRewrite = ($appBase === '' || $appBase === '/') ? '/' : $appBase . '/';
 				<label>Mağaza teması
 					<select name="theme">
 						<option value="blue" selected>Blue (önerilen)</option>
+						<option value="nova">FriSay Nova</option>
 						<option value="default">Varsayılan</option>
 						<option value="prime">Prime</option>
 					</select>

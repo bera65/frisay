@@ -534,3 +534,98 @@ footer {
 		padding: 5px 10px;
 	}
 }
+
+/* Aktif sipariş kartları — ana sayfa */
+.active-orders-section {
+	margin-top: -0.5rem;
+}
+.active-order-card {
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 16px;
+	padding: 16px 18px;
+	box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+.active-order-card__head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+.active-order-card__ref {
+	display: block;
+	font-weight: 700;
+	font-size: 0.95rem;
+	color: #1a1a1a;
+}
+.active-order-card__time {
+	display: block;
+	font-size: 0.78rem;
+	color: #888;
+	margin-top: 2px;
+}
+.active-order-card__total {
+	font-weight: 700;
+	font-size: 0.9rem;
+	color: var(--primary-color);
+	white-space: nowrap;
+}
+.active-order-card__status {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #333;
+}
+.active-order-progress {
+	height: 8px;
+	background: #f0f0f0;
+	border-radius: 999px;
+	overflow: hidden;
+	margin-bottom: 10px;
+}
+.active-order-progress__bar {
+	height: 100%;
+	background: linear-gradient(90deg, var(--primary-color), #ff8c42);
+	border-radius: 999px;
+	transition: width 0.4s ease;
+}
+.active-order-steps {
+	display: flex;
+	justify-content: space-between;
+	gap: 4px;
+}
+.active-order-step {
+	flex: 1;
+	text-align: center;
+	font-size: 0.68rem;
+	color: #aaa;
+	position: relative;
+	padding-top: 6px;
+}
+.active-order-step::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #ddd;
+}
+.active-order-step.is-active {
+	color: var(--primary-color);
+	font-weight: 700;
+}
+.active-order-step.is-active::before,
+.active-order-step.is-done::before {
+	background: var(--primary-color);
+}
+.active-order-step.is-done {
+	color: #555;
+}
+@media (max-width: 767.98px) {
+	.active-orders-section .col-md-4 + .col-md-4 {
+		margin-top: 0;
+	}
+}

@@ -48,20 +48,7 @@
 	$variationData = ProductVariation::getForStorefront($idProduct, (float) $product['price']);
 	$optionData = ProductOption::getForStorefront($idProduct);
 
-	$relatedProducts = [];
-	$idBrand = (int) ($product['id_brand'] ?? 0);
-	if ($idBrand > 0) {
-		$relatedRaw = Product::getActiveList(null, 8, 0, 'newest', $idBrand);
-		foreach ($relatedRaw as $relatedItem) {
-			if ((int) ($relatedItem['id_product'] ?? 0) === $idProduct) {
-				continue;
-			}
-			$relatedProducts[] = $relatedItem;
-			if (count($relatedProducts) >= 5) {
-				break;
-			}
-		}
-	}
+	$relatedData = Product::getRelatedForProduct($product, 4);
 
 	$smarty->assign([
 		'product' 			=> $product,
@@ -85,7 +72,8 @@
 		'cargoPrice' 		=> (float)Settings::get('SHIPPING_FEE'),
 		'havale'			=> (float)Settings::get('HAVALE'),
 		'isFavorite' 		=> Favorite::isFavorite($idProduct),
-		'relatedProducts'	=> $relatedProducts,
+		'relatedProducts'	=> $relatedData['products'],
+		'relatedProductsTitle' => $relatedData['title'],
 		'hasVariations'     => !empty($variationData['has_variations']),
 		'variationGroups'   => $variationData['groups'],
 		'variationItemsJson' => json_encode($variationData['items'], JSON_UNESCAPED_UNICODE),
@@ -118,3 +106,4 @@
 	Module::refreshHook($smarty, 'product_tab', ['id_product' => $idProduct]);
 	Module::refreshHook($smarty, 'product_tab_content', ['id_product' => $idProduct]);
 	Module::refreshHook($smarty, 'product_inf', ['id_product' => $idProduct]);
+	Module::refreshHook($smarty, 'product_detail', ['id_product' => $idProduct]);

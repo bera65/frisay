@@ -2,9 +2,6 @@
 	ob_start();
 
 	define('IN_ADMIN', true);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 	require_once dirname(__FILE__) . '/function.php';
 	require_once dirname(__FILE__) . '/connection.php';
 	require_once dirname(__FILE__) . '/database.php';
@@ -55,8 +52,14 @@ error_reporting(E_ALL);
 	require_once dirname(__FILE__) . '/../core/SmtpMailer.php';
 	require_once dirname(__FILE__) . '/../core/Notification.php';
 	require_once dirname(__FILE__) . '/../core/Coupon.php';
+	require_once dirname(__FILE__) . '/../core/CartPromotion.php';
 	require_once dirname(__FILE__) . '/../core/Theme.php';
 	require_once dirname(__FILE__) . '/../core/SiteAssets.php';
+	require_once dirname(__FILE__) . '/../core/Performance.php';
+	require_once dirname(__FILE__) . '/../core/FShop.php';
+
+	Performance::ensureDefaults();
+	App::configureErrors();
 	require_once dirname(__FILE__) . '/../core/Seo.php';
 
 	if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -115,5 +118,7 @@ error_reporting(E_ALL);
 		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin'),
 		'adminLang' => $adminLang,
 		'adminLangSwitcher' => AdminLang::getSwitcherList(),
+		'fshopVersion' => FShop::version(),
+		'fshopName' => FShop::NAME,
 	]);
 	$smarty->registerPlugin('modifier', 'adminT', 'adminT');

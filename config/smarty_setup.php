@@ -24,7 +24,9 @@ function fshop_configure_smarty(Smarty\Smarty $smarty): void
 	$smarty->cache_lifetime = 0;
 	$smarty->caching = false;
 	$smarty->compile_check = true;
-	$smarty->force_compile = App::isDebug();
+
+	$cacheEnabled = class_exists('Performance', false) ? Performance::isCacheEnabled() : true;
+	$smarty->force_compile = App::isDebug() || !$cacheEnabled;
 
 	$smarty->registerPlugin('modifier', 'contains', static function ($haystack, $needle) {
 		if ($needle === '' || $needle === null) {

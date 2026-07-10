@@ -13,6 +13,13 @@ cache/force/*
 !cache/force/index.php
 cache/cache/*
 !cache/cache/index.php
+cache/pages/*
+!cache/pages/index.php
+cache/news-feed.json
+cache/*.txt
+cache/*.xml
+
+# Haber JSON kaynağı repoda kalır; üretilen önbellek değil
 
 # Yüklenen ürün görselleri
 img/products/*

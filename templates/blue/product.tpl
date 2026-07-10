@@ -95,13 +95,18 @@
 						<div><b>{'Stock Code'|translate}</b> : {$stockCode}</div>
 						<div><b>{'Cargo'|translate}</b> : {if $price >= $freeCargo}{'Free'|translate}{else}{Tools::displayPrice($cargoPrice)}{/if}</div>
 						<div><b>{'Cargo Day'|translate}</b> : {$cargoDay} {'Day(s)'|translate}</div>
-					</div>				
+					</div>
+					{if $hooks.product_detail}
+					<div class="product-detail-hook mt-3">
+						{$hooks.product_detail nofilter}
+					</div>
+					{/if}
 				</div>
 			</div>
 		</div>
 		<div class="col-lg-3">
 			<div class="row otherProduct">
-				<h6>{'Other Products'|translate}{if $brandName} — {$brandName|escape}{/if}</h6>
+				<h6>{$relatedProductsTitle|escape}</h6>
 				{if $relatedProducts|@count}
 					{foreach $relatedProducts as $rp}
 					<a class="col-12" href="{$rp.url|escape}" title="{$rp.product_name|escape}">

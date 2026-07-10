@@ -1,0 +1,58 @@
+[
+	{
+		"title": "FShop 2.1.0 yayınlandı",
+		"link": "https://frisay.com/fshop",
+		"description": "Tema galerisi, zip ile tema yükleme, şema tabanlı özelleştirme, performans paneli ve geliştirilmiş admin deneyimi bu sürümle geldi.",
+		"pubDate": "2026-07-10T12:00:00+03:00",
+		"category": "Sürüm"
+	},
+	{
+		"title": "Performans paneli eklendi",
+		"link": "https://frisay.com/fshop",
+		"description": "Admin panelinde önbellek aç/kapa, önbellek temizleme, gzip, HTML küçültme ve hata ayıklama ayarları artık tek sayfadan yönetilebilir.",
+		"pubDate": "2026-07-09T10:00:00+03:00",
+		"category": "Özellik"
+	},
+	{
+		"title": "Tema yönetimi yenilendi",
+		"link": "https://frisay.com/fshop",
+		"description": "Tema galerisi, zip yükleme, tema kopyalama ve theme.schema.json ile tema bazlı özelleştirme desteği eklendi.",
+		"pubDate": "2026-07-08T14:30:00+03:00",
+		"category": "Özellik"
+	},
+	{
+		"title": "Shopier modülü — ürün senkronizasyonu",
+		"link": "https://frisay.com/fshop",
+		"description": "Shopier REST API ile ürün oluşturma, güncelleme ve silme senkronizasyonu modül olarak eklendi.",
+		"pubDate": "2026-07-07T09:00:00+03:00",
+		"category": "Modül"
+	},
+	{
+		"title": "Sepet kampanyaları modülü",
+		"link": "https://frisay.com/fshop",
+		"description": "N. ürün indirimi ve X al Y öde kampanyaları admin kuponlar sayfasından yönetilebilir; sepette otomatik uygulanır.",
+		"pubDate": "2026-07-06T11:00:00+03:00",
+		"category": "Modül"
+	},
+	{
+		"title": "İndirim zamanlayıcı modülü",
+		"link": "https://frisay.com/fshop",
+		"description": "Başlangıç ve bitiş tarihli ürün indirimleri ile geri sayım sayacı modülü eklendi.",
+		"pubDate": "2026-07-05T16:00:00+03:00",
+		"category": "Modül"
+	},
+	{
+		"title": "Ürün ek metin modülü",
+		"link": "https://frisay.com/fshop",
+		"description": "Tüm ürün sayfalarında gösterilecek global bilgi metni modül ayarlarından yönetilebilir.",
+		"pubDate": "2026-07-04T13:00:00+03:00",
+		"category": "Modül"
+	},
+	{
+		"title": "Nova ve Blue — kategori filtreleri",
+		"link": "https://frisay.com/fshop",
+		"description": "Alt kategori, marka ve fiyat filtreleri kategori sayfası sol menüsüne eklendi.",
+		"pubDate": "2026-07-03T10:00:00+03:00",
+		"category": "Tema"
+	}
+]

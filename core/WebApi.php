@@ -496,6 +496,9 @@ class WebApi
 		if (array_key_exists('price', $input)) {
 			$payload['price'] = $input['price'];
 		}
+		if (array_key_exists('cost', $input)) {
+			$payload['cost'] = $input['cost'];
+		}
 
 		if (array_key_exists('doviz_price', $input)) {
 			$payload['doviz_price'] = $input['doviz_price'];

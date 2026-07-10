@@ -26,7 +26,7 @@ DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(64) NOT NULL,
-  `value` varchar(255) NOT NULL,
+  `value` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `title` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -228,6 +228,8 @@ CREATE TABLE `orders` (
   `note` text NOT NULL,
   `coupon_code` varchar(32) NOT NULL DEFAULT '',
   `coupon_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `promotion_name` varchar(128) NOT NULL DEFAULT '',
+  `promotion_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `subtotal` decimal(20,2) NOT NULL DEFAULT 0.00,
   `shipping` decimal(20,2) NOT NULL DEFAULT 0.00,
   `total` decimal(20,2) NOT NULL DEFAULT 0.00,
@@ -322,6 +324,25 @@ CREATE TABLE `coupons` (
   `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_coupon`),
   UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `cart_promotions` (
+  `id_promotion` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  `promo_type` enum('nth_item','buy_x_pay_y') NOT NULL DEFAULT 'nth_item',
+  `item_position` int(11) NOT NULL DEFAULT 2,
+  `item_discount_type` enum('percent','fixed') NOT NULL DEFAULT 'fixed',
+  `item_discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `repeat_every` tinyint(1) NOT NULL DEFAULT 0,
+  `buy_qty` int(11) NOT NULL DEFAULT 3,
+  `pay_qty` int(11) NOT NULL DEFAULT 2,
+  `min_cart` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `priority` int(11) NOT NULL DEFAULT 0,
+  `date_from` datetime DEFAULT NULL,
+  `date_to` datetime DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_promotion`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `admins` (

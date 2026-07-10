@@ -1,0 +1,14 @@
+.product-extra-text {
+	margin-top: 1rem;
+	padding: 1rem 1.1rem;
+	border: 1px solid #e8edf3;
+	border-radius: 12px;
+	background: #f8fafc;
+	color: #334155;
+	font-size: 0.95rem;
+	line-height: 1.6;
+}
+
+.product-extra-text p:last-child {
+	margin-bottom: 0;
+}

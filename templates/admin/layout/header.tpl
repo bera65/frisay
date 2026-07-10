@@ -51,7 +51,7 @@
 				<span class="menu-item__label">{'Mesajlar'|adminT}</span>
 				{if $adminNavBadges.messages > 0}<span class="nav-badge nav-badge--green">{$adminNavBadges.messages}</span>{/if}
 			</a>
-			<a href="{$adminUrl}coupons" class="menu-item {if $pageName == 'coupons' || $pageName == 'coupon'}active{/if}">
+			<a href="{$adminUrl}coupons" class="menu-item {if $pageName == 'coupons' || $pageName == 'coupon' || $pageName == 'cart-promotion'}active{/if}">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
 				<span class="menu-item__label">{'Kuponlar'|adminT}</span>
 			</a>
@@ -91,17 +91,21 @@
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v6"/><path d="m15.17 2.21 2.83 2.83"/><path d="M21 12h-6"/><path d="m18.83 15.17 2.83 2.83"/><path d="M12 21v-6"/><path d="m8.83 18.83-2.83 2.83"/><path d="M3 12h6"/><path d="m5.17 8.83-2.83-2.83"/></svg></span>
 				<span class="menu-item__label">{'Eklentiler'|adminT}</span>
 			</a>
-			<a href="{$adminUrl}module" class="menu-item {if $pageName == 'module'}active{/if}">
+			<a href="https://frisay.com/modules" target="_blank" class="menu-item">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></svg></span>
 				<span class="menu-item__label">{'Eklenti Mağazası'|adminT}</span>
 			</a>
-			<a href="{$adminUrl}templates" class="menu-item {if $pageName == 'templates'}active{/if}">
+			<a href="{$adminUrl}templates" class="menu-item {if $pageName == 'templates' || $pageName == 'theme-customize'}active{/if}">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span>
 				<span class="menu-item__label">{'Temalar'|adminT}</span>
 			</a>
 			<a href="{$adminUrl}settings" class="menu-item {if $pageName == 'settings'}active{/if}">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
 				<span class="menu-item__label">{'Ayarlar'|adminT}</span>
+			</a>
+			<a href="{$adminUrl}performance" class="menu-item {if $pageName == 'performance'}active{/if}">
+				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+				<span class="menu-item__label">{'Performans'|adminT}</span>
 			</a>
 		</nav>
 

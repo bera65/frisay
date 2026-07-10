@@ -3,6 +3,8 @@
 		exit;
 	}
 
+	require_once dirname(__DIR__, 2) . '/core/NewsFeed.php';
+
 	$stats = Admin::getDashboardStats();
 	$stats['revenue_month_formatted'] = Tools::displayPrice($stats['revenue_month']);
 	$charts = Admin::getDashboardCharts();
@@ -53,6 +55,8 @@
 		'statusShipped' => Order::STATUS_SHIPPED,
 		'adminUseCharts' => true,
 		'adminHooks' => Module::renderAdminHooks($dashboardHooks, $dashboardContext),
+		'frisayNews' => NewsFeed::getDashboardItems(6),
+		'frisayNewsUrl' => 'https://frisay.com/rss.xml',
 	]);
 
 	AdminPage::add('dashboard', 'Gösterge Paneli');

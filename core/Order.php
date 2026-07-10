@@ -60,6 +60,9 @@ class Order
 		$labels = [
 			'bank_transfer' => translate('Bank Transfer'),
 			'cash_on_delivery' => translate('Cash on Delivery'),
+			'pos_cash' => 'POS — Nakit',
+			'pos_card' => 'POS — Kart',
+			'pos_transfer' => 'POS — Havale',
 		];
 
 		return isset($labels[$method]) ? $labels[$method] : $method;
@@ -242,10 +245,13 @@ class Order
 		}
 
 		$subtotal = (float) $cart['total'];
-		$couponDiscount = Coupon::getDiscount($subtotal);
+		$checkoutSummary = Coupon::getCheckoutSummary($subtotal, $cart);
+		$couponDiscount = (float) ($checkoutSummary['coupon_discount'] ?? 0);
+		$promotionDiscount = (float) ($checkoutSummary['promotion_discount'] ?? 0);
+		$promotionName = (string) ($checkoutSummary['promotion_name'] ?? '');
 		$appliedCoupon = Coupon::getApplied();
 		$couponCode = $appliedCoupon ? (string) $appliedCoupon['code'] : '';
-		$totals = self::getCheckoutTotals($subtotal, $couponDiscount, $cart);
+		$totals = self::getCheckoutTotals($subtotal, (float) $checkoutSummary['discount'], $cart);
 
 		if (!empty($data['_reference'])) {
 			$reference = (string) $data['_reference'];
@@ -298,7 +304,9 @@ class Order
 				'address_text' => $address,
 				'note' => $note,
 				'coupon_code' => $couponCode,
-				'coupon_discount' => $totals['discount'],
+				'coupon_discount' => $couponDiscount,
+				'promotion_name' => $promotionName,
+				'promotion_discount' => $promotionDiscount,
 				'subtotal' => $totals['subtotal'],
 				'shipping' => $totals['shipping'],
 				'total' => $totals['total'],
@@ -460,20 +468,26 @@ class Order
 		$idUser = Customer::getId();
 
 		if ($idUser > 0) {
-			return self::getByIdForUser($idOrder, $idUser);
+			$order = self::getByIdForUser($idOrder, $idUser);
+
+			if ($order) {
+				return $order;
+			}
 		}
 
+		// Ödeme dönüşü / guest: session'da erişim verilmişse id_user fark etmeksizin göster
+		// (PSP dönünce oturum düşse bile ref + grant ile sipariş görülebilir)
 		if (!self::guestCanViewOrder($idOrder)) {
 			return null;
 		}
 
-		$order = DB::getRowSafe('orders', 'id_order = ? AND id_user = 0', [$idOrder]);
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
 
 		if (!$order) {
 			return null;
 		}
 
-		return self::hydrateCustomerOrder($order, 0);
+		return self::hydrateCustomerOrder($order, (int) ($order['id_user'] ?? 0));
 	}
 
 	public static function getByIdForUser(int $idOrder, int $idUser): ?array
@@ -536,6 +550,84 @@ class Order
 		unset($row);
 
 		return $rows;
+	}
+
+	/** Ana sayfa: teslim edilmemiş son siparişler (en fazla 3). */
+	public static function getActiveOrdersForViewer(int $limit = 3): array
+	{
+		$limit = max(1, min(3, $limit));
+		$exclude = [self::STATUS_DELIVERED, self::STATUS_CANCELLED];
+		$idUser = Customer::getId();
+		$rows = [];
+
+		if ($idUser > 0) {
+			$rows = DB::execute(
+				'SELECT * FROM orders
+				 WHERE id_user = ? AND status NOT IN (?, ?)
+				 ORDER BY id_order DESC
+				 LIMIT ' . $limit,
+				[$idUser, self::STATUS_DELIVERED, self::STATUS_CANCELLED]
+			) ?: [];
+		} elseif (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_order_ids']) && is_array($_SESSION['guest_order_ids'])) {
+			$ids = array_values(array_filter(array_map('intval', array_keys($_SESSION['guest_order_ids']))));
+
+			if ($ids !== []) {
+				$placeholders = implode(',', array_fill(0, count($ids), '?'));
+				$params = array_merge($ids, $exclude);
+				$rows = DB::execute(
+					'SELECT * FROM orders
+					 WHERE id_order IN (' . $placeholders . ')
+					   AND id_user = 0
+					   AND status NOT IN (?, ?)
+					 ORDER BY id_order DESC
+					 LIMIT ' . $limit,
+					$params
+				) ?: [];
+			}
+		}
+
+		return array_map([self::class, 'enrichActiveOrderCard'], $rows);
+	}
+
+	public static function getStatusProgress(int $status): int
+	{
+		switch ((int) $status) {
+			case self::STATUS_PENDING:
+				return 10;
+			case self::STATUS_PROCESSING:
+				return 25;
+			case self::STATUS_SHIPPED:
+				return 70;
+			default:
+				return 5;
+		}
+	}
+
+	public static function getStatusStepLabel(int $status): string
+	{
+		switch ((int) $status) {
+			case self::STATUS_PENDING:
+				return 'Sipariş alındı';
+			case self::STATUS_PROCESSING:
+				return 'Hazırlanıyor';
+			case self::STATUS_SHIPPED:
+				return 'Kuryeye verildi';
+			default:
+				return self::getStatusLabel((int) $status);
+		}
+	}
+
+	private static function enrichActiveOrderCard(array $order): array
+	{
+		$status = (int) ($order['status'] ?? 0);
+
+		$order['status_label'] = self::getStatusLabel($status);
+		$order['status_step_label'] = self::getStatusStepLabel($status);
+		$order['status_progress'] = self::getStatusProgress($status);
+		$order['time_ago'] = Tools::timeAgo((string) ($order['date_add'] ?? ''));
+		$order['total_formatted'] = Tools::displayPrice((float) ($order['total'] ?? 0));
+
+		return $order;
 	}
 
 	public static function trackByReference(string $reference, ?int $idUser = null): ?array

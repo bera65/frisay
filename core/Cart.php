@@ -284,6 +284,7 @@ class Cart
 			$items[] = [
 				'cart_key' => (string) $cartKey,
 				'id_product' => $idProduct,
+				'id_category' => (int) ($product['id_category'] ?? 0),
 				'id_variation' => $idVariation,
 				'options' => $options,
 				'options_label' => $optionsLabel,
@@ -305,14 +306,23 @@ class Cart
 		}
 
 		$shippingAmount = 0.0;
+		$cartData = [
+			'items' => $items,
+			'total' => $total,
+			'subtotal' => $total,
+			'empty' => empty($items),
+		];
+		$promotion = CartPromotion::calculate($cartData);
+		$promotionDiscount = (float) ($promotion['discount'] ?? 0);
+		$afterPromotion = max(0.0, $total - $promotionDiscount);
 
-		if ($total > 0 && self::requiresShipping(['items' => $items])) {
+		if ($afterPromotion > 0 && self::requiresShipping(['items' => $items])) {
 			$freeMin = (float) Settings::get('FREE_SHIPPING_MIN');
 			$fee = (float) Settings::get('SHIPPING_FEE');
-			$shippingAmount = $total >= $freeMin ? 0.0 : $fee;
+			$shippingAmount = $afterPromotion >= $freeMin ? 0.0 : $fee;
 		}
 
-		$grandTotal = $total + $shippingAmount;
+		$grandTotal = $afterPromotion + $shippingAmount;
 
 		return [
 			'items' => $items,
@@ -321,6 +331,11 @@ class Cart
 			'subtotal_formatted' => Tools::displayPrice($total),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
+			'promotion_discount' => $promotionDiscount,
+			'promotion_discount_formatted' => Tools::displayPrice($promotionDiscount),
+			'promotion_name' => $promotion['name'] ?? '',
+			'promotion_label' => $promotion['label'] ?? '',
+			'has_promotion' => $promotionDiscount > 0,
 			'shipping' => $shippingAmount,
 			'shipping_formatted' => $shippingAmount > 0
 				? Tools::displayPrice($shippingAmount)

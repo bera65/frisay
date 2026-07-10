@@ -37,6 +37,8 @@
 </section>
 {/if}
 
+{include file='./plugin/activeOrders.tpl'}
+
 <!-- Categories -->
 {if $homeCategories|@count}
 <div class="container mb-5">

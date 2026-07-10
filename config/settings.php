@@ -4,9 +4,7 @@
 	require_once(dirname(__FILE__).'/connection.php');
 	require_once(dirname(__FILE__).'/database.php');
 	require_once(dirname(__FILE__).'/config.php');
-ini_set('display_errors', 1);
-		ini_set('display_startup_errors', 1);
-		error_reporting(E_ALL & ~E_DEPRECATED);
+
 	App::configureSession();
 
 	require_once(dirname(__FILE__).'/../core/Lang.php');
@@ -36,6 +34,9 @@ ini_set('display_errors', 1);
 	require_once(dirname(__FILE__).'/../core/Contact.php');
 	require_once(dirname(__FILE__).'/../core/Address.php');
 	require_once(dirname(__FILE__).'/../core/Pagination.php');
+	require_once(dirname(__FILE__).'/../core/CatalogFilter.php');
+	require_once(dirname(__FILE__).'/../core/Coupon.php');
+	require_once(dirname(__FILE__).'/../core/CartPromotion.php');
 	require_once(dirname(__FILE__).'/../core/Brand.php');
 	require_once(dirname(__FILE__).'/../core/Cms.php');
 	require_once(dirname(__FILE__).'/../core/Currency.php');
@@ -46,9 +47,12 @@ ini_set('display_errors', 1);
 	require_once(dirname(__FILE__).'/../core/SmtpMailer.php');
 	require_once(dirname(__FILE__).'/../core/Notification.php');
 	require_once(dirname(__FILE__).'/../core/Routes.php');
-	require_once(dirname(__FILE__).'/../core/Coupon.php');
 	require_once(dirname(__FILE__).'/../core/Theme.php');
 	require_once(dirname(__FILE__).'/../core/SiteAssets.php');
+	require_once(dirname(__FILE__).'/../core/Performance.php');
+
+	Performance::ensureDefaults();
+	App::configureErrors();
 	require_once(dirname(__FILE__).'/../core/Seo.php');
 	require_once(dirname(__FILE__).'/../core/SchemaOrg.php');
 
@@ -57,6 +61,11 @@ ini_set('display_errors', 1);
 	$rootDir 	= Settings::get('FOLDER');
 	$domain		= Settings::get('DOMAIN');
 	$theme		= Settings::get('THEME') ?: 'default';
+	$previewTheme = (string) Tools::getValue('theme_preview');
+
+	if ($previewTheme !== '' && Theme::isValidName($previewTheme)) {
+		$theme = $previewTheme;
+	}
 	Theme::ensureColorsFile($theme);
 	Theme::ensureCustomCss($theme);
 	$themeOptions = Theme::getResolvedOptions($theme);
@@ -101,7 +110,7 @@ ini_set('display_errors', 1);
 	$customer = Customer::getCurrent();
 	$isLoggedIn = Customer::isLoggedIn();
 	$notificationCount = $isLoggedIn ? Notification::getUnreadCount(Customer::getId()) : 0;
-	$menuCategories = Category::getMenuList();
+	$menuCategories = Category::getMenuListWithChildren();
 	$favoriteCount = Favorite::getCount();
 
 	Module::bootstrap('front');
@@ -191,3 +200,5 @@ ini_set('display_errors', 1);
 		'activeTheme'		=> $theme,
 	));
 	$smarty->registerPlugin('modifier', 'translate', 'translate');
+
+	Performance::bootstrapFront();

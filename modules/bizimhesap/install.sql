@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS `bizimhesap_invoices` (
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id_order` INT UNSIGNED NOT NULL,
+	`reference` VARCHAR(24) NOT NULL DEFAULT '',
+	`invoice_no` VARCHAR(64) NOT NULL DEFAULT '',
+	`external_id` VARCHAR(128) NOT NULL DEFAULT '',
+	`status` VARCHAR(32) NOT NULL DEFAULT 'created',
+	`message` TEXT NULL,
+	`response_json` TEXT NULL,
+	`date_add` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`date_upd` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `uq_order` (`id_order`),
+	KEY `idx_reference` (`reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

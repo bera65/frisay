@@ -2,8 +2,9 @@
 		</div>
 	</div>
 </div>
-<p class="text-center">
-	<a href="https://frisay.com/" target="_blank">Copyriht FriSay Ecommerce V2</a>
+<p class="admin-footer-meta text-center">
+	<a href="https://frisay.com/" target="_blank" rel="noopener">FriSay E-Commerce</a>
+	<span class="text-muted"> · {$fshopName|escape} v{$fshopVersion|escape}</span>
 </p>
 <script src="{$domain}templates/admin/js/admin.js?v={$smarty.now}"></script>
 <script src="{$domain}templates/admin/js/popper.min.js"></script>
