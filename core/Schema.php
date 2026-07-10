@@ -103,6 +103,12 @@ class Schema
 
 		Order::ensureSchema();
 
+		if (!class_exists('ReturnRequest', false)) {
+			require_once dirname(__DIR__) . '/core/ReturnRequest.php';
+		}
+
+		ReturnRequest::ensureSchema();
+
 		if (!class_exists('Address', false)) {
 			require_once dirname(__DIR__) . '/core/Address.php';
 		}

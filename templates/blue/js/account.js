@@ -153,6 +153,10 @@
 		});
 	});
 
+	if (window.location.hash === '#notifications') {
+		$('[data-account-tab="notifications"]').trigger('click');
+	}
+
 	// Logout
 	$('#logoutBtn').on('click', function () {
 		$.post(typeof authApiUrl !== 'undefined' ? authApiUrl : (domain + 'api/auth.php'), {

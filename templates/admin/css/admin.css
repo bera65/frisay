@@ -755,6 +755,7 @@ a { text-decoration: none; }
 .ps-status-badge--shipped { background: var(--ps-green); }
 .ps-status-badge--delivered { background: var(--ps-orange); }
 .ps-status-badge--cancelled { background: var(--navy-dark); }
+.ps-status-badge--returned { background: #7c3aed; }
 .ps-status-badge--default { background: var(--ps-blue); }
 
 .ps-order-actions {

@@ -115,6 +115,15 @@
 				</div>
 			</div>
 
+			<div class="admin-panel mb-4">
+				<h2 class="h6 mb-3">İade</h2>
+				<div class="mb-3">
+					<label class="form-label">{$settingsKeys.RETURN_REQUEST_DAYS.label|escape}</label>
+					<input type="number" min="0" max="365" name="RETURN_REQUEST_DAYS" class="form-control" value="{$settingsValues.RETURN_REQUEST_DAYS|escape}">
+					<div class="form-text">Müşteriler sipariş tarihinden itibaren bu gün sayısı içinde iade talebi oluşturabilir. 0 = kapalı.</div>
+				</div>
+			</div>
+
 			<button type="submit" class="btn btn-dark">Kaydet</button>
 		</form>
 

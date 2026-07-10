@@ -36,6 +36,7 @@
 				'CONTACT_PHONE_TEL' => ['label' => 'Telefon (tel: linki)', 'group' => 'iletisim'],
 				'FREE_SHIPPING_MIN' => ['label' => 'Ücretsiz kargo limiti', 'group' => 'kargo'],
 				'SHIPPING_FEE' => ['label' => 'Kargo ücreti', 'group' => 'kargo'],
+				'RETURN_REQUEST_DAYS' => ['label' => 'İade talebi süresi (gün)', 'group' => 'iade'],
 				'MAIL_DRIVER' => ['label' => 'E-posta gönderim yöntemi', 'group' => 'mail', 'type' => 'select'],
 				'SMTP_HOST' => ['label' => 'SMTP Sunucu', 'group' => 'smtp', 'type' => 'text'],
 				'SMTP_PORT' => ['label' => 'SMTP Port', 'group' => 'smtp', 'type' => 'text'],

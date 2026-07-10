@@ -873,6 +873,7 @@ class WebApi
 			Order::STATUS_SHIPPED => 'Shipped',
 			Order::STATUS_DELIVERED => 'Delivered',
 			Order::STATUS_CANCELLED => 'Cancelled',
+			Order::STATUS_RETURNED => 'Returned',
 		];
 
 		return $map[$status] ?? 'Unknown';

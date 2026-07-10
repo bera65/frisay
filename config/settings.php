@@ -29,6 +29,7 @@
 	require_once(dirname(__FILE__).'/../core/Cart.php');
 	require_once(dirname(__FILE__).'/../core/Customer.php');
 	require_once(dirname(__FILE__).'/../core/Order.php');
+	require_once(dirname(__FILE__).'/../core/ReturnRequest.php');
 	require_once(dirname(__FILE__).'/../core/Category.php');
 	require_once(dirname(__FILE__).'/../core/Favorite.php');
 	require_once(dirname(__FILE__).'/../core/Contact.php');
@@ -110,6 +111,7 @@
 	$customer = Customer::getCurrent();
 	$isLoggedIn = Customer::isLoggedIn();
 	$notificationCount = $isLoggedIn ? Notification::getUnreadCount(Customer::getId()) : 0;
+	$headerNotifications = $isLoggedIn ? Notification::getListForUser(Customer::getId(), 8) : [];
 	$menuCategories = Category::getMenuListWithChildren();
 	$favoriteCount = Favorite::getCount();
 
@@ -182,6 +184,7 @@
 		'menuCategories' 	=> $menuCategories,
 		'favoriteCount' 	=> $favoriteCount,
 		'notificationCount' => $notificationCount,
+		'headerNotifications' => $headerNotifications,
 		'cmsFooterLinks' 	=> Cms::getFooterLinks(),
 		'shopLanguages' 	=> Lang::getAvailable(),
 		'defaultLang' 		=> Lang::getDefault(),

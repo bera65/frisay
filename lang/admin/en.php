@@ -4,6 +4,7 @@
 		'Genel' => 'General',
 		'Gösterge Paneli' => 'Dashboard',
 		'Siparişler' => 'Orders',
+		'İadeler' => 'Returns',
 		'Müşteriler' => 'Customers',
 		'Mesajlar' => 'Messages',
 		'Kuponlar' => 'Coupons',

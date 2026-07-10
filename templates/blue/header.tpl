@@ -35,6 +35,7 @@
 	{/if}
 	<link rel="stylesheet" href="{$css_dir}style.css" />
 	<link rel="stylesheet" href="{$css_dir}pages.css" />
+	<link rel="stylesheet" href="{$css_dir}notifications.css" />
 	<link rel="stylesheet" href="{$css_dir}cart-modal.css" />
 	{if $css}
 	<link rel="stylesheet" href="{$css_dir}{$css}" />

@@ -97,6 +97,10 @@ class Notification
 			return $refLine . 'Siparişiniz iptal edildi.';
 		}
 
+		if ($newStatus === Order::STATUS_RETURNED) {
+			return $refLine . 'Siparişiniz iade edildi olarak işaretlendi.';
+		}
+
 		return $refLine . 'Yeni durum: ' . Order::getStatusLabel($newStatus);
 	}
 
@@ -144,5 +148,49 @@ class Notification
 			'id_user = :id_user AND is_read = 0',
 			['id_user' => $idUser]
 		);
+	}
+
+	public static function returnRequestSubmitted(int $idUser, string $reference, int $idReturn): void
+	{
+		$title = 'İade talebiniz alındı';
+		$message = 'Sipariş #' . $reference . " için iade talebiniz başarıyla oluşturuldu.\n\n"
+			. 'Talebiniz incelendikten sonra size bilgi verilecektir.';
+
+		self::notifyUser($idUser, 'return_submitted', $title, $message, 'returns?id=' . $idReturn);
+	}
+
+	public static function returnRequestApproved(int $idUser, string $reference, int $idReturn, string $adminMessage): void
+	{
+		$title = 'İade talebiniz onaylandı';
+		$message = 'Sipariş #' . $reference . " için iade talebiniz onaylandı.\n\n"
+			. "Mağaza mesajı:\n" . $adminMessage . "\n\n"
+			. 'Sipariş durumu: İade edildi.';
+
+		self::notifyUser($idUser, 'return_approved', $title, $message, 'returns?id=' . $idReturn);
+	}
+
+	public static function returnRequestRejected(int $idUser, string $reference, int $idReturn, string $adminMessage): void
+	{
+		$title = 'İade talebiniz reddedildi';
+		$message = 'Sipariş #' . $reference . " için iade talebiniz reddedildi.\n\n"
+			. "Mağaza mesajı:\n" . $adminMessage;
+
+		self::notifyUser($idUser, 'return_rejected', $title, $message, 'returns?id=' . $idReturn);
+	}
+
+	public static function returnRequestCompleted(int $idUser, string $reference, int $idReturn, string $adminMessage, string $receiptFile = ''): void
+	{
+		$title = 'İade işlemi tamamlandı';
+		$message = 'Sipariş #' . $reference . " için iade işlemi tamamlandı.";
+
+		if (trim($adminMessage) !== '') {
+			$message .= "\n\nMağaza mesajı:\n" . $adminMessage;
+		}
+
+		if ($receiptFile !== '') {
+			$message .= "\n\nİade dekontunuz hesabınızdaki iade detayında görüntülenebilir.";
+		}
+
+		self::notifyUser($idUser, 'return_completed', $title, $message, 'returns?id=' . $idReturn);
 	}
 }

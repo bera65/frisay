@@ -80,9 +80,15 @@
 
 
 
-	<div class="mt-4">
+	<div class="mt-4 d-flex flex-wrap gap-2">
 
 		<a href="{$domain}orders" class="prime-btn prime-btn--outline prime-btn--sm">← {'Back to orders'|translate}</a>
+
+		{if $canReturnRequest}
+		<a href="{$domain}return-request?id_order={$order.id_order}" class="prime-btn prime-btn--primary prime-btn--sm">{'Request return'|translate}</a>
+		{elseif $returnRequest}
+		<a href="{$domain}returns?id={$returnRequest.id_return}" class="prime-btn prime-btn--outline prime-btn--sm">{'View return request'|translate}</a>
+		{/if}
 
 	</div>
 

@@ -25,6 +25,10 @@ cache/*.xml
 img/products/*
 !img/products/index.php
 
+# İade talebi görselleri
+img/returns/*
+!img/returns/index.php
+
 # Dijital ürün dosyaları
 storage/digital/*
 !storage/digital/index.php

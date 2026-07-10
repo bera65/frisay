@@ -13,6 +13,9 @@
 {if $js}
 	<script src="{$js_dir}{$js}"></script>
 {/if}
+{if $isLoggedIn}
+<script src="{$js_dir}notifications.js"></script>
+{/if}
 {if !$isLoggedIn}
 <script src="{$js_dir}auth-modal.js"></script>
 {/if}

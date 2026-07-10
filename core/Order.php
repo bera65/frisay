@@ -7,6 +7,7 @@ class Order
 	const STATUS_SHIPPED = 3;
 	const STATUS_DELIVERED = 4;
 	const STATUS_CANCELLED = 5;
+	const STATUS_RETURNED = 6;
 
 	private static bool $schemaReady = false;
 
@@ -44,6 +45,7 @@ class Order
 			self::STATUS_SHIPPED => translate('Order status shipped'),
 			self::STATUS_DELIVERED => translate('Order status delivered'),
 			self::STATUS_CANCELLED => translate('Order status cancelled'),
+			self::STATUS_RETURNED => translate('Order status returned'),
 		];
 
 		return $labels[$status] ?? translate('Order status unknown');
@@ -556,17 +558,17 @@ class Order
 	public static function getActiveOrdersForViewer(int $limit = 3): array
 	{
 		$limit = max(1, min(3, $limit));
-		$exclude = [self::STATUS_DELIVERED, self::STATUS_CANCELLED];
+		$exclude = [self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED];
 		$idUser = Customer::getId();
 		$rows = [];
 
 		if ($idUser > 0) {
 			$rows = DB::execute(
 				'SELECT * FROM orders
-				 WHERE id_user = ? AND status NOT IN (?, ?)
+				 WHERE id_user = ? AND status NOT IN (?, ?, ?)
 				 ORDER BY id_order DESC
 				 LIMIT ' . $limit,
-				[$idUser, self::STATUS_DELIVERED, self::STATUS_CANCELLED]
+				[$idUser, self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED]
 			) ?: [];
 		} elseif (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_order_ids']) && is_array($_SESSION['guest_order_ids'])) {
 			$ids = array_values(array_filter(array_map('intval', array_keys($_SESSION['guest_order_ids']))));
@@ -578,7 +580,7 @@ class Order
 					'SELECT * FROM orders
 					 WHERE id_order IN (' . $placeholders . ')
 					   AND id_user = 0
-					   AND status NOT IN (?, ?)
+					   AND status NOT IN (?, ?, ?)
 					 ORDER BY id_order DESC
 					 LIMIT ' . $limit,
 					$params
@@ -598,6 +600,10 @@ class Order
 				return 25;
 			case self::STATUS_SHIPPED:
 				return 70;
+			case self::STATUS_DELIVERED:
+				return 100;
+			case self::STATUS_RETURNED:
+				return 100;
 			default:
 				return 5;
 		}
@@ -612,6 +618,10 @@ class Order
 				return 'Hazırlanıyor';
 			case self::STATUS_SHIPPED:
 				return 'Kuryeye verildi';
+			case self::STATUS_DELIVERED:
+				return translate('Order status delivered');
+			case self::STATUS_RETURNED:
+				return translate('Order status returned');
 			default:
 				return self::getStatusLabel((int) $status);
 		}
@@ -678,6 +688,7 @@ class Order
 			self::STATUS_SHIPPED => self::getStatusLabel(self::STATUS_SHIPPED),
 			self::STATUS_DELIVERED => self::getStatusLabel(self::STATUS_DELIVERED),
 			self::STATUS_CANCELLED => self::getStatusLabel(self::STATUS_CANCELLED),
+			self::STATUS_RETURNED => self::getStatusLabel(self::STATUS_RETURNED),
 		];
 	}
 
@@ -689,6 +700,7 @@ class Order
 			self::STATUS_SHIPPED => 'shipped',
 			self::STATUS_DELIVERED => 'delivered',
 			self::STATUS_CANCELLED => 'cancelled',
+			self::STATUS_RETURNED => 'returned',
 		];
 
 		return $map[$status] ?? 'default';
@@ -818,6 +830,24 @@ class Order
 		unset($item);
 
 		return $order;
+	}
+
+	public static function setStatusQuiet(int $idOrder, int $status): bool
+	{
+		self::ensureSchema();
+
+		if (!isset(self::getStatusOptions()[$status])) {
+			return false;
+		}
+
+		$updated = DB::update(
+			'orders',
+			['status' => $status],
+			'id_order = :id_order',
+			['id_order' => $idOrder]
+		);
+
+		return $updated !== false;
 	}
 
 	public static function updateStatus(int $idOrder, int $status): array

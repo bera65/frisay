@@ -12,6 +12,7 @@
 			</a>
 		</div>
 		<div class="header-actions">
+			{include file='blue/plugin/notifications-dropdown.tpl'}
 			<a href="{$domain}my-account" class="action-item" title="{'My Account'|translate}">
 				<div class="icon-box">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -48,6 +49,7 @@
 		</div>
 		<div class="col-lg-3 d-flex justify-content-end">
 			<div class="header-actions">
+				{include file='blue/plugin/notifications-dropdown.tpl'}
 				<div data-bs-toggle="dropdown" class="action-item dropdown-toggle cursorPointer">
 					<div class="icon-box">
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

@@ -9,6 +9,8 @@ class Routes
 			'hesabim' => 'my-account',
 			'siparislerim' => 'orders',
 			'siparis' => 'order',
+			'iadeler' => 'returns',
+			'iade-talebi' => 'return-request',
 			'favoriler' => 'favorites',
 			'sifremi-unuttum' => 'forgot-password',
 			'sifre-sifirla' => 'reset-password',
@@ -33,6 +35,8 @@ class Routes
 			'my-account',
 			'orders',
 			'order',
+			'returns',
+			'return-request',
 			'favorites',
 		];
 	}

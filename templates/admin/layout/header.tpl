@@ -42,6 +42,11 @@
 				<span class="menu-item__label">{'Siparişler'|adminT}</span>
 				{if $adminNavBadges.orders > 0}<span class="nav-badge">{$adminNavBadges.orders}</span>{/if}
 			</a>
+			<a href="{$adminUrl}returns" class="menu-item {if $pageName == 'returns' || $pageName == 'return'}active{/if}">
+				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></span>
+				<span class="menu-item__label">{'İadeler'|adminT}</span>
+				{if $adminNavBadges.returns > 0}<span class="nav-badge">{$adminNavBadges.returns}</span>{/if}
+			</a>
 			<a href="{$adminUrl}customers" class="menu-item {if $pageName == 'customers' || $pageName == 'customer'}active{/if}">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
 				<span class="menu-item__label">{'Müşteriler'|adminT}</span>

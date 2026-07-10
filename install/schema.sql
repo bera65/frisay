@@ -345,6 +345,32 @@ CREATE TABLE `cart_promotions` (
   PRIMARY KEY (`id_promotion`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `return_requests` (
+  `id_return` int(11) NOT NULL AUTO_INCREMENT,
+  `id_order` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `customer_message` text NOT NULL,
+  `admin_message` text NOT NULL,
+  `admin_receipt_file` varchar(255) NOT NULL DEFAULT '',
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_upd` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `date_resolved` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_return`),
+  KEY `id_order` (`id_order`),
+  KEY `id_user` (`id_user`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `return_request_images` (
+  `id_return_image` int(11) NOT NULL AUTO_INCREMENT,
+  `id_return` int(11) NOT NULL,
+  `image_file` varchar(255) NOT NULL,
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_return_image`),
+  KEY `id_return` (`id_return`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `admins` (
   `id_admin` int(11) NOT NULL AUTO_INCREMENT,
   `full_name` varchar(128) NOT NULL,
@@ -395,6 +421,7 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('SHOP_CURRENCY', 'try'),
 ('FREE_SHIPPING_MIN', '500'),
 ('SHIPPING_FEE', '79.90'),
+('RETURN_REQUEST_DAYS', '14'),
 ('HAVALE', '3'),
 ('CARGO_DAY', '3'),
 ('CONTACT_EMAIL', 'destek@example.com'),
