@@ -47,14 +47,15 @@ class Notification
 		self::notifyUser($idUser, 'welcome', $title, $message, 'my-account');
 	}
 
-	public static function orderPlaced(int $idUser, string $reference, float $total): void
+	public static function orderPlaced(int $idUser, string $reference, float $total, int $idOrder = 0): void
 	{
 		$title = 'Siparişiniz alındı';
 		$message = 'Siparişiniz başarıyla oluşturuldu.' . "\n\n"
 			. 'Sipariş No: ' . $reference . "\n"
 			. 'Toplam: ' . Tools::displayPrice($total);
 
-		self::notifyUser($idUser, 'order_placed', $title, $message, 'orders');
+		$link = $idOrder > 0 ? 'my-account?order=' . $idOrder : 'my-account';
+		self::notifyUser($idUser, 'order_placed', $title, $message, $link);
 	}
 
 	public static function orderStatusChanged(array $order, int $oldStatus, int $newStatus): void
@@ -69,8 +70,10 @@ class Notification
 
 		$title = 'Sipariş durumu güncellendi';
 		$message = self::buildStatusMessage($reference, $oldStatus, $newStatus, $payment);
+		$idOrder = (int) ($order['id_order'] ?? 0);
+		$link = $idOrder > 0 ? 'my-account?order=' . $idOrder : 'my-account';
 
-		self::notifyUser($idUser, 'order_status', $title, $message, 'orders');
+		self::notifyUser($idUser, 'order_status', $title, $message, $link);
 	}
 
 	private static function buildStatusMessage(string $reference, int $oldStatus, int $newStatus, string $payment): string
@@ -95,6 +98,10 @@ class Notification
 
 		if ($newStatus === Order::STATUS_CANCELLED) {
 			return $refLine . 'Siparişiniz iptal edildi.';
+		}
+
+		if ($newStatus === Order::STATUS_RETURN_PENDING) {
+			return $refLine . 'Siparişiniz iade bekleniyor olarak işaretlendi.';
 		}
 
 		if ($newStatus === Order::STATUS_RETURNED) {
@@ -164,7 +171,7 @@ class Notification
 		$title = 'İade talebiniz onaylandı';
 		$message = 'Sipariş #' . $reference . " için iade talebiniz onaylandı.\n\n"
 			. "Mağaza mesajı:\n" . $adminMessage . "\n\n"
-			. 'Sipariş durumu: İade edildi.';
+			. 'Sipariş durumu: İade bekleniyor.';
 
 		self::notifyUser($idUser, 'return_approved', $title, $message, 'returns?id=' . $idReturn);
 	}
@@ -192,5 +199,50 @@ class Notification
 		}
 
 		self::notifyUser($idUser, 'return_completed', $title, $message, 'returns?id=' . $idReturn);
+	}
+
+	public static function cancelRequestSubmitted(int $idUser, string $reference, int $idOrder): void
+	{
+		$title = 'İptal talebiniz alındı';
+		$message = 'Sipariş #' . $reference . " için iptal talebiniz oluşturuldu.\n\n"
+			. 'Talebiniz incelendikten sonra size bilgi verilecektir.';
+
+		self::notifyUser($idUser, 'cancel_submitted', $title, $message, 'my-account?order=' . $idOrder);
+	}
+
+	public static function cancelRequestApproved(int $idUser, string $reference, int $idCancel, string $adminMessage, string $receiptFile = ''): void
+	{
+		$title = 'İptal talebiniz onaylandı';
+		$message = 'Sipariş #' . $reference . " iptal edildi.\n\nMağaza mesajı:\n" . $adminMessage;
+
+		if ($receiptFile !== '') {
+			$message .= "\n\nİptal dekontunuz hesabınızdaki sipariş detayında görüntülenebilir.";
+		}
+
+		self::notifyUser($idUser, 'cancel_approved', $title, $message, 'my-account');
+	}
+
+	public static function cancelRequestRejected(int $idUser, string $reference, int $idCancel, string $adminMessage): void
+	{
+		$title = 'İptal talebiniz reddedildi';
+		$message = 'Sipariş #' . $reference . " için iptal talebiniz reddedildi.\n\nMağaza mesajı:\n" . $adminMessage;
+
+		self::notifyUser($idUser, 'cancel_rejected', $title, $message, 'my-account');
+	}
+
+	public static function contactReply(int $idUser, string $reference, int $idOrder, int $idMessage, string $adminReply): void
+	{
+		$title = $reference !== ''
+			? 'Sipariş #' . $reference . ' — yanıtınız'
+			: 'Mesajınıza yanıt';
+		$message = $reference !== ''
+			? 'Sipariş #' . $reference . " ile ilgili sorunuza yanıt verildi:\n\n" . $adminReply
+			: "Mesajınıza yanıt verildi:\n\n" . $adminReply;
+
+		$link = $idOrder > 0
+			? 'my-account?order=' . $idOrder . '#order-contact'
+			: 'my-account';
+
+		self::notifyUser($idUser, 'contact_reply', $title, $message, $link);
 	}
 }

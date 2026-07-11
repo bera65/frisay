@@ -97,7 +97,18 @@ class SiteAssets
 
 		$targetPath = $dir . '/' . $targetName;
 
-		if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+		if ($mime === 'image/svg+xml') {
+			$raw = (string) file_get_contents($file['tmp_name']);
+			$sanitized = Security::sanitizeSvg($raw);
+
+			if ($sanitized === null) {
+				return ['success' => false, 'message' => 'SVG dosyası güvenlik kontrolünden geçemedi'];
+			}
+
+			if (@file_put_contents($targetPath, $sanitized) === false) {
+				return ['success' => false, 'message' => 'Logo kaydedilemedi'];
+			}
+		} elseif (!move_uploaded_file($file['tmp_name'], $targetPath)) {
 			return ['success' => false, 'message' => 'Logo kaydedilemedi'];
 		}
 

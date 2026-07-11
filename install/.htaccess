@@ -1,2 +1,9 @@
-# Kurulum tamamlandıktan sonra web erişimini kapatmak için aşağıdaki satırların yorumunu kaldırın:
-# Require all denied
+# Kurulum tamamlandıktan sonra web erişimini kapatır.
+# Yeni kurulum için geçici olarak bu dosyayı devre dışı bırakın.
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order deny,allow
+	Deny from all
+</IfModule>

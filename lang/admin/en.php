@@ -5,6 +5,8 @@
 		'Gösterge Paneli' => 'Dashboard',
 		'Siparişler' => 'Orders',
 		'İadeler' => 'Returns',
+		'İptaller' => 'Cancellations',
+		'Bildirimler' => 'Notifications',
 		'Müşteriler' => 'Customers',
 		'Mesajlar' => 'Messages',
 		'Kuponlar' => 'Coupons',

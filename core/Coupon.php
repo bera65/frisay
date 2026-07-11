@@ -102,6 +102,7 @@ class Coupon
 			'promotion_discount_formatted' => Tools::displayPrice($promotionDiscount),
 			'promotion_name' => $promotion['name'] ?? '',
 			'promotion_label' => $promotion['label'] ?? '',
+			'promotion_lines' => $promotion['lines'] ?? [],
 			'has_promotion' => $promotionDiscount > 0,
 			'coupon_discount' => $couponDiscount,
 			'coupon_discount_formatted' => Tools::displayPrice($couponDiscount),

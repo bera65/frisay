@@ -131,6 +131,19 @@ class App
 		header('X-Frame-Options: SAMEORIGIN');
 		header('Referrer-Policy: strict-origin-when-cross-origin');
 		header('X-XSS-Protection: 1; mode=block');
+		header(
+			'Content-Security-Policy: '
+			. "default-src 'self'; "
+			. "base-uri 'self'; "
+			. "form-action 'self'; "
+			. "frame-ancestors 'self'; "
+			. "img-src 'self' data: https: blob:; "
+			. "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+			. "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+			. "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+			. "connect-src 'self'; "
+			. "frame-src 'self' https:;"
+		);
 
 		if (self::isProduction()) {
 			header('Permissions-Policy: geolocation=(), microphone=(), camera=()');

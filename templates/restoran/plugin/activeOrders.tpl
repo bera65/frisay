@@ -3,7 +3,7 @@
 	<div class="d-flex justify-content-between align-items-center mb-3">
 		<h4 class="fw-bold m-0">Aktif Siparişleriniz</h4>
 		{if $isLoggedIn}
-		<a href="{$domain}orders" class="small text-decoration-none theme-link fw-semibold">Tüm siparişler</a>
+		<a href="{$domain}my-account" class="small text-decoration-none theme-link fw-semibold">Tüm siparişler</a>
 		{/if}
 	</div>
 	<div class="row g-3">

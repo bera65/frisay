@@ -65,7 +65,7 @@
 
 	<div class="mt-4 d-flex flex-wrap gap-2">
 		<a href="{$domain}returns" class="prime-btn prime-btn--outline prime-btn--sm">← {'My Returns'|translate}</a>
-		<a href="{$domain}order?id={$returnItem.id_order}" class="prime-btn prime-btn--outline prime-btn--sm">{'Order Detail'|translate}</a>
+		<a href="{$domain}my-account?order={$returnItem.id_order}" class="prime-btn prime-btn--outline prime-btn--sm">{'Order Detail'|translate}</a>
 	</div>
 
 	{else}
@@ -93,7 +93,7 @@
 		{if $canCreate}
 		<a href="{$domain}return-request" class="prime-btn prime-btn--primary prime-btn--sm">{'New Return Request'|translate}</a>
 		{else}
-		<a href="{$domain}orders" class="prime-btn prime-btn--outline prime-btn--sm">{'My Orders'|translate}</a>
+		<a href="{$domain}my-account" class="prime-btn prime-btn--outline prime-btn--sm">{'My Orders'|translate}</a>
 		{/if}
 	</div>
 	{else}

@@ -55,7 +55,7 @@
 	<div class="dress-mobile-menu__account">
 		{if $isLoggedIn}
 		<a href="{$domain}my-account" class="dress-mobile-menu__account-link">{'My Account'|translate}</a>
-		<a href="{$domain}orders" class="dress-mobile-menu__account-link">{'My Orders'|translate}</a>
+		<a href="{$domain}my-account" class="dress-mobile-menu__account-link">{'My Orders'|translate}</a>
 		<a href="{$domain}favorites" class="dress-mobile-menu__account-link">{'Favorites'|translate}</a>
 		{else}
 		<a href="{$domain}login" class="dress-mobile-menu__account-link">{'Sign In'|translate}</a>

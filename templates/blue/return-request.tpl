@@ -10,7 +10,7 @@
 	<div class="prime-empty">
 		<i class="fa-solid fa-rotate-left"></i>
 		<p>{'No eligible orders for return'|translate}</p>
-		<a href="{$domain}orders" class="prime-btn prime-btn--outline prime-btn--sm">{'My Orders'|translate}</a>
+		<a href="{$domain}my-account" class="prime-btn prime-btn--outline prime-btn--sm">{'My Orders'|translate}</a>
 	</div>
 	{else}
 
@@ -18,6 +18,7 @@
 
 	<form method="post" enctype="multipart/form-data" class="prime-page-card">
 		<input type="hidden" name="submitReturn" value="1">
+		<input type="hidden" name="token" value="{$token}">
 
 		<div class="mb-3">
 			<label class="form-label" for="id_order">{'Select order'|translate}</label>
@@ -38,8 +39,8 @@
 
 		<div class="mb-4">
 			<label class="form-label" for="images">{'Upload images'|translate}</label>
-			<input type="file" name="images[]" id="images" class="form-control" accept="image/jpeg,image/png,image/webp" multiple required>
-			<div class="form-text">{'Return images help'|translate|replace:'%max%':$maxImages}</div>
+			<input type="file" name="images[]" id="images" class="form-control" accept="image/jpeg,image/png,image/webp" multiple>
+			<div class="form-text">{'Return images help optional'|translate|replace:'%max%':$maxImages}</div>
 		</div>
 
 		<div class="d-flex flex-wrap gap-2">

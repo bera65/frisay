@@ -170,6 +170,24 @@ class ProductVariation
 			$option1Value = trim((string) ($row['option1_value'] ?? ''));
 			$option2Name = trim((string) ($row['option2_name'] ?? ''));
 			$option2Value = trim((string) ($row['option2_value'] ?? ''));
+
+			if (!empty($row['options']) && is_array($row['options'])) {
+				$optionIndex = 0;
+
+				foreach ($row['options'] as $name => $value) {
+					$optionIndex++;
+
+					if ($optionIndex === 1) {
+						$option1Name = trim((string) $name);
+						$option1Value = trim((string) $value);
+					} elseif ($optionIndex === 2) {
+						$option2Name = trim((string) $name);
+						$option2Value = trim((string) $value);
+						break;
+					}
+				}
+			}
+
 			$sku = trim((string) ($row['sku'] ?? ''));
 			$barcode = trim((string) ($row['barcode'] ?? ''));
 

@@ -17,19 +17,25 @@
 	}
 
 	if (Tools::isSubmit('submitReturn')) {
-		$idOrder = (int) Tools::getValue('id_order');
-		$message = (string) Tools::getValue('message');
-		$result = ReturnRequest::create($idOrder, $idUser, $message, $_FILES['images'] ?? []);
+		$postToken = (string) Tools::getValue('token');
 
-		if ($result['success']) {
-			$_SESSION['return_flash'] = $result['message'];
-			$_SESSION['return_flash_type'] = 'success';
-			header('Location: ' . $domain . 'returns?id=' . (int) $result['id_return']);
-			exit;
+		if (!hash_equals($token, $postToken)) {
+			$flash = translate('Invalid request, please refresh and try again');
+		} else {
+			$idOrder = (int) Tools::getValue('id_order');
+			$message = (string) Tools::getValue('message');
+			$result = ReturnRequest::create($idOrder, $idUser, $message, $_FILES['images'] ?? []);
+
+			if ($result['success']) {
+				$_SESSION['return_flash'] = $result['message'];
+				$_SESSION['return_flash_type'] = 'success';
+				header('Location: ' . $domain . 'returns?id=' . (int) $result['id_return']);
+				exit;
+			}
+
+			$flash = $result['message'];
+			$selectedOrderId = $idOrder;
 		}
-
-		$flash = $result['message'];
-		$selectedOrderId = $idOrder;
 	}
 
 	if ($selectedOrderId > 0 && !ReturnRequest::isOrderEligible($selectedOrderId, $idUser)) {

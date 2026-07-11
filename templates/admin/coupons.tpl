@@ -72,7 +72,7 @@
 			Sepet kampanyaları otomatik uygulanır; müşteri kod girmek zorunda değildir.
 			<strong>N. ürüne indirim:</strong> örn. 2. ürüne 10 TL veya %5.
 			<strong>X al Y öde:</strong> örn. 3 al 2 öde (en ucuz ürün bedava).
-			Aynı anda birden fazla kampanya varsa öncelik değeri yüksek olan uygulanır.
+			Uygun koşulları sağlayan tüm aktif kampanyalar sepette birlikte uygulanır.
 		</div>
 
 		<div class="d-flex justify-content-end mb-3">
@@ -87,7 +87,6 @@
 							<th>Kampanya</th>
 							<th>Kural</th>
 							<th>Min. Sepet</th>
-							<th>Öncelik</th>
 							<th>Geçerlilik</th>
 							<th>Durum</th>
 							<th></th>
@@ -100,7 +99,6 @@
 							<td><strong>{$row.name|escape}</strong></td>
 							<td>{$row.rule_label|escape}</td>
 							<td>{$row.min_cart_formatted}</td>
-							<td>{$row.priority}</td>
 							<td class="small">
 								{if $row.date_from}{$row.date_from|escape}{else}—{/if}
 								→
@@ -119,7 +117,7 @@
 						</tr>
 						{/foreach}
 						{else}
-						<tr><td colspan="7" class="text-muted">Henüz sepet kampanyası yok.</td></tr>
+						<tr><td colspan="6" class="text-muted">Henüz sepet kampanyası yok.</td></tr>
 						{/if}
 					</tbody>
 				</table>

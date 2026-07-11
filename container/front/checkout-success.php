@@ -55,15 +55,14 @@
 		return;
 	}
 
-	$pageTitle = translate('Checkout success title');
-	$pageDesc = translate('Checkout success description');
+	$idOrder = (int) $order['id_order'];
+	$target = $domain . 'my-account?order=' . $idOrder;
 
-	$smarty->assign([
-		'order' => $order,
-		'breadcrumb' => [
-			['name' => translate('Home Page'), 'url' => $domain],
-			['name' => translate('Order confirmation'), 'url' => ''],
-		],
-	]);
+	if (Customer::isLoggedIn()) {
+		header('Location: ' . $target);
+		exit;
+	}
 
-	Module::refreshHook($smarty, 'order_confirmation', ['order' => $order]);
+	$_SESSION['auth_redirect'] = $target;
+	header('Location: ' . $domain . 'login');
+	exit;

@@ -94,7 +94,7 @@
 				// Ödeme modülü yönlendirme istediyse oraya (ör. PayTR), yoksa onay sayfasına
 				$target = !empty($result['redirect'])
 					? $result['redirect']
-					: $domain . 'checkout-success?id=' . (int) $result['id_order'];
+					: $domain . 'my-account?order=' . (int) $result['id_order'];
 
 				header('Location: ' . $target);
 				exit;

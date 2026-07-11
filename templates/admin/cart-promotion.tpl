@@ -72,22 +72,17 @@
 				<input type="number" name="min_cart" class="form-control" value="{$promotion.min_cart}" min="0" step="0.01">
 			</div>
 			<div class="col-md-3">
-				<label class="form-label">Öncelik</label>
-				<input type="number" name="priority" class="form-control" value="{$promotion.priority}">
-				<div class="form-text">Yüksek değer önce uygulanır</div>
-			</div>
-			<div class="col-md-3">
 				<label class="form-label">Durum</label>
 				<select name="active" class="form-select">
 					<option value="1"{if $promotion.active} selected{/if}>Aktif</option>
 					<option value="0"{if !$promotion.active} selected{/if}>Pasif</option>
 				</select>
 			</div>
-			<div class="col-md-6">
+			<div class="col-md-3">
 				<label class="form-label">Başlangıç (opsiyonel)</label>
 				<input type="datetime-local" name="date_from" class="form-control" value="{$promotion.date_from_input|escape}">
 			</div>
-			<div class="col-md-6">
+			<div class="col-md-3">
 				<label class="form-label">Bitiş (opsiyonel)</label>
 				<input type="datetime-local" name="date_to" class="form-control" value="{$promotion.date_to_input|escape}">
 			</div>

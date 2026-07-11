@@ -8,7 +8,11 @@
 	define('IN_SCRIPT', true);
 	require_once dirname(__DIR__) . '/config/admin_bootstrap.php';
 
-	$container = Tools::getValue('container') ?: 'dashboard';
+	$container = Security::sanitizeContainerSlug((string) Tools::getValue('container'));
+
+	if ($container === '') {
+		$container = 'dashboard';
+	}
 	$publicPages = ['login'];
 
 	if (!in_array($container, $publicPages, true) && !Admin::isLoggedIn()) {

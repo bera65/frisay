@@ -26,7 +26,14 @@
 
 				<nav class="dress-account-nav" aria-label="{'Account menu'|translate}">
 
-					<button type="button" class="dress-account-nav__item is-active" data-account-tab="profile">
+					<a href="{$domain}my-account" class="dress-account-nav__item">
+						<span class="dress-account-nav__icon" aria-hidden="true">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+						</span>
+						{'My Orders'|translate}
+					</a>
+
+					<button type="button" class="dress-account-nav__item{if $activeTab == 'profile'} is-active{/if}" data-account-tab="profile">
 
 						<span class="dress-account-nav__icon" aria-hidden="true">
 
@@ -75,18 +82,6 @@
 						{'Password'|translate}
 
 					</button>
-
-					<a href="{$domain}orders" class="dress-account-nav__item">
-
-						<span class="dress-account-nav__icon" aria-hidden="true">
-
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-
-						</span>
-
-						{'My Orders'|translate}
-
-					</a>
 
 					<a href="{$domain}returns" class="dress-account-nav__item">
 
@@ -158,9 +153,13 @@
 
 			<div class="dress-account-main">
 
+				<div class="dress-account-panel{if $activeTab == 'orders'} is-active{/if}" data-account-panel="orders">
+					{include file='blue/partials/account-orders.tpl'}
+				</div>
+
 				{* Profil *}
 
-				<div class="dress-account-panel is-active" data-account-panel="profile">
+				<div class="dress-account-panel{if $activeTab == 'profile'} is-active{/if}" data-account-panel="profile">
 
 					<div class="dress-account-stats">
 

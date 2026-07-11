@@ -8,7 +8,11 @@
 	define('IN_SCRIPT', true);
 	require_once dirname(__FILE__) . '/config/settings.php';
 
-	$container = Tools::getValue('container') ?: 'home';
+	$container = Security::sanitizeContainerSlug((string) Tools::getValue('container'));
+
+	if ($container === '') {
+		$container = 'home';
+	}
 	Routes::redirectLegacyIfNeeded($container);
 
 	$skipPageRender = false;
@@ -22,7 +26,13 @@
 	}
 
 	if (in_array($container, $protected, true) && !Customer::isLoggedIn()) {
-		$_SESSION['auth_redirect'] = $domain . $container;
+		$redirectUrl = rtrim($domain, '/') . '/' . $container;
+		$query = $_GET;
+		unset($query['container']);
+		if ($query !== []) {
+			$redirectUrl .= '?' . http_build_query($query);
+		}
+		$_SESSION['auth_redirect'] = $redirectUrl;
 		header('Location: ' . $domain . 'login');
 		exit;
 	}

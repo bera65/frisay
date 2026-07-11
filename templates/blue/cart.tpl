@@ -217,12 +217,24 @@
 
 				</div>
 
-				{if $cart.has_promotion}
+				{if $cart.promotion_lines|@count}
+				<div id="cartPromotionLines">
+					{foreach $cart.promotion_lines as $promoLine}
+					<div class="prime-cart-summary__row prime-cart-summary__row--promo">
+						<span>{$promoLine.name|escape}</span>
+						<span>-{$promoLine.discount_formatted}</span>
+					</div>
+					{/foreach}
+				</div>
+				{elseif $cart.has_promotion}
+				<div id="cartPromotionLines">
 				<div class="prime-cart-summary__row prime-cart-summary__row--promo">
 					<span>{$cart.promotion_name|escape}</span>
 					<span id="cartPagePromotion">-{$cart.promotion_discount_formatted}</span>
 				</div>
+				</div>
 				{else}
+				<div id="cartPromotionLines"></div>
 				<div class="prime-cart-summary__row prime-cart-summary__row--promo d-none">
 					<span id="cartPagePromotionName"></span>
 					<span id="cartPagePromotion"></span>

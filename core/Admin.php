@@ -5,16 +5,27 @@ class Admin
 	public static function login(string $email, string $password): array
 	{
 		$email = trim(strtolower($email));
+		$identifier = RateLimit::loginIdentifier($email);
+
+		if (RateLimit::isLimited(RateLimit::SCOPE_ADMIN_LOGIN, $identifier, 8, 900)) {
+			return self::fail('Çok fazla başarısız giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.');
+		}
 
 		if (!Validate::isEmail($email)) {
+			RateLimit::record(RateLimit::SCOPE_ADMIN_LOGIN, $identifier);
+
 			return self::fail('E-posta veya şifre hatalı');
 		}
 
 		$row = DB::getRowSafe('admins', 'email = ? AND active = 1', [$email]);
 
 		if (!$row || !password_verify($password, $row['password'])) {
+			RateLimit::record(RateLimit::SCOPE_ADMIN_LOGIN, $identifier);
+
 			return self::fail('E-posta veya şifre hatalı');
 		}
+
+		RateLimit::clear(RateLimit::SCOPE_ADMIN_LOGIN, $identifier);
 
 		session_regenerate_id(true);
 		$_SESSION['id_admin'] = (int) $row['id_admin'];
@@ -70,6 +81,15 @@ class Admin
 		global $adminUrl;
 
 		return $adminUrl . ltrim($path, '/');
+	}
+
+	public static function addNotification(string $title, string $message = '', string $link = '', string $type = 'info'): ?int
+	{
+		if (!class_exists('AdminNotification', false)) {
+			require_once dirname(__FILE__) . '/AdminNotification.php';
+		}
+
+		return AdminNotification::add($title, $message !== '' ? $message : $title, $link, $type);
 	}
 
 	public static function getDashboardStats(): array

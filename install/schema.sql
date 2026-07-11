@@ -268,6 +268,7 @@ CREATE TABLE `favorites` (
 CREATE TABLE `contact_messages` (
   `id_message` int(11) NOT NULL AUTO_INCREMENT,
   `id_user` int(11) NOT NULL DEFAULT 0,
+  `id_order` int(11) NOT NULL DEFAULT 0,
   `full_name` varchar(128) NOT NULL,
   `email` varchar(128) NOT NULL,
   `phone` varchar(20) NOT NULL DEFAULT '',

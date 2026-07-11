@@ -183,7 +183,24 @@ function updateCartUI(data) {
 	}
 
 	$('#cartSubtotal, #cartPageSubtotal').text(data.subtotal_formatted || data.total_formatted || '');
-	if (data.promotion_discount > 0) {
+	var $promoLines = $('#cartPromotionLines');
+	if ($promoLines.length) {
+		if (data.promotion_lines && data.promotion_lines.length) {
+			$promoLines.html(data.promotion_lines.map(function (line) {
+				return '<div class="prime-cart-summary__row prime-cart-summary__row--promo"><span>' +
+					$('<div>').text(line.name || '').html() +
+					'</span><span>-' + (line.discount_formatted || '') + '</span></div>';
+			}).join(''));
+		} else if ((data.promotion_discount || 0) > 0) {
+			$promoLines.html(
+				'<div class="prime-cart-summary__row prime-cart-summary__row--promo"><span>' +
+				$('<div>').text(data.promotion_name || '').html() +
+				'</span><span>-' + (data.promotion_discount_formatted || '') + '</span></div>'
+			);
+		} else {
+			$promoLines.empty();
+		}
+	} else if (data.promotion_discount > 0) {
 		$('.prime-cart-summary__row--promo').removeClass('d-none');
 		$('#cartPagePromotionName').text(data.promotion_name || '');
 		$('#cartPagePromotion').text('-' + (data.promotion_discount_formatted || ''));

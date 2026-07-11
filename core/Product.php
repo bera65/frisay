@@ -1386,6 +1386,10 @@ class Product
 			return self::fail('Sadece http/https URL desteklenir');
 		}
 
+		if (!Security::isSafeOutboundUrl($url)) {
+			return self::fail('Görsel URL güvenlik kontrolünden geçemedi');
+		}
+
 		if (!function_exists('curl_init')) {
 			return self::fail('cURL eklentisi gerekli');
 		}
@@ -1399,7 +1403,15 @@ class Product
 			CURLOPT_TIMEOUT => 20,
 			CURLOPT_SSL_VERIFYPEER => true,
 			CURLOPT_USERAGENT => 'FShop-WebAPI/1.0',
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
 		]);
+
+		if (defined('CURLOPT_FOLLOWFUNCTION')) {
+			curl_setopt($ch, CURLOPT_FOLLOWFUNCTION, static function ($curlHandle, $redirectUrl) {
+				return Security::isSafeOutboundUrl((string) $redirectUrl) ? (int) strlen((string) $redirectUrl) : 0;
+			});
+		}
 
 		$binary = curl_exec($ch);
 		$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);

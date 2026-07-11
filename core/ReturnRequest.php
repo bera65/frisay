@@ -234,30 +234,28 @@ class ReturnRequest
 
 		$days = self::getAllowedDays();
 		$cutoff = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
-		$allowedStatuses = [
-			Order::STATUS_PROCESSING,
-			Order::STATUS_SHIPPED,
-			Order::STATUS_DELIVERED,
-		];
-		$placeholders = implode(',', array_fill(0, count($allowedStatuses), '?'));
 
 		$rows = DB::execute(
 			'SELECT o.*
 			FROM orders o
 			WHERE o.id_user = ?
-				AND o.status IN (' . $placeholders . ')
-				AND o.date_add >= ?
+				AND o.status = ?
+				AND o.date_delivered IS NOT NULL
+				AND o.date_delivered >= ?
 				AND NOT EXISTS (
 					SELECT 1 FROM return_requests rr
 					WHERE rr.id_order = o.id_order
 						AND rr.status IN (?, ?, ?)
 				)
 			ORDER BY o.id_order DESC',
-			array_merge(
-				[$idUser],
-				$allowedStatuses,
-				[$cutoff, self::STATUS_PENDING, self::STATUS_APPROVED, self::STATUS_COMPLETED]
-			)
+			[
+				$idUser,
+				Order::STATUS_DELIVERED,
+				$cutoff,
+				self::STATUS_PENDING,
+				self::STATUS_APPROVED,
+				self::STATUS_COMPLETED,
+			]
 		) ?: [];
 
 		foreach ($rows as &$row) {
@@ -268,6 +266,27 @@ class ReturnRequest
 		unset($row);
 
 		return $rows;
+	}
+
+	public static function getForOrder(int $idOrder, int $idUser): ?array
+	{
+		$rows = DB::execute(
+			'SELECT rr.*, o.reference, o.total
+			FROM return_requests rr
+			INNER JOIN orders o ON o.id_order = rr.id_order
+			WHERE rr.id_order = ? AND rr.id_user = ?
+			ORDER BY rr.id_return DESC
+			LIMIT 1',
+			[$idOrder, $idUser]
+		);
+
+		if (!$rows || !isset($rows[0])) {
+			return null;
+		}
+
+		$enriched = self::enrichRows([$rows[0]]);
+
+		return $enriched[0] ?? null;
 	}
 
 	public static function isOrderEligible(int $idOrder, int $idUser): bool
@@ -330,6 +349,12 @@ class ReturnRequest
 
 		if ($order) {
 			Notification::returnRequestSubmitted($idUser, (string) $order['reference'], $idReturn);
+			AdminNotification::add(
+				'Yeni iade talebi',
+				'Sipariş #' . $order['reference'] . ' için iade talebi oluşturuldu.',
+				self::adminLink('return?id=' . $idReturn),
+				'return_request'
+			);
 		}
 
 		return [
@@ -396,6 +421,8 @@ class ReturnRequest
 			return self::fail('İade talebi güncellenemedi');
 		}
 
+		Order::setStatusQuiet((int) $return['id_order'], Order::STATUS_RETURNED);
+
 		Notification::returnRequestCompleted(
 			(int) $return['id_user'],
 			(string) $return['reference'],
@@ -447,7 +474,7 @@ class ReturnRequest
 		}
 
 		if ($action === 'approve') {
-			Order::setStatusQuiet((int) $return['id_order'], Order::STATUS_RETURNED);
+			Order::setStatusQuiet((int) $return['id_order'], Order::STATUS_RETURN_PENDING);
 
 			Notification::returnRequestApproved(
 				(int) $return['id_user'],
@@ -455,7 +482,7 @@ class ReturnRequest
 				$idReturn,
 				$adminMessage
 			);
-			$flash = 'İade talebi onaylandı, sipariş iade edildi olarak işaretlendi';
+			$flash = 'İade talebi onaylandı, sipariş iade bekleniyor olarak işaretlendi';
 		} else {
 			Notification::returnRequestRejected(
 				(int) $return['id_user'],
@@ -469,17 +496,15 @@ class ReturnRequest
 		return ['success' => true, 'message' => $flash];
 	}
 
-	public static function getImages(int $idReturn): array
+	public static function getImages(int $idReturn, bool $forAdmin = false): array
 	{
-		global $domain;
-
 		$rows = DB::execute(
 			'SELECT * FROM return_request_images WHERE id_return = ? ORDER BY id_return_image ASC',
 			[$idReturn]
 		) ?: [];
 
 		foreach ($rows as &$row) {
-			$row['url'] = rtrim($domain, '/') . '/img/returns/' . rawurlencode((string) $row['image_file']);
+			$row['url'] = self::getProtectedFileUrl((string) $row['image_file'], $forAdmin);
 		}
 		unset($row);
 
@@ -488,6 +513,8 @@ class ReturnRequest
 
 	private static function enrichRows(array $rows): array
 	{
+		$forAdmin = defined('IN_ADMIN') && IN_ADMIN;
+
 		foreach ($rows as &$row) {
 			$row['status_label'] = self::getStatusLabel((int) $row['status']);
 			$row['status_badge'] = self::getStatusBadgeClass((int) $row['status']);
@@ -502,15 +529,20 @@ class ReturnRequest
 			$row['order_status_label'] = isset($row['order_status'])
 				? Order::getStatusLabel((int) $row['order_status'])
 				: '';
-			$row['images'] = self::getImages((int) $row['id_return']);
-			$row['admin_receipt_url'] = self::getReceiptUrl((string) ($row['admin_receipt_file'] ?? ''));
+			$row['images'] = self::getImages((int) $row['id_return'], $forAdmin);
+			$row['admin_receipt_url'] = self::getReceiptUrl((string) ($row['admin_receipt_file'] ?? ''), $forAdmin);
 		}
 		unset($row);
 
 		return $rows;
 	}
 
-	public static function getReceiptUrl(string $filename): string
+	public static function getReceiptUrl(string $filename, bool $forAdmin = false): string
+	{
+		return self::getProtectedFileUrl($filename, $forAdmin);
+	}
+
+	public static function getProtectedFileUrl(string $filename, bool $forAdmin = false): string
 	{
 		$filename = trim($filename);
 
@@ -520,7 +552,86 @@ class ReturnRequest
 
 		global $domain;
 
-		return rtrim($domain, '/') . '/img/returns/' . rawurlencode($filename);
+		if ($forAdmin) {
+			return self::adminUrl('return-image') . '?file=' . rawurlencode($filename);
+		}
+
+		return rtrim($domain, '/') . '/api/return-image.php?file=' . rawurlencode($filename);
+	}
+
+	public static function canAccessProtectedFile(string $filename, int $idUser, bool $isAdmin): bool
+	{
+		if ($isAdmin) {
+			return self::isAllowedFilename($filename);
+		}
+
+		if ($idUser <= 0 || !self::isAllowedFilename($filename)) {
+			return false;
+		}
+
+		$imageOwner = (int) DB::getValue(
+			'SELECT COUNT(*) FROM return_request_images ri
+			 INNER JOIN return_requests rr ON rr.id_return = ri.id_return
+			 WHERE ri.image_file = ? AND rr.id_user = ?',
+			[$filename, $idUser]
+		);
+
+		if ($imageOwner > 0) {
+			return true;
+		}
+
+		$returnReceipt = (int) DB::getValue(
+			'SELECT COUNT(*) FROM return_requests WHERE admin_receipt_file = ? AND id_user = ?',
+			[$filename, $idUser]
+		);
+
+		if ($returnReceipt > 0) {
+			return true;
+		}
+
+		$cancelReceipt = (int) DB::getValue(
+			'SELECT COUNT(*) FROM cancel_requests WHERE admin_receipt_file = ? AND id_user = ?',
+			[$filename, $idUser]
+		);
+
+		return $cancelReceipt > 0;
+	}
+
+	public static function isAllowedFilename(string $filename): bool
+	{
+		$filename = basename($filename);
+
+		return (bool) preg_match('/^(return|receipt|cancel-receipt)-[0-9]+-[a-f0-9]+\\.(jpe?g|png|webp)$/i', $filename);
+	}
+
+	public static function serveProtectedFile(string $filename): void
+	{
+		$filename = basename($filename);
+
+		if (!self::isAllowedFilename($filename)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$path = self::uploadDir() . $filename;
+
+		if (!is_readable($path)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$finfo = finfo_open(FILEINFO_MIME_TYPE);
+		$mime = $finfo ? (finfo_file($finfo, $path) ?: 'application/octet-stream') : 'application/octet-stream';
+
+		if ($finfo) {
+			finfo_close($finfo);
+		}
+
+		header('Content-Type: ' . $mime);
+		header('X-Content-Type-Options: nosniff');
+		header('Cache-Control: private, max-age=3600');
+		readfile($path);
+		exit;
 	}
 
 	private static function storeAdminReceipt(int $idReturn, array $file, string $oldFilename = ''): array
@@ -582,7 +693,19 @@ class ReturnRequest
 		self::ensureUploadDir();
 
 		if (empty($files['name']) || !is_array($files['name'])) {
-			return self::fail(translate('Please upload at least one image'));
+			return ['success' => true, 'message' => ''];
+		}
+
+		$hasUpload = false;
+		foreach ($files['name'] as $name) {
+			if (trim((string) $name) !== '') {
+				$hasUpload = true;
+				break;
+			}
+		}
+
+		if (!$hasUpload) {
+			return ['success' => true, 'message' => ''];
 		}
 
 		$count = count($files['name']);
@@ -614,10 +737,6 @@ class ReturnRequest
 			}
 
 			$saved++;
-		}
-
-		if ($saved === 0) {
-			return self::fail(translate('Please upload at least one image'));
 		}
 
 		return ['success' => true, 'message' => ''];
@@ -714,6 +833,17 @@ class ReturnRequest
 		if (!is_file($guard)) {
 			@file_put_contents($guard, "<?php\nheader('Location: ../');\nexit;\n");
 		}
+	}
+
+	private static function adminLink(string $path): string
+	{
+		if (class_exists('Admin', false)) {
+			return Admin::url($path);
+		}
+
+		global $domain;
+
+		return rtrim($domain, '/') . '/admin/' . ltrim($path, '/');
 	}
 
 	private static function fail(string $message): array

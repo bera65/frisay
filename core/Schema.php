@@ -109,6 +109,22 @@ class Schema
 
 		ReturnRequest::ensureSchema();
 
+		if (!class_exists('CancelRequest', false)) {
+			require_once dirname(__DIR__) . '/core/CancelRequest.php';
+		}
+
+		CancelRequest::ensureSchema();
+
+		if (!class_exists('AdminNotification', false)) {
+			require_once dirname(__DIR__) . '/core/AdminNotification.php';
+		}
+
+		AdminNotification::ensureSchema();
+
+		Contact::ensureSchema();
+
+		RateLimit::ensureSchema();
+
 		if (!class_exists('Address', false)) {
 			require_once dirname(__DIR__) . '/core/Address.php';
 		}

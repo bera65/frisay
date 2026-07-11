@@ -56,8 +56,10 @@ class Customer
 			return self::fail('Geçerli bir e-posta adresi girin');
 		}
 
-		if (strlen($password) < 6) {
-			return self::fail('Şifre en az 6 karakter olmalı');
+		$passwordError = Security::validatePassword($password);
+
+		if ($passwordError !== null) {
+			return self::fail($passwordError);
 		}
 
 		$exists = DB::getValue('SELECT id_user FROM users WHERE phone = ? LIMIT 1', [$phone]);
@@ -92,16 +94,27 @@ class Customer
 	public static function login(string $phone, string $password, bool $remember = true): array
 	{
 		$phone = self::normalizePhone($phone);
+		$identifier = RateLimit::loginIdentifier($phone);
+
+		if (RateLimit::isLimited(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier, 8, 900)) {
+			return self::fail('Çok fazla başarısız giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.');
+		}
 
 		if (!self::isValidPhone($phone)) {
+			RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
+
 			return self::fail('Telefon veya şifre hatalı');
 		}
 
 		$user = DB::getRowSafe('users', 'phone = ? AND active = 1', [$phone]);
 
 		if (!$user || !self::verifyPassword($password, $user['password'])) {
+			RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
+
 			return self::fail('Telefon veya şifre hatalı');
 		}
+
+		RateLimit::clear(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
 
 		self::upgradePasswordIfNeeded((int) $user['id_user'], $password, $user['password']);
 		self::loginSession((int) $user['id_user'], $remember);
@@ -261,8 +274,10 @@ class Customer
 			return self::fail('Mevcut şifre hatalı');
 		}
 
-		if (strlen($newPassword) < 6) {
-			return self::fail('Yeni şifre en az 6 karakter olmalı');
+		$passwordError = Security::validatePassword($newPassword);
+
+		if ($passwordError !== null) {
+			return self::fail($passwordError);
 		}
 
 		$updated = DB::update(
@@ -406,8 +421,10 @@ class Customer
 	{
 		$token = trim($token);
 
-		if (strlen($password) < 6) {
-			return self::fail('Şifre en az 6 karakter olmalı');
+		$passwordError = Security::validatePassword($password);
+
+		if ($passwordError !== null) {
+			return self::fail($passwordError);
 		}
 
 		if ($password !== $password2) {

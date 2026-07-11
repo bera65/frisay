@@ -279,12 +279,24 @@
 					<span>{'Subtotal'|translate}</span>
 					<span id="checkoutSubtotal">{$checkoutTotals.subtotal_formatted}</span>
 				</div>
-				{if $checkoutTotals.has_promotion}
+				{if $checkoutTotals.promotion_lines|@count}
+				<div id="checkoutPromotionLines">
+					{foreach $checkoutTotals.promotion_lines as $promoLine}
+					<div class="checkout-summary__row checkout-summary__row--discount">
+						<span>{$promoLine.name|escape}</span>
+						<span>-{$promoLine.discount_formatted}</span>
+					</div>
+					{/foreach}
+				</div>
+				{elseif $checkoutTotals.has_promotion}
+				<div id="checkoutPromotionLines">
 				<div class="checkout-summary__row checkout-summary__row--discount" id="checkoutPromotionRow">
 					<span>{$checkoutTotals.promotion_name|escape}</span>
 					<span id="checkoutPromotion">-{$checkoutTotals.promotion_discount_formatted}</span>
 				</div>
+				</div>
 				{else}
+				<div id="checkoutPromotionLines"></div>
 				<div class="checkout-summary__row checkout-summary__row--discount d-none" id="checkoutPromotionRow">
 					<span id="checkoutPromotionName"></span>
 					<span id="checkoutPromotion"></span>

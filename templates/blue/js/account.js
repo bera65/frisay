@@ -41,6 +41,15 @@
 		$('[data-account-panel="' + tab + '"]').addClass('is-active');
 	});
 
+	$(function () {
+		var params = new URLSearchParams(window.location.search);
+		if (params.get('tab')) {
+			$('[data-account-tab="' + params.get('tab') + '"]').trigger('click');
+		} else if (window.location.hash === '#notifications') {
+			$('[data-account-tab="notifications"]').trigger('click');
+		}
+	});
+
 	// Profile
 	$('#profileForm').on('submit', function (e) {
 		e.preventDefault();
@@ -201,7 +210,24 @@
 	function refreshCheckoutTotals(data) {
 		if (!data) return;
 		if (data.subtotal_formatted) $('#checkoutSubtotal').text(data.subtotal_formatted);
-		if (data.promotion_discount > 0) {
+		var $promoLines = $('#checkoutPromotionLines');
+		if ($promoLines.length) {
+			if (data.promotion_lines && data.promotion_lines.length) {
+				$promoLines.html(data.promotion_lines.map(function (line) {
+					return '<div class="checkout-summary__row checkout-summary__row--discount"><span>' +
+						$('<div>').text(line.name || '').html() +
+						'</span><span>-' + (line.discount_formatted || '') + '</span></div>';
+				}).join(''));
+			} else if ((data.promotion_discount || 0) > 0) {
+				$promoLines.html(
+					'<div class="checkout-summary__row checkout-summary__row--discount"><span>' +
+					$('<div>').text(data.promotion_name || '').html() +
+					'</span><span>-' + (data.promotion_discount_formatted || '') + '</span></div>'
+				);
+			} else {
+				$promoLines.empty();
+			}
+		} else if (data.promotion_discount > 0) {
 			$('#checkoutPromotionRow').removeClass('d-none');
 			$('#checkoutPromotionName').text(data.promotion_name || '');
 			$('#checkoutPromotion').text('-' + data.promotion_discount_formatted);

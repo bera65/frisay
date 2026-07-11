@@ -40,10 +40,22 @@ class WebApi
 		}
 
 		$provided = self::extractApiKey();
+		$ip = RateLimit::clientIp();
 
 		if ($provided === '' || !hash_equals($storedKey, $provided)) {
+			if (RateLimit::isLimited(RateLimit::SCOPE_WEBAPI . '_fail', $ip, 30, 900)) {
+				self::respond(429, ['success' => false, 'message' => 'Çok fazla başarısız istek. Daha sonra tekrar deneyin.']);
+			}
+
+			RateLimit::record(RateLimit::SCOPE_WEBAPI . '_fail', $ip);
 			self::respond(403, ['success' => false, 'message' => 'Geçersiz API anahtarı']);
 		}
+
+		if (RateLimit::isLimited(RateLimit::SCOPE_WEBAPI, $ip, 300, 900)) {
+			self::respond(429, ['success' => false, 'message' => 'İstek limiti aşıldı. Daha sonra tekrar deneyin.']);
+		}
+
+		RateLimit::record(RateLimit::SCOPE_WEBAPI, $ip);
 	}
 
 	private static function extractApiKey(): string
@@ -60,7 +72,7 @@ class WebApi
 			return trim($matches[1]);
 		}
 
-		return trim((string) Tools::getValue('api_key'));
+		return '';
 	}
 
 	private static function resolveMethod(): string
@@ -873,6 +885,7 @@ class WebApi
 			Order::STATUS_SHIPPED => 'Shipped',
 			Order::STATUS_DELIVERED => 'Delivered',
 			Order::STATUS_CANCELLED => 'Cancelled',
+			Order::STATUS_RETURN_PENDING => 'ReturnPending',
 			Order::STATUS_RETURNED => 'Returned',
 		];
 

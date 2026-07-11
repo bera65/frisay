@@ -7,10 +7,11 @@ class Routes
 	{
 		return [
 			'hesabim' => 'my-account',
-			'siparislerim' => 'orders',
-			'siparis' => 'order',
+			'siparislerim' => 'my-account',
+			'siparis' => 'my-account',
 			'iadeler' => 'returns',
 			'iade-talebi' => 'return-request',
+			'iptal-talebi' => 'cancel-request',
 			'favoriler' => 'favorites',
 			'sifremi-unuttum' => 'forgot-password',
 			'sifre-sifirla' => 'reset-password',
@@ -33,10 +34,9 @@ class Routes
 	{
 		return [
 			'my-account',
-			'orders',
-			'order',
 			'returns',
 			'return-request',
+			'cancel-request',
 			'favorites',
 		];
 	}
@@ -54,6 +54,11 @@ class Routes
 		$newSlug = $map[$slug];
 		$params = $_GET;
 		unset($params['container']);
+
+		if (isset($params['id']) && !isset($params['order']) && in_array($newSlug, ['my-account', 'order'], true)) {
+			$params['order'] = $params['id'];
+			unset($params['id']);
+		}
 
 		$url = rtrim($domain, '/') . '/' . $newSlug;
 

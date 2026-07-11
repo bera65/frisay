@@ -141,11 +141,21 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'PIN girin'];
 		}
 
+		$identifier = RateLimit::loginIdentifier('pos_unlock');
+
+		if (RateLimit::isLimited(RateLimit::SCOPE_POS_LOGIN, $identifier, 8, 900)) {
+			return ['success' => false, 'message' => 'Çok fazla deneme. 15 dakika sonra tekrar deneyin.'];
+		}
+
 		$hash = (string) Settings::get(self::SET_PIN_HASH, '');
 
 		if (!password_verify($pin, $hash)) {
+			RateLimit::record(RateLimit::SCOPE_POS_LOGIN, $identifier);
+
 			return ['success' => false, 'message' => 'Hatalı PIN'];
 		}
+
+		RateLimit::clear(RateLimit::SCOPE_POS_LOGIN, $identifier);
 
 		unset($_SESSION[self::SESSION_SCREEN_LOCKED]);
 
@@ -416,11 +426,21 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'PIN girin'];
 		}
 
+		$identifier = RateLimit::loginIdentifier('pos_login');
+
+		if (RateLimit::isLimited(RateLimit::SCOPE_POS_LOGIN, $identifier, 8, 900)) {
+			return ['success' => false, 'message' => 'Çok fazla deneme. 15 dakika sonra tekrar deneyin.'];
+		}
+
 		$hash = (string) Settings::get(self::SET_PIN_HASH, '');
 
 		if (!password_verify($pin, $hash)) {
+			RateLimit::record(RateLimit::SCOPE_POS_LOGIN, $identifier);
+
 			return ['success' => false, 'message' => 'Hatalı PIN'];
 		}
+
+		RateLimit::clear(RateLimit::SCOPE_POS_LOGIN, $identifier);
 
 		$_SESSION[self::SESSION_AUTH] = time();
 		unset($_SESSION[self::SESSION_SCREEN_LOCKED]);

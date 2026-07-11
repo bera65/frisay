@@ -33,14 +33,14 @@
 			{if $hasVirtual}
 			<div class="alert alert-info small mt-3 mb-0">
 				{'Virtual product checkout notice'|translate}
-				<a href="{$domain}order?id={$order.id_order}">{'Order Detail'|translate}</a>.
+				<a href="{$domain}my-account?order={$order.id_order}">{'Order Detail'|translate}</a>.
 			</div>
 			{/if}
 		</div>
 
 		<div class="d-flex flex-wrap gap-2 justify-content-center">
-			<a href="{$domain}order?id={$order.id_order}" class="prime-btn prime-btn--primary">{'Order Detail'|translate}</a>
-			<a href="{$domain}orders" class="prime-btn prime-btn--outline">{'My Orders'|translate}</a>
+			<a href="{$domain}my-account?order={$order.id_order}" class="prime-btn prime-btn--primary">{'Order Detail'|translate}</a>
+			<a href="{$domain}my-account" class="prime-btn prime-btn--outline">{'My Orders'|translate}</a>
 			<a href="{$domain}" class="prime-btn prime-btn--outline">{'Continue Shopping'|translate}</a>
 		</div>
 	</div>

@@ -1,8 +1,8 @@
-# FriSay
+# FShop
 
 **Version 2.1.0** — Open-source PHP e-commerce for merchants and developers who want a readable, self-hosted store without a heavy framework.
 
-FriSay runs on plain PHP, MySQL, Apache, and Smarty. You own your data, extend the shop with modules, and customize the storefront with themes — no Node build step, no vendor lock-in.
+FShop runs on plain PHP, MySQL, Apache, and Smarty. You own your data, extend the shop with modules, and customize the storefront with themes — no Node build step, no vendor lock-in.
 
 🔗 **Repository:** [github.com/bera65/frisay](https://github.com/bera65/frisay)
 

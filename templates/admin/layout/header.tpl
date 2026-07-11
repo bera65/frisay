@@ -47,6 +47,11 @@
 				<span class="menu-item__label">{'İadeler'|adminT}</span>
 				{if $adminNavBadges.returns > 0}<span class="nav-badge">{$adminNavBadges.returns}</span>{/if}
 			</a>
+			<a href="{$adminUrl}cancellations" class="menu-item {if $pageName == 'cancellations' || $pageName == 'cancel'}active{/if}">
+				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span>
+				<span class="menu-item__label">{'İptaller'|adminT}</span>
+				{if $adminNavBadges.cancellations > 0}<span class="nav-badge">{$adminNavBadges.cancellations}</span>{/if}
+			</a>
 			<a href="{$adminUrl}customers" class="menu-item {if $pageName == 'customers' || $pageName == 'customer'}active{/if}">
 				<span class="menu-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
 				<span class="menu-item__label">{'Müşteriler'|adminT}</span>
@@ -167,10 +172,16 @@
 						<li><a class="dropdown-item" href="{$adminUrl}settings">{'Site Ayarları'|adminT}</a></li>
 					</ul>
 				</div>
+				<a href="{$adminUrl}notifications" class="header-icon-btn" title="{'Bildirimler'|adminT}">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+					{if $adminNavBadges.notifications > 0}<span class="header-icon-btn__badge">{$adminNavBadges.notifications}</span>{/if}
+				</a>
+				{*
 				<a href="{$adminUrl}messages" class="header-icon-btn" title="{'Mesajlar'|adminT}">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
 					{if $adminNavBadges.messages > 0}<span class="header-icon-btn__badge">{$adminNavBadges.messages}</span>{/if}
 				</a>
+				*}
 				<div class="dropdown">
 					<button class="header-user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 						<span class="header-user__avatar">{$adminInitial|escape}</span>

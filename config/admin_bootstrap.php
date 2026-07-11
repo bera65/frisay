@@ -30,9 +30,13 @@
 		}
 	}
 
+	require_once dirname(__FILE__) . '/../core/Security.php';
+	require_once dirname(__FILE__) . '/../core/RateLimit.php';
 	require_once dirname(__FILE__) . '/../core/Admin.php';
 	require_once dirname(__FILE__) . '/../core/Order.php';
 	require_once dirname(__FILE__) . '/../core/ReturnRequest.php';
+	require_once dirname(__FILE__) . '/../core/CancelRequest.php';
+	require_once dirname(__FILE__) . '/../core/AdminNotification.php';
 	require_once dirname(__FILE__) . '/../core/Contact.php';
 	require_once dirname(__FILE__) . '/../core/Product.php';
 	require_once dirname(__FILE__) . '/../core/ProductVariation.php';
@@ -99,6 +103,8 @@
 	$adminNavBadges = [
 		'orders' => Order::countAdmin(Order::STATUS_PENDING) + Order::countAdmin(Order::STATUS_PROCESSING),
 		'returns' => ReturnRequest::countPending(),
+		'cancellations' => CancelRequest::countPending(),
+		'notifications' => AdminNotification::countUnread(),
 		'messages' => Contact::countUnread(),
 	];
 

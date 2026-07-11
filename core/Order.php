@@ -8,6 +8,7 @@ class Order
 	const STATUS_DELIVERED = 4;
 	const STATUS_CANCELLED = 5;
 	const STATUS_RETURNED = 6;
+	const STATUS_RETURN_PENDING = 7;
 
 	private static bool $schemaReady = false;
 
@@ -35,6 +36,18 @@ class Order
 				DB::execute("ALTER TABLE `orders` ADD COLUMN `{$name}` {$definition}");
 			}
 		}
+
+		$dateDelivered = DB::execute("SHOW COLUMNS FROM `orders` LIKE 'date_delivered'");
+
+		if (empty($dateDelivered)) {
+			DB::execute(
+				"ALTER TABLE `orders` ADD COLUMN `date_delivered` datetime DEFAULT NULL AFTER `date_add`"
+			);
+			DB::execute(
+				'UPDATE orders SET date_delivered = date_add WHERE status = ? AND date_delivered IS NULL',
+				[self::STATUS_DELIVERED]
+			);
+		}
 	}
 
 	public static function getStatusLabel(int $status): string
@@ -46,6 +59,7 @@ class Order
 			self::STATUS_DELIVERED => translate('Order status delivered'),
 			self::STATUS_CANCELLED => translate('Order status cancelled'),
 			self::STATUS_RETURNED => translate('Order status returned'),
+			self::STATUS_RETURN_PENDING => translate('Order status return pending'),
 		];
 
 		return $labels[$status] ?? translate('Order status unknown');
@@ -343,7 +357,7 @@ class Order
 				Coupon::remove();
 			}
 
-			Notification::orderPlaced($idUser, $reference, (float) $totals['total']);
+			Notification::orderPlaced($idUser, $reference, (float) $totals['total'], (int) $idOrder);
 
 			if ($idUser <= 0) {
 				self::grantGuestOrderAccess((int) $idOrder);
@@ -554,21 +568,67 @@ class Order
 		return $rows;
 	}
 
+	public static function enrichUserOrderRows(array $rows): array
+	{
+		foreach ($rows as &$row) {
+			$idOrder = (int) $row['id_order'];
+			$status = (int) $row['status'];
+
+			$row['status_label'] = self::getStatusLabel($status);
+			$row['status_class'] = self::getStatusBadgeClass($status);
+			$row['payment_label'] = self::getPaymentLabel($row['payment_method']);
+			$row['total_formatted'] = Tools::displayPrice($row['total']);
+			$row['date_formatted'] = Tools::formatDate3($row['date_add']);
+			$row['is_ongoing'] = in_array($status, [self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_SHIPPED], true);
+			$row['is_cancelled'] = $status === self::STATUS_CANCELLED;
+			$row['is_returned'] = in_array($status, [self::STATUS_RETURNED, self::STATUS_RETURN_PENDING], true);
+			$row['is_return_pending'] = $status === self::STATUS_RETURN_PENDING;
+			$row['is_return_completed'] = $status === self::STATUS_RETURNED;
+			$row['is_delivered'] = $status === self::STATUS_DELIVERED;
+
+			$items = DB::execute(
+				'SELECT od.*, i.id_image
+				FROM order_detail od
+				LEFT JOIN images i ON i.id_product = od.id_product AND i.cover = 1
+				WHERE od.id_order = ?
+				ORDER BY od.id_order_detail ASC',
+				[$idOrder]
+			) ?: [];
+
+			$row['item_count'] = count($items);
+			$first = $items[0] ?? null;
+			$row['thumb_product'] = $first['product_name'] ?? '';
+			$row['thumb_url'] = !empty($first['id_image'])
+				? Product::getImageUrl((int) $first['id_image'])
+				: '../img/default.jpg';
+			$row['first_product_id'] = (int) ($first['id_product'] ?? 0);
+			$row['can_review'] = $status === self::STATUS_DELIVERED && $row['first_product_id'] > 0;
+		}
+		unset($row);
+
+		return $rows;
+	}
+
+	public static function canCustomerCancel(int $status): bool
+	{
+		return in_array($status, [self::STATUS_PENDING, self::STATUS_PROCESSING], true);
+	}
+
 	/** Ana sayfa: teslim edilmemiş son siparişler (en fazla 3). */
 	public static function getActiveOrdersForViewer(int $limit = 3): array
 	{
 		$limit = max(1, min(3, $limit));
-		$exclude = [self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED];
+		$exclude = [self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED, self::STATUS_RETURN_PENDING];
 		$idUser = Customer::getId();
 		$rows = [];
 
 		if ($idUser > 0) {
 			$rows = DB::execute(
 				'SELECT * FROM orders
-				 WHERE id_user = ? AND status NOT IN (?, ?, ?)
+				 WHERE id_user = ? AND status NOT IN (?, ?, ?, ?)
 				 ORDER BY id_order DESC
 				 LIMIT ' . $limit,
-				[$idUser, self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED]
+				[$idUser, self::STATUS_DELIVERED, self::STATUS_CANCELLED, self::STATUS_RETURNED, self::STATUS_RETURN_PENDING]
 			) ?: [];
 		} elseif (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_order_ids']) && is_array($_SESSION['guest_order_ids'])) {
 			$ids = array_values(array_filter(array_map('intval', array_keys($_SESSION['guest_order_ids']))));
@@ -580,7 +640,7 @@ class Order
 					'SELECT * FROM orders
 					 WHERE id_order IN (' . $placeholders . ')
 					   AND id_user = 0
-					   AND status NOT IN (?, ?, ?)
+					   AND status NOT IN (?, ?, ?, ?)
 					 ORDER BY id_order DESC
 					 LIMIT ' . $limit,
 					$params
@@ -603,6 +663,7 @@ class Order
 			case self::STATUS_DELIVERED:
 				return 100;
 			case self::STATUS_RETURNED:
+			case self::STATUS_RETURN_PENDING:
 				return 100;
 			default:
 				return 5;
@@ -622,6 +683,8 @@ class Order
 				return translate('Order status delivered');
 			case self::STATUS_RETURNED:
 				return translate('Order status returned');
+			case self::STATUS_RETURN_PENDING:
+				return translate('Order status return pending');
 			default:
 				return self::getStatusLabel((int) $status);
 		}
@@ -688,6 +751,7 @@ class Order
 			self::STATUS_SHIPPED => self::getStatusLabel(self::STATUS_SHIPPED),
 			self::STATUS_DELIVERED => self::getStatusLabel(self::STATUS_DELIVERED),
 			self::STATUS_CANCELLED => self::getStatusLabel(self::STATUS_CANCELLED),
+			self::STATUS_RETURN_PENDING => self::getStatusLabel(self::STATUS_RETURN_PENDING),
 			self::STATUS_RETURNED => self::getStatusLabel(self::STATUS_RETURNED),
 		];
 	}
@@ -700,6 +764,7 @@ class Order
 			self::STATUS_SHIPPED => 'shipped',
 			self::STATUS_DELIVERED => 'delivered',
 			self::STATUS_CANCELLED => 'cancelled',
+			self::STATUS_RETURN_PENDING => 'return-pending',
 			self::STATUS_RETURNED => 'returned',
 		];
 
@@ -884,6 +949,12 @@ class Order
 
 		if (array_key_exists('tracking_number', $data)) {
 			$row['tracking_number'] = mb_substr(trim(strip_tags((string) $data['tracking_number'])), 0, 64);
+		}
+
+		$newStatus = (int) ($row['status'] ?? $oldStatus);
+
+		if (isset($row['status']) && $newStatus === self::STATUS_DELIVERED && $oldStatus !== self::STATUS_DELIVERED) {
+			$row['date_delivered'] = date('Y-m-d H:i:s');
 		}
 
 		if ($row === []) {

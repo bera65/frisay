@@ -7,7 +7,7 @@
 	$readFilter = Tools::getValue('read');
 	$readFilter = $readFilter === '' ? null : (int) $readFilter;
 	$perPage = 30;
-	$total = Contact::countAdmin($readFilter);
+	$total = Contact::countAdminThreads($readFilter);
 	$query = [];
 
 	if ($readFilter !== null) {
@@ -15,15 +15,10 @@
 	}
 
 	$pagination = Pagination::build($total, $currentPage, $perPage, Admin::url('messages'), $query);
-	$messages = Contact::getAdminList($perPage, $pagination['offset'], $readFilter);
-
-	foreach ($messages as &$msg) {
-		$msg['date_formatted'] = Tools::formatDate3($msg['date_add']);
-	}
-	unset($msg);
+	$threads = Contact::getAdminThreadList($perPage, $pagination['offset'], $readFilter);
 
 	$smarty->assign([
-		'messages' => $messages,
+		'threads' => $threads,
 		'pagination' => $pagination,
 		'readFilter' => $readFilter,
 	]);

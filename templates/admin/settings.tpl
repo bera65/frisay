@@ -120,7 +120,7 @@
 				<div class="mb-3">
 					<label class="form-label">{$settingsKeys.RETURN_REQUEST_DAYS.label|escape}</label>
 					<input type="number" min="0" max="365" name="RETURN_REQUEST_DAYS" class="form-control" value="{$settingsValues.RETURN_REQUEST_DAYS|escape}">
-					<div class="form-text">Müşteriler sipariş tarihinden itibaren bu gün sayısı içinde iade talebi oluşturabilir. 0 = kapalı.</div>
+					<div class="form-text">Müşteriler yalnızca <strong>teslim edilmiş</strong> siparişler için, teslim tarihinden itibaren bu gün sayısı içinde iade talebi oluşturabilir. 0 = kapalı.</div>
 				</div>
 			</div>
 

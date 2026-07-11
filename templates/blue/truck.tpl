@@ -62,7 +62,7 @@
 
 		<p class="mb-3"><strong>{'Payment'|translate}:</strong> {$trackResult.payment_label}</p>
 
-		<a href="{$domain}order?id={$trackResult.id_order}" class="prime-btn prime-btn--primary prime-btn--sm">{'Order Detail'|translate}</a>
+		<a href="{$domain}my-account?order={$trackResult.id_order}" class="prime-btn prime-btn--primary prime-btn--sm">{'Order Detail'|translate}</a>
 
 		{else}
 

@@ -22,6 +22,8 @@
 	$selectLang = clearSQL((string) $_SESSION['selectLang']);
 
 	require_once(dirname(__FILE__).'/../lang/lang.php');
+	require_once(dirname(__FILE__).'/../core/Security.php');
+	require_once(dirname(__FILE__).'/../core/RateLimit.php');
 	require_once(dirname(__FILE__).'/../core/Product.php');
 	require_once(dirname(__FILE__).'/../core/ProductVariation.php');
 	require_once(dirname(__FILE__).'/../core/ProductOption.php');
@@ -30,6 +32,8 @@
 	require_once(dirname(__FILE__).'/../core/Customer.php');
 	require_once(dirname(__FILE__).'/../core/Order.php');
 	require_once(dirname(__FILE__).'/../core/ReturnRequest.php');
+	require_once(dirname(__FILE__).'/../core/CancelRequest.php');
+	require_once(dirname(__FILE__).'/../core/AdminNotification.php');
 	require_once(dirname(__FILE__).'/../core/Category.php');
 	require_once(dirname(__FILE__).'/../core/Favorite.php');
 	require_once(dirname(__FILE__).'/../core/Contact.php');

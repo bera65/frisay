@@ -69,7 +69,7 @@
 						<li><a class="dropdown-item" title="{'Login'|translate}" href="{$domain}login">{'Login'|translate}</a></li>
 					{/if}
 					<li><a class="dropdown-item" href="{$domain}login" title="{'My Favorites'|translate}">{'My Favorites'|translate}</a></li>
-					<li><a class="dropdown-item" href="{$domain}orders" title="{'My Orders'|translate}">{'My Orders'|translate}</a></li>
+					<li><a class="dropdown-item" href="{$domain}my-account" title="{'My Orders'|translate}">{'My Orders'|translate}</a></li>
 					<li><a class="dropdown-item" href="{$domain}my-account#notifications" title="{'Notifications'|translate}">{'Notifications'|translate} ({$notificationCount})</a></li>
 					<li><a class="dropdown-item" href="{$domain}my-account#addresses" title="{'My Addresses'|translate}">{'My Addresses'|translate}</a></li>
 					{if $isLoggedIn}

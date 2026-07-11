@@ -755,8 +755,27 @@ a { text-decoration: none; }
 .ps-status-badge--shipped { background: var(--ps-green); }
 .ps-status-badge--delivered { background: var(--ps-orange); }
 .ps-status-badge--cancelled { background: var(--navy-dark); }
+.ps-status-badge--return-pending { background: #9333ea; }
 .ps-status-badge--returned { background: #7c3aed; }
 .ps-status-badge--default { background: var(--ps-blue); }
+
+.contact-admin-thread__item--customer .contact-admin-thread__body {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	padding: 12px 14px;
+}
+.contact-admin-thread__item--admin .contact-admin-thread__body {
+	background: #fff7ed;
+	border: 1px solid #fed7aa;
+	border-radius: 10px;
+	padding: 12px 14px;
+}
+.contact-admin-thread {
+	max-height: 560px;
+	overflow-y: auto;
+	padding-right: 4px;
+}
 
 .ps-order-actions {
 	display: flex;

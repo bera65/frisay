@@ -50,7 +50,7 @@ class CartPromotion
 	{
 		self::ensureSchema();
 
-		$rows = DB::execute('SELECT * FROM cart_promotions ORDER BY priority DESC, date_add DESC') ?: [];
+		$rows = DB::execute('SELECT * FROM cart_promotions ORDER BY date_add DESC') ?: [];
 
 		foreach ($rows as &$row) {
 			$row = self::enrichAdmin($row);
@@ -81,7 +81,6 @@ class CartPromotion
 		$buyQty = max(2, (int) ($data['buy_qty'] ?? 3));
 		$payQty = max(1, (int) ($data['pay_qty'] ?? 2));
 		$minCart = max(0.0, (float) ($data['min_cart'] ?? 0));
-		$priority = (int) ($data['priority'] ?? 0);
 		$active = !empty($data['active']) ? 1 : 0;
 		$dateFrom = self::normalizeDateTime((string) ($data['date_from'] ?? ''));
 		$dateTo = self::normalizeDateTime((string) ($data['date_to'] ?? ''));
@@ -118,7 +117,7 @@ class CartPromotion
 			'buy_qty' => $buyQty,
 			'pay_qty' => $payQty,
 			'min_cart' => $minCart,
-			'priority' => $priority,
+			'priority' => 0,
 			'active' => $active,
 			'date_from' => $dateFrom !== '' ? $dateFrom : null,
 			'date_to' => $dateTo !== '' ? $dateTo : null,
@@ -158,7 +157,13 @@ class CartPromotion
 		return self::ok('Kampanya silindi');
 	}
 
-	/** @return array{discount: float, name: string, label: string, id_promotion: int} */
+	/** @return array{
+	 *   discount: float,
+	 *   name: string,
+	 *   label: string,
+	 *   id_promotion: int,
+	 *   lines: array<int, array{name: string, label: string, discount: float, discount_formatted: string, id_promotion: int}>
+	 * } */
 	public static function calculate(array $cart): array
 	{
 		self::ensureSchema();
@@ -168,6 +173,7 @@ class CartPromotion
 			'name' => '',
 			'label' => '',
 			'id_promotion' => 0,
+			'lines' => [],
 		];
 
 		if (!empty($cart['empty']) || empty($cart['items'])) {
@@ -175,49 +181,74 @@ class CartPromotion
 		}
 
 		$subtotal = (float) ($cart['total'] ?? $cart['subtotal'] ?? 0);
-		$promotion = self::resolveActivePromotion($subtotal);
+		$promotions = self::resolveActivePromotions($subtotal);
 
-		if (!$promotion) {
+		if ($promotions === []) {
 			return $empty;
 		}
 
 		$units = self::expandUnits($cart['items']);
-		$discount = 0.0;
+		$totalDiscount = 0.0;
+		$lines = [];
+		$labels = [];
+		$names = [];
 
-		if ($promotion['promo_type'] === 'buy_x_pay_y') {
-			$discount = self::calculateBuyXPayY($units, $promotion);
-		} else {
-			$discount = self::calculateNthItem($units, $promotion);
+		foreach ($promotions as $promotion) {
+			if ($promotion['promo_type'] === 'buy_x_pay_y') {
+				$discount = self::calculateBuyXPayY($units, $promotion);
+			} else {
+				$discount = self::calculateNthItem($units, $promotion);
+			}
+
+			$discount = max(0.0, round($discount, 2));
+
+			if ($discount <= 0) {
+				continue;
+			}
+
+			$totalDiscount += $discount;
+			$name = (string) $promotion['name'];
+			$label = self::buildLabel($promotion, $discount);
+			$names[] = $name;
+			$labels[] = $label;
+			$lines[] = [
+				'id_promotion' => (int) $promotion['id_promotion'],
+				'name' => $name,
+				'label' => $label,
+				'discount' => $discount,
+				'discount_formatted' => Tools::displayPrice($discount),
+			];
 		}
 
-		$discount = min($subtotal, max(0.0, round($discount, 2)));
+		$totalDiscount = min($subtotal, max(0.0, round($totalDiscount, 2)));
 
-		if ($discount <= 0) {
+		if ($totalDiscount <= 0) {
 			return $empty;
 		}
 
 		return [
-			'discount' => $discount,
-			'name' => (string) $promotion['name'],
-			'label' => self::buildLabel($promotion, $discount),
-			'id_promotion' => (int) $promotion['id_promotion'],
+			'discount' => $totalDiscount,
+			'name' => implode(' + ', $names),
+			'label' => implode('; ', $labels),
+			'id_promotion' => count($lines) === 1 ? (int) $lines[0]['id_promotion'] : 0,
+			'lines' => $lines,
 		];
 	}
 
-	private static function resolveActivePromotion(float $subtotal): ?array
+	/** @return array<int, array<string, mixed>> */
+	private static function resolveActivePromotions(float $subtotal): array
 	{
 		$now = date('Y-m-d H:i:s');
-		$rows = DB::execute(
+
+		return DB::execute(
 			'SELECT * FROM cart_promotions
 			 WHERE active = 1
 			 AND (date_from IS NULL OR date_from <= ?)
 			 AND (date_to IS NULL OR date_to >= ?)
 			 AND (min_cart <= 0 OR min_cart <= ?)
-			 ORDER BY priority DESC, id_promotion DESC',
+			 ORDER BY id_promotion ASC',
 			[$now, $now, $subtotal]
 		) ?: [];
-
-		return $rows[0] ?? null;
 	}
 
 	/** @param array<int, array{unit_price: float}> $units */

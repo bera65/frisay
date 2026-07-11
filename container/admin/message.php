@@ -3,21 +3,71 @@
 		exit;
 	}
 
+	$idOrder = (int) Tools::getValue('order');
 	$id = (int) Tools::getValue('id');
-	$message = Contact::getById($id);
+	$flash = Tools::getValue('sent') === '1' ? 'Yanıt müşteriye gönderildi' : '';
+	$flashType = $flash !== '' ? 'success' : 'info';
+	$replyToId = (int) Tools::getValue('reply_to');
 
-	if (!$message) {
+	if (Tools::isSubmit('replyMessage')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} else {
+			if ($replyToId <= 0) {
+				$replyToId = (int) Tools::getValue('reply_to_message_id');
+			}
+
+			$result = Contact::replyFromAdmin($replyToId, (string) Tools::getValue('reply'));
+			$flash = $result['message'];
+			$flashType = !empty($result['success']) ? 'success' : 'danger';
+
+			if (!empty($result['success'])) {
+				if ($idOrder > 0) {
+					header('Location: ' . Admin::url('message') . '?order=' . $idOrder . '&sent=1');
+					exit;
+				}
+
+				header('Location: ' . Admin::url('message') . '?id=' . $replyToId . '&sent=1');
+				exit;
+			}
+		}
+	}
+
+	$thread = null;
+
+	if ($idOrder > 0) {
+		$thread = Contact::getAdminOrderThread($idOrder);
+
+		if ($thread) {
+			Contact::markOrderThreadRead($idOrder);
+		}
+	} elseif ($id > 0) {
+		$message = Contact::getById($id);
+
+		if ($message && (int) ($message['id_order'] ?? 0) > 0) {
+			header('Location: ' . Admin::url('message') . '?order=' . (int) $message['id_order']);
+			exit;
+		}
+
+		$thread = Contact::getAdminGeneralThread($id);
+
+		if ($thread) {
+			Contact::markRead($id);
+		}
+	}
+
+	if (!$thread) {
 		http_response_code(404);
 		AdminPage::add('404', 'Mesaj Bulunamadı');
 		return;
 	}
 
-	if (!(int) $message['is_read']) {
-		Contact::markRead($id);
-		$message['is_read'] = 1;
-	}
-
-	$message['date_formatted'] = Tools::formatDate3($message['date_add']);
-
-	$smarty->assign('message', $message);
-	AdminPage::add('message', 'Mesaj Detayı');
+	$smarty->assign([
+		'thread' => $thread,
+		'flash' => $flash,
+		'flashType' => $flashType,
+	]);
+	AdminPage::add('message', $thread['is_order_thread'] ? 'Sipariş Mesajları' : 'Mesaj Detayı');
