@@ -1,9 +1,9 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-	<p class="text-muted small mb-0">{if $unreadCount > 0}{$unreadCount} okunmamış bildirim{else}Tüm bildirimler okundu{/if}</p>
+	<p class="text-muted small mb-0">{if $unreadCount > 0}{$unreadCount}{' unread notifications'|adminT}{else}{'All notifications read'|adminT}{/if}</p>
 	{if $unreadCount > 0}
 	<form method="post" class="mb-0">
 		<input type="hidden" name="token" value="{$adminToken}">
-		<button type="submit" name="markAllRead" value="1" class="btn btn-sm btn-outline-secondary">Tümünü okundu işaretle</button>
+		<button type="submit" name="markAllRead" value="1" class="btn btn-sm btn-outline-secondary">{'Mark all as read'|adminT}</button>
 	</form>
 	{/if}
 </div>
@@ -22,13 +22,13 @@
 					</div>
 					<div class="d-flex flex-column gap-1 align-items-end">
 						{if $n.link}
-						<a href="{$n.link|escape}" class="btn btn-sm btn-outline-dark">Görüntüle</a>
+						<a href="{$n.link|escape}" class="btn btn-sm btn-outline-dark">{'View'|adminT}</a>
 						{/if}
 						{if !$n.is_read}
 						<form method="post" class="mb-0">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="id" value="{$n.id_notification}">
-							<button type="submit" name="markRead" value="1" class="btn btn-sm btn-link">Okundu</button>
+							<button type="submit" name="markRead" value="1" class="btn btn-sm btn-link">{'Mark as read'|adminT}</button>
 						</form>
 						{/if}
 					</div>
@@ -37,7 +37,7 @@
 			{/foreach}
 		</div>
 		{else}
-		<p class="text-muted p-4 mb-0">Bildirim bulunmuyor.</p>
+		<p class="text-muted p-4 mb-0">{'No notifications.'|adminT}</p>
 		{/if}
 	</div>
 </div>

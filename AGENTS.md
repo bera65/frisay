@@ -107,6 +107,7 @@ Tema dosyalarında tanımlı hook noktaları:
 |------|--------|
 | `footer` | `templates/default/footer.tpl` |
 | `home_slider` | `templates/default/header.tpl` |
+| `main_menu` | Tema üst menü (`_mini/header*.tpl`) — kategori menüsü yerine |
 | `home_promo_slider` | `templates/default/home.tpl` |
 | `product`, `product_inf`, `product_detail` | `templates/default/product.tpl` |
 | `product_tab`, `product_tab_content` | `templates/default/product.tpl` |

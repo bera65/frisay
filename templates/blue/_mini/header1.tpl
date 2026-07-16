@@ -96,12 +96,16 @@
 <div class="menu-card-wrapper container">
 <div id="menu" class="menu-card">
 	<ul class="nav-list">
+		{if $hooks.main_menu}
+			{$hooks.main_menu nofilter}
+		{else}
 		<li><a href="{$domain}" class="desktop-nav-link{if $pageName == 'home'} active{/if}">{'Home Page'|translate}</a></li>
 		{foreach $menuCategories as $cat}
 			<li><a href="{$domain}{$cat.category_link}" class="desktop-nav-link{if isset($category) && $category.category_link == $cat.category_link} active{/if}">{$cat.category_name|escape}</a></li>
 		{/foreach}
 		<li><a href="{$domain}special" class="desktop-nav-link{if $pageName == 'special'} active{/if}">{'Specilas'|translate}</a></li>
 		<li><a href="{$domain}contact" class="desktop-nav-link{if $pageName == 'contact'} active{/if}">{'Contact'|translate}</a></li>
+		{/if}
 	</ul>
 </div>
 </div>

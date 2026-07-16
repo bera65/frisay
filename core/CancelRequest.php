@@ -227,8 +227,8 @@ class CancelRequest
 		if ($order) {
 			Notification::cancelRequestSubmitted($idUser, (string) $order['reference'], $idOrder);
 			AdminNotification::add(
-				'Yeni iptal talebi',
-				'Sipariş #' . $order['reference'] . ' için iptal talebi oluşturuldu.',
+				'New cancel request',
+				'Cancel request created for order #' . $order['reference'] . '.',
 				self::adminLink('cancel?id=' . $idCancel),
 				'cancel_request'
 			);

@@ -1,7 +1,7 @@
 <div class="admin-toolbar d-flex flex-wrap gap-2 mb-3">
 	<form method="get" action="{$adminUrl}customers" class="d-flex gap-2 flex-grow-1">
-		<input type="search" name="q" class="form-control form-control-sm" placeholder="Ad, telefon veya e-posta ara..." value="{$searchQuery|escape}">
-		<button type="submit" class="btn btn-sm btn-dark">Ara</button>
+		<input type="search" name="q" class="form-control form-control-sm" placeholder="{'Search name, phone or email...'|adminT}" value="{$searchQuery|escape}">
+		<button type="submit" class="btn btn-sm btn-dark">{'Search'|adminT}</button>
 	</form>
 </div>
 
@@ -11,13 +11,13 @@
 			<thead>
 				<tr>
 					<th>ID</th>
-					<th>Ad Soyad</th>
-					<th>Telefon</th>
-					<th>E-posta</th>
-					<th>Sipariş</th>
-					<th>Toplam</th>
-					<th>Kayıt</th>
-					<th>Durum</th>
+					<th>{'Full name'|adminT}</th>
+					<th>{'Phone'|adminT}</th>
+					<th>{'Email'|adminT}</th>
+					<th>{'Order'|adminT}</th>
+					<th>{'Total'|adminT}</th>
+					<th>{'Registered'|adminT}</th>
+					<th>{'Status'|adminT}</th>
 					<th></th>
 				</tr>
 			</thead>
@@ -32,12 +32,12 @@
 					<td>{$row.order_count}</td>
 					<td>{$row.order_total_formatted}</td>
 					<td>{$row.date_formatted}</td>
-					<td>{if $row.active}Aktif{else}<span class="text-danger">Pasif</span>{/if}</td>
-					<td class="text-end"><a href="{$adminUrl}customer?id={$row.id_user}" class="btn btn-sm btn-outline-dark">Detay</a></td>
+					<td>{if $row.active}{'Active'|adminT}{else}<span class="text-danger">{'Inactive'|adminT}</span>{/if}</td>
+					<td class="text-end"><a href="{$adminUrl}customer?id={$row.id_user}" class="btn btn-sm btn-outline-dark">{'Detail'|adminT}</a></td>
 				</tr>
 				{/foreach}
 				{else}
-				<tr><td colspan="9" class="text-muted">Müşteri bulunamadı.</td></tr>
+				<tr><td colspan="9" class="text-muted">{'No customers found.'|adminT}</td></tr>
 				{/if}
 			</tbody>
 		</table>

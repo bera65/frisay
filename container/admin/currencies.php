@@ -10,7 +10,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$action = trim((string) Tools::getValue('action'));
@@ -41,7 +41,7 @@
 					break;
 
 				default:
-					$result = ['success' => false, 'message' => 'Geçersiz işlem'];
+					$result = ['success' => false, 'message' => adminT('Invalid action')];
 					break;
 			}
 
@@ -57,4 +57,4 @@
 		'flashType' => $flashType,
 	]);
 
-	AdminPage::add('currencies', 'Para Birimleri');
+	AdminPage::add('currencies', 'Currencies');

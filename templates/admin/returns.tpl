@@ -1,5 +1,5 @@
 <div class="ps-order-filters mb-3">
-	<a href="{$adminUrl}returns" class="ps-filter-pill{if $statusFilter == 0} active{/if}">{'Tümü'|adminT}</a>
+	<a href="{$adminUrl}returns" class="ps-filter-pill{if $statusFilter == 0} active{/if}">{'All'|adminT}</a>
 	{foreach $statusOptions as $statusId => $statusLabel}
 	<a href="{$adminUrl}returns?status={$statusId}" class="ps-filter-pill{if $statusFilter == $statusId} active{/if}">{$statusLabel|escape}</a>
 	{/foreach}
@@ -7,7 +7,7 @@
 
 <div class="ps-panel">
 	<div class="ps-panel__head ps-panel__head--split">
-		<h2>{'İadeler'|adminT} {if $returnsTotal > 0}<span class="ps-panel__count">({$returnsTotal})</span>{/if}</h2>
+		<h2>{'Returns'|adminT} {if $returnsTotal > 0}<span class="ps-panel__count">({$returnsTotal})</span>{/if}</h2>
 	</div>
 	<div class="ps-panel__body p-0">
 		{if $returns|@count}
@@ -16,10 +16,10 @@
 				<thead>
 					<tr>
 						<th>#</th>
-						<th>{'Sipariş'|adminT}</th>
-						<th>{'Müşteri'|adminT}</th>
-						<th>{'Tarih'|adminT}</th>
-						<th>{'Durum'|adminT}</th>
+						<th>{'Order'|adminT}</th>
+						<th>{'Customer'|adminT}</th>
+						<th>{'Date'|adminT}</th>
+						<th>{'Status'|adminT}</th>
 						<th></th>
 					</tr>
 				</thead>
@@ -38,7 +38,7 @@
 						<td>{$r.date_formatted}</td>
 						<td><span class="badge {$r.status_badge}">{$r.status_label|escape}</span></td>
 						<td class="text-end">
-							<a href="{$adminUrl}return?id={$r.id_return}" class="btn btn-sm btn-outline-dark">{'Detay'|adminT}</a>
+							<a href="{$adminUrl}return?id={$r.id_return}" class="btn btn-sm btn-outline-dark">{'Detail'|adminT}</a>
 						</td>
 					</tr>
 					{/foreach}
@@ -46,7 +46,7 @@
 			</table>
 		</div>
 		{else}
-		<p class="text-muted p-4 mb-0">{'Kayıt bulunamadı.'|adminT}</p>
+		<p class="text-muted p-4 mb-0">{'No records found.'|adminT}</p>
 		{/if}
 	</div>
 </div>

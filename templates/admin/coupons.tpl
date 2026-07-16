@@ -1,10 +1,10 @@
 <div class="admin-toolbar d-flex flex-wrap gap-2 mb-3">
 	<ul class="nav nav-pills">
 		<li class="nav-item">
-			<a class="nav-link active" href="#couponCodes" data-bs-toggle="tab">Kupon Kodları</a>
+			<a class="nav-link active" href="#couponCodes" data-bs-toggle="tab">{'Coupon codes'|adminT}</a>
 		</li>
 		<li class="nav-item">
-			<a class="nav-link" href="#cartPromotions" data-bs-toggle="tab">Sepet Kampanyaları</a>
+			<a class="nav-link" href="#cartPromotions" data-bs-toggle="tab">{'Cart promotions'|adminT}</a>
 		</li>
 	</ul>
 </div>
@@ -16,7 +16,7 @@
 <div class="tab-content">
 	<div class="tab-pane fade show active" id="couponCodes">
 		<div class="d-flex justify-content-end mb-3">
-			<a href="{$adminUrl}coupon" class="btn btn-sm btn-primary">+ Yeni Kupon</a>
+			<a href="{$adminUrl}coupon" class="btn btn-sm btn-primary">{'+ New coupon'|adminT}</a>
 		</div>
 
 		<div class="admin-panel">
@@ -24,12 +24,12 @@
 				<table class="table table-sm align-middle mb-0">
 					<thead>
 						<tr>
-							<th>Kod</th>
-							<th>İndirim</th>
-							<th>Min. Sepet</th>
-							<th>Kullanım</th>
-							<th>Geçerlilik</th>
-							<th>Durum</th>
+							<th>{'Code'|adminT}</th>
+							<th>{'Discount'|adminT}</th>
+							<th>{'Min. cart'|adminT}</th>
+							<th>{'Usage'|adminT}</th>
+							<th>{'Validity'|adminT}</th>
+							<th>{'Status'|adminT}</th>
 							<th></th>
 						</tr>
 					</thead>
@@ -46,20 +46,20 @@
 								→
 								{if $row.date_to}{$row.date_to|escape}{else}—{/if}
 							</td>
-							<td>{if $row.active}Aktif{else}<span class="text-danger">Pasif</span>{/if}</td>
+							<td>{if $row.active}{'Active'|adminT}{else}<span class="text-danger">{'Inactive'|adminT}</span>{/if}</td>
 							<td class="text-end">
-								<a href="{$adminUrl}coupon?id={$row.id_coupon}" class="btn btn-sm btn-outline-dark">Düzenle</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('Bu kupon silinsin mi?');">
+								<a href="{$adminUrl}coupon?id={$row.id_coupon}" class="btn btn-sm btn-outline-dark">{'Edit'|adminT}</a>
+								<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this coupon?'|adminT}');">
 									<input type="hidden" name="deleteCoupon" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_coupon" value="{$row.id_coupon}">
-									<button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+									<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete'|adminT}</button>
 								</form>
 							</td>
 						</tr>
 						{/foreach}
 						{else}
-						<tr><td colspan="7" class="text-muted">Henüz kupon yok.</td></tr>
+						<tr><td colspan="7" class="text-muted">{'No coupons yet.'|adminT}</td></tr>
 						{/if}
 					</tbody>
 				</table>
@@ -69,14 +69,14 @@
 
 	<div class="tab-pane fade" id="cartPromotions">
 		<div class="alert alert-light border small mb-3">
-			Sepet kampanyaları otomatik uygulanır; müşteri kod girmek zorunda değildir.
-			<strong>N. ürüne indirim:</strong> örn. 2. ürüne 10 TL veya %5.
-			<strong>X al Y öde:</strong> örn. 3 al 2 öde (en ucuz ürün bedava).
-			Uygun koşulları sağlayan tüm aktif kampanyalar sepette birlikte uygulanır.
+			{'Cart promotions apply automatically; customers do not need to enter a code.'|adminT}
+			{'<strong>Nth item discount:</strong> e.g. 10 off the 2nd item or 5%.'|adminT}
+			{'<strong>Buy X pay Y:</strong> e.g. buy 3 pay for 2 (cheapest item free).'|adminT}
+			{'All active promotions that match are applied together in the cart.'|adminT}
 		</div>
 
 		<div class="d-flex justify-content-end mb-3">
-			<a href="{$adminUrl}cart-promotion" class="btn btn-sm btn-primary">+ Yeni Sepet Kampanyası</a>
+			<a href="{$adminUrl}cart-promotion" class="btn btn-sm btn-primary">{'+ New cart promotion'|adminT}</a>
 		</div>
 
 		<div class="admin-panel">
@@ -84,11 +84,11 @@
 				<table class="table table-sm align-middle mb-0">
 					<thead>
 						<tr>
-							<th>Kampanya</th>
-							<th>Kural</th>
-							<th>Min. Sepet</th>
-							<th>Geçerlilik</th>
-							<th>Durum</th>
+							<th>{'Promotion'|adminT}</th>
+							<th>{'Rule'|adminT}</th>
+							<th>{'Min. cart'|adminT}</th>
+							<th>{'Validity'|adminT}</th>
+							<th>{'Status'|adminT}</th>
 							<th></th>
 						</tr>
 					</thead>
@@ -104,20 +104,20 @@
 								→
 								{if $row.date_to}{$row.date_to|escape}{else}—{/if}
 							</td>
-							<td>{if $row.active}Aktif{else}<span class="text-danger">Pasif</span>{/if}</td>
+							<td>{if $row.active}{'Active'|adminT}{else}<span class="text-danger">{'Inactive'|adminT}</span>{/if}</td>
 							<td class="text-end">
-								<a href="{$adminUrl}cart-promotion?id={$row.id_promotion}" class="btn btn-sm btn-outline-dark">Düzenle</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('Bu kampanya silinsin mi?');">
+								<a href="{$adminUrl}cart-promotion?id={$row.id_promotion}" class="btn btn-sm btn-outline-dark">{'Edit'|adminT}</a>
+								<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this promotion?'|adminT}');">
 									<input type="hidden" name="deletePromotion" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_promotion" value="{$row.id_promotion}">
-									<button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+									<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete'|adminT}</button>
 								</form>
 							</td>
 						</tr>
 						{/foreach}
 						{else}
-						<tr><td colspan="6" class="text-muted">Henüz sepet kampanyası yok.</td></tr>
+						<tr><td colspan="6" class="text-muted">{'No cart promotions yet.'|adminT}</td></tr>
 						{/if}
 					</tbody>
 				</table>

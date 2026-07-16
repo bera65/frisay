@@ -8,7 +8,7 @@
 	$stats = Admin::getDashboardStats();
 	$stats['revenue_month_formatted'] = Tools::displayPrice($stats['revenue_month']);
 	$charts = Admin::getDashboardCharts();
-	$recentOrders = Order::getDashboardRecentOrders(10);
+	$recentOrders = Order::getDashboardRecentOrders(50);
 
 	$revenueTrend = 0.0;
 	if ($stats['revenue_yesterday'] > 0) {
@@ -54,9 +54,12 @@
 		'statusProcessing' => Order::STATUS_PROCESSING,
 		'statusShipped' => Order::STATUS_SHIPPED,
 		'adminUseCharts' => true,
+		'adminUseOrderStatus' => true,
+		'orderStatusApiUrl' => Admin::url('order-status'),
+		'statusOptions' => Order::getStatusOptions(),
 		'adminHooks' => Module::renderAdminHooks($dashboardHooks, $dashboardContext),
 		'frisayNews' => NewsFeed::getDashboardItems(6),
 		'frisayNewsUrl' => 'https://frisay.com/rss.xml',
 	]);
 
-	AdminPage::add('dashboard', 'Gösterge Paneli');
+	AdminPage::add('dashboard', 'Dashboard');

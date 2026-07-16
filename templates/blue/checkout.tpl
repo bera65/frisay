@@ -178,9 +178,36 @@
 				</div>
 			</section>
 
+			{if $cartRequiresShipping && $cargoOptions}
 			<section class="checkout-section">
 				<header class="checkout-section__head">
 					<span class="checkout-section__step">3</span>
+					<h2>{'Cargo'|translate}</h2>
+				</header>
+				<div class="checkout-section__body">
+					<div class="checkout-payment-list" id="checkoutCargoList">
+						{foreach $cargoOptions as $cargoOpt}
+						<label class="checkout-payment-card">
+							<input type="radio" name="id_cargo" value="{$cargoOpt.id_cargo}"{if $cargoOpt.selected || $formData.id_cargo == $cargoOpt.id_cargo} checked{/if} required>
+							<span class="checkout-payment-card__body">
+								<span class="checkout-payment-card__icon">
+									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+								</span>
+								<span>
+									<strong>{$cargoOpt.name|escape}</strong>
+									<small class="checkout-cargo-fee" data-cargo-id="{$cargoOpt.id_cargo}">{$cargoOpt.fee_formatted}</small>
+								</span>
+							</span>
+						</label>
+						{/foreach}
+					</div>
+				</div>
+			</section>
+			{/if}
+
+			<section class="checkout-section">
+				<header class="checkout-section__head">
+					<span class="checkout-section__step">{if $cartRequiresShipping && $cargoOptions}4{else}3{/if}</span>
 					<h2>{'Checkout step payment'|translate}</h2>
 				</header>
 				<div class="checkout-section__body">
@@ -324,14 +351,22 @@
 					<span id="checkoutDiscount"></span>
 				</div>
 				{/if}
+				{if $checkoutTotals.has_payment_discount}
+				<div class="checkout-summary__row checkout-summary__row--discount" id="checkoutPaymentDiscountRow">
+					<span id="checkoutPaymentDiscountLabel">{$checkoutTotals.payment_discount_label|escape}</span>
+					<span id="checkoutPaymentDiscount">-{$checkoutTotals.payment_discount_formatted}</span>
+				</div>
+				{else}
+				<div class="checkout-summary__row checkout-summary__row--discount d-none" id="checkoutPaymentDiscountRow">
+					<span id="checkoutPaymentDiscountLabel"></span>
+					<span id="checkoutPaymentDiscount"></span>
+				</div>
+				{/if}
 				{if $cartRequiresShipping}
 				<div class="checkout-summary__row" id="checkoutShippingRow">
 					<span>{'Cargo'|translate}</span>
 					<span id="checkoutShipping">{if $checkoutTotals.shipping > 0}{$checkoutTotals.shipping_formatted}{else}{'Free'|translate}{/if}</span>
 				</div>
-				{if $checkoutTotals.shipping > 0}
-				<p class="checkout-summary__ship-note" id="checkoutShippingNote">{Tools::displayPrice($checkoutTotals.free_shipping_min)} {'Free shipping orders over'|translate}</p>
-				{/if}
 				{/if}
 				<div class="checkout-summary__row checkout-summary__row--total">
 					<span>{'Total'|translate}</span>

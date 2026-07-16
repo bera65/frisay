@@ -22,6 +22,12 @@
 			<label class="form-label">IBAN</label>
 			<input type="text" name="iban" class="form-control" value="{$bankwireIban|escape}" placeholder="TR00 0000 0000 0000 0000 0000 00">
 		</div>
+		<div class="mb-3">
+			<label class="form-label">Havale indirimi (%)</label>
+			<input type="number" name="discount_percent" class="form-control" min="0" max="100" step="0.01"
+				value="{$bankwireDiscountPercent|escape}" placeholder="3">
+			<div class="form-text">Ödeme sayfasında havale seçilince ürün tutarına (kupon/kampanya sonrası) uygulanır. 0 = indirim yok.</div>
+		</div>
 
 		<button type="submit" class="btn btn-dark">Kaydet</button>
 	</form>

@@ -1,4 +1,4 @@
-﻿<div class="prime-container prime-page">
+<div class="prime-container prime-page">
 
 	<h1 class="prime-page__title">{'Order'|translate} #{$order.reference|escape}</h1>
 

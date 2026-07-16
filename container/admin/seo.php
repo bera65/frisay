@@ -15,7 +15,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$input = [];
@@ -37,7 +37,7 @@
 				'SCHEMA_INSTAGRAM_URL' => (string) Tools::getValue('schema_instagram_url'),
 				'SCHEMA_YOUTUBE_URL' => (string) Tools::getValue('schema_youtube_url'),
 			])) {
-				$result = ['success' => false, 'message' => 'Schema.org ayarları kaydedilemedi'];
+				$result = ['success' => false, 'message' => adminT('Schema.org settings could not be saved')];
 			}
 
 			if ($result['success']) {
@@ -60,4 +60,4 @@
 		'flashType' => $flashType,
 	]);
 
-	AdminPage::add('seo', 'SEO Ayarları');
+	AdminPage::add('seo', 'SEO settings');

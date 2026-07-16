@@ -11,7 +11,7 @@
 
 	if (!$isNew && !$page) {
 		http_response_code(404);
-		AdminPage::add('404', 'Sayfa Bulunamadı');
+		AdminPage::add('404', 'Page not found');
 		return;
 	}
 
@@ -19,7 +19,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$result = Cms::save($idCms, [
@@ -85,4 +85,4 @@
 		'adminUseEditor' => true,
 	]);
 
-	AdminPage::add('cms-edit', $isNew ? 'Yeni CMS Sayfası' : 'CMS: ' . ($form['title'] ?? $form['slug']));
+	AdminPage::add('cms-edit', $isNew ? 'New CMS page' : 'CMS: ' . ($form['title'] ?? $form['slug']));

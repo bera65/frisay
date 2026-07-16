@@ -6,7 +6,7 @@
 	<div class="row g-2 align-items-center">
 		<div class="col-md-8">
 			<div class="input-group">
-				<input type="search" class="form-control" id="moduleSearch" placeholder="Modül ara…" autocomplete="off">
+				<input type="search" class="form-control" id="moduleSearch" placeholder="{'Search modules…'|adminT}" autocomplete="off">
 				<button type="button" class="btn btn-primary" tabindex="-1" aria-hidden="true">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 				</button>
@@ -14,16 +14,16 @@
 		</div>
 		<div class="col-md-4">
 			<select class="form-select" id="moduleStatusFilter">
-				<option value="all">Tüm modülleri göster</option>
-				<option value="installed">Kurulu modüller</option>
-				<option value="active">Aktif modüller</option>
-				<option value="not_installed">Kurulu olmayanlar</option>
+				<option value="all">{'Show all modules'|adminT}</option>
+				<option value="installed">{'Installed modules'|adminT}</option>
+				<option value="active">{'Active modules'|adminT}</option>
+				<option value="not_installed">{'Not installed'|adminT}</option>
 			</select>
 		</div>
 	</div>
 </div>
 
-<h2 class="h6 text-muted mb-2">Yönetim</h2>
+<h2 class="h6 text-muted mb-2">{'Management'|adminT}</h2>
 
 <div class="admin-panel p-0 overflow-hidden" id="moduleList">
 {if $modules|@count}
@@ -41,11 +41,11 @@
 		<div class="module-row-body flex-grow-1 min-w-0">
 			<div class="module-row-title">{$mod.title|escape}</div>
 			<div class="module-row-meta">
-				v{$mod.version|escape} — {$mod.author|escape} tarafından
+				v{$mod.version|escape} — {$mod.author|escape}{' by'|adminT}
 				{if $mod.installed && $mod.active}
-				· <span class="text-success">Aktif</span>
+				· <span class="text-success">{'Active'|adminT}</span>
 				{elseif $mod.installed}
-				· <span class="text-secondary">Pasif</span>
+				· <span class="text-secondary">{'Inactive'|adminT}</span>
 				{/if}
 				{if $mod.assigned_hooks|@count}
 				· Hook: {foreach $mod.assigned_hooks as $hk name=hkLoop}<code>{$hk|escape}</code>{if !$smarty.foreach.hkLoop.last}, {/if}{/foreach}
@@ -56,19 +56,19 @@
 		<div class="module-row-actions d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
 			{if $mod.installed}
 			<div class="btn-group">
-				<a href="{$mod.configure_url}" class="btn btn-outline-primary module-btn-configure">Yapılandır</a>
+				<a href="{$mod.configure_url}" class="btn btn-outline-primary module-btn-configure">{'Configure'|adminT}</a>
 				<button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-					<span class="visually-hidden">Diğer işlemler</span>
+					<span class="visually-hidden">{'More actions'|adminT}</span>
 				</button>
 				<ul class="dropdown-menu dropdown-menu-end">
-					<li><a class="dropdown-item" href="{$mod.detail_url}">Modül detayı</a></li>
+					<li><a class="dropdown-item" href="{$mod.detail_url}">{'Module details'|adminT}</a></li>
 					{if $mod.active}
 					<li>
 						<form method="post" class="px-3 py-1">
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
-							<button type="submit" name="action" value="disable" class="dropdown-item px-0">Devre dışı bırak</button>
+							<button type="submit" name="action" value="disable" class="dropdown-item px-0">{'Disable'|adminT}</button>
 						</form>
 					</li>
 					{else}
@@ -77,17 +77,17 @@
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
-							<button type="submit" name="action" value="enable" class="dropdown-item px-0">Etkinleştir</button>
+							<button type="submit" name="action" value="enable" class="dropdown-item px-0">{'Enable'|adminT}</button>
 						</form>
 					</li>
 					{/if}
 					<li><hr class="dropdown-divider"></li>
 					<li>
-						<form method="post" class="px-3 py-1" onsubmit="return confirm('Modül kaldırılsın mı?');">
+						<form method="post" class="px-3 py-1" onsubmit="return confirm('{'Uninstall this module?'|adminT}');">
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
-							<button type="submit" name="action" value="uninstall" class="dropdown-item text-danger px-0">Kaldır</button>
+							<button type="submit" name="action" value="uninstall" class="dropdown-item text-danger px-0">{'Uninstall'|adminT}</button>
 						</form>
 					</li>
 				</ul>
@@ -97,14 +97,14 @@
 				<input type="hidden" name="moduleAction" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 				<input type="hidden" name="name" value="{$mod.name|escape}">
-				<button type="submit" name="action" value="install" class="btn btn-outline-primary module-btn-configure">Kur</button>
+				<button type="submit" name="action" value="install" class="btn btn-outline-primary module-btn-configure">{'Install'|adminT}</button>
 			</form>
 			{/if}
 		</div>
 	</div>
 	{/foreach}
 {else}
-	<div class="p-4 text-muted">Henüz modül bulunamadı. <code>modules/</code> klasörüne modül ekleyin.</div>
+	<div class="p-4 text-muted">{'No modules found yet.'|adminT} {'Add modules to the'|adminT} <code>modules/</code> {'folder.'|adminT}</div>
 {/if}
-	<div class="p-4 text-muted d-none" id="moduleListEmpty">Arama veya filtreye uygun modül bulunamadı.</div>
+	<div class="p-4 text-muted d-none" id="moduleListEmpty">{'No modules match your search or filter.'|adminT}</div>
 </div>

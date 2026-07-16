@@ -5,6 +5,55 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.3.0] — 2026-07-16
+
+### Added
+
+- **Admin i18n** — English default admin language; all admin UI strings via `adminT` / `{'Key'|adminT}` with `lang/admin/en.php` and `lang/admin/tr.php`
+- **Admin language switcher** — session-based TR/EN toggle in admin header
+
+### Changed
+
+- **Admin notifications** — page UI and notification titles/messages translated; legacy Turkish records mapped at display time
+- **Site version** — `FShop::VERSION` 2.3.0 (admin footer)
+
+---
+
+## [2.2.0] — 2026-07-15
+
+### Added
+
+- **Login with email or phone** — customers can sign in using either identifier (`Customer::login`, auth API / login form)
+- **`main_menu` display hook** — editable top navigation; **main-menu** module (custom links, category, CMS, blog)
+- **Blog module** — installable posts list (`/blog`), categories (`/blog/kategori/{slug}-{id}`), detail (`/blog/{slug}-{id}`) with admin CRUD, TinyMCE + media library
+- **Admin media picker** — reusable `media-picker.js` for TinyMCE / form fields (besides product attach)
+- **Admin product media library** — “Dosya yöneticisi” modal; browse `img/`, upload to `img/media/`, multi-select, attach to product (`MediaLibrary`, `/api/admin-media.php`)
+- **Admin product editor redesign** — sticky header, card sections, sticky price/media sidebar (`product-editor.css`)
+- **AJAX product images** — cover / delete without full page reload; multi-file upload endpoint
+- **Admin confirm modal** — shared “Vazgeç / Evet, Onayla” dialog for product, category, and brand delete
+- **Bankwire payment discount** — `BANKWIRE_DISCOUNT_PERCENT` (havale indirimi) applied at checkout when bank transfer is selected
+- **Checkout cargo selection** — customer picks carrier; fee from cargo rules (session + AJAX `set_cargo` / `set_payment`)
+- **Order contact attachments** — optional file upload on “Bu sipariş hakkında soru sor” (`img/contact/`, `/api/contact-file.php`)
+- **Admin customer password reset** — set customer password from customer detail page
+- **Admin customer profile edit** — name, phone, and email editable by admin
+
+### Changed
+
+- Checkout shipping: global `FREE_SHIPPING_MIN` / `SHIPPING_FEE` settings removed from flow; rates come only from **Kargolar**
+- Bankwire order confirmation UI — larger amount display, copy buttons for IBAN / holder / reference
+- Customer account order detail — clearer breakdown (subtotal, promotions, coupon, payment discount, shipping, cargo, total)
+- Admin product image workflow — open media library first instead of immediate file-input upload
+- Admin set-password rules — minimum 8 characters (complexity optional for admin resets; e.g. `12345678` allowed)
+
+### Fixed
+
+- New product form warning: undefined `cost` key
+- Media library “Bağlantı hatası” — clean JSON responses from `/api/admin-media.php` (output buffer / bootstrap clash)
+- Returns admin list fatal: `ReturnRequest::adminUrl()` → `adminLink()` / `Admin::url()`
+- Admin customer password change appearing to save while rejecting numeric-only passwords
+
+---
+
 ## [2.1.0] — 2026-07-10
 
 ### Added
@@ -69,6 +118,8 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+[2.3.0]: https://github.com/bera65/fshop/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/bera65/fshop/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/bera65/fshop/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/bera65/fshop/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/bera65/fshop/releases/tag/v1.0.0

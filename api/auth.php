@@ -24,11 +24,14 @@ $action = Tools::getValue('action');
 switch ($action) {
 	case 'login':
 		$remember = Tools::getValue('remember') !== '0';
-		$result = Customer::login(
-			(string) Tools::getValue('phone'),
-			(string) Tools::getValue('password'),
-			$remember
-		);
+		$login = (string) Tools::getValue('login');
+		if ($login === '') {
+			$login = (string) Tools::getValue('phone');
+		}
+		if ($login === '') {
+			$login = (string) Tools::getValue('email');
+		}
+		$result = Customer::login($login, (string) Tools::getValue('password'), $remember);
 		if ($result['success'] && !empty($_SESSION['auth_redirect'])) {
 			$result['redirect'] = $_SESSION['auth_redirect'];
 			unset($_SESSION['auth_redirect']);

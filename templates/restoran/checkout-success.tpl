@@ -1,4 +1,4 @@
-﻿<div class="prime-container prime-page">
+<div class="prime-container prime-page">
 	<div class="checkout-success text-center py-2">
 		<div class="success-icon mb-3">✓</div>
 		<h1 class="prime-page__title mb-2">{'Order received'|translate}</h1>

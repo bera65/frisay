@@ -43,16 +43,16 @@
 		$postToken = (string) Tools::getValue('imprtExcel');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$sonuc = 'Geçersiz istek';
+			$sonuc = adminT('Invalid request');
 			$sonucType = 'danger';
 		} elseif (empty($_FILES['excelFile']['tmp_name']) || !is_uploaded_file($_FILES['excelFile']['tmp_name'])) {
-			$sonuc = 'Excel dosyası seçin';
+			$sonuc = adminT('Select an Excel file');
 			$sonucType = 'danger';
 		} else {
 			$ext = strtolower(pathinfo((string) ($_FILES['excelFile']['name'] ?? ''), PATHINFO_EXTENSION));
 
 			if ($ext !== 'xlsx') {
-				$sonuc = 'Sadece .xlsx dosyası yükleyebilirsiniz';
+				$sonuc = adminT('Only .xlsx files are allowed');
 				$sonucType = 'danger';
 			} else {
 				include(dirname(__FILE__, 3) . '/libs/SimpleXLSX.php');
@@ -82,7 +82,7 @@
 		$postToken = (string) Tools::getValue('exprtExcel');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} 
 		else 
 		{
@@ -157,4 +157,4 @@ function decodeHtmlEntities($string) {
 		'sonucType' 		=> $sonucType,
 	]);
 
-	AdminPage::add('products', 'Ürünler');
+	AdminPage::add('products', 'Products');

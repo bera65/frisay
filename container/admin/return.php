@@ -10,7 +10,7 @@
 
 	if (!$return) {
 		http_response_code(404);
-		AdminPage::add('404', 'İade Talebi Bulunamadı');
+		AdminPage::add('404', 'Return request not found');
 		return;
 	}
 
@@ -18,7 +18,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$adminMessage = (string) Tools::getValue('admin_message');
@@ -50,4 +50,4 @@
 		'statusCompleted' => ReturnRequest::STATUS_COMPLETED,
 	]);
 
-	AdminPage::add('return', 'İade #' . $return['id_return']);
+	AdminPage::add('return', adminT('Return #') . $return['id_return']);

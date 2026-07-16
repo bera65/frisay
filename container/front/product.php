@@ -50,6 +50,10 @@
 
 	$relatedData = Product::getRelatedForProduct($product, 4);
 
+	$havalePercent = Module::getPaymentModule('bank_transfer')
+		? (float) Module::getPaymentDiscount('bank_transfer', 100)['percent']
+		: (float) (Settings::get('BANKWIRE_DISCOUNT_PERCENT') ?: Settings::get('HAVALE') ?: 0);
+
 	$smarty->assign([
 		'product' 			=> $product,
 		'productUrl'		=> Product::getLink($product),
@@ -68,9 +72,9 @@
 		'productVideoEmbed' => Product::getYoutubeEmbedUrl((string) ($product['product_video'] ?? '')),
 		'productLabel' 		=> trim((string) ($product['label'] ?? '')),
 		'cargoDay'			=> $productCargoDay > 0 ? $productCargoDay : $globalCargoDay,
-		'freeCargo' 		=> (float)Settings::get('FREE_SHIPPING_MIN'),
-		'cargoPrice' 		=> (float)Settings::get('SHIPPING_FEE'),
-		'havale'			=> (float)Settings::get('HAVALE'),
+		'freeCargo' 		=> ($cargoHints = Cargo::getDisplayHints())['free_shipping_min'],
+		'cargoPrice' 		=> $cargoHints['shipping_fee'],
+		'havale'			=> $havalePercent,
 		'isFavorite' 		=> Favorite::isFavorite($idProduct),
 		'relatedProducts'	=> $relatedData['products'],
 		'relatedProductsTitle' => $relatedData['title'],
@@ -97,8 +101,8 @@
 			],
 			$pageTitle,
 			$pageDesc,
-			(float) (Settings::get('FREE_SHIPPING_MIN') ?: 0),
-			(float) (Settings::get('SHIPPING_FEE') ?: 0)
+			(float) $cargoHints['free_shipping_min'],
+			(float) $cargoHints['shipping_fee']
 		),
 	]);
 

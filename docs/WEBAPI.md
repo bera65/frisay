@@ -6,14 +6,20 @@ JSON tabanlı REST API ile uzaktan **sipariş çekme**, **ürün ekleme/güncell
 
 ## 1. Kurulum (ilk adım)
 
-1. Admin panele girin: `http://localhost/fshop/admin/`
-2. **Ayarlar** sayfasına gidin
-3. **Web API** bölümünde:
-   - **Anahtar Oluştur** (veya **Anahtarı Yenile**) butonuna tıklayın
-   - **API aktif** kutusunu işaretleyip **API Durumunu Kaydet** deyin
-4. Ekranda görünen **API Key** değerini kopyalayın — tüm isteklerde kullanacaksınız
+1. Admin panele girin
+2. Sol menüden **API** sayfasına gidin
+3. **Web API aktif** olsun
+4. **Yeni API oluştur** ile partner adı verin (ör. `Paroner`, `BizimHesap`)
+5. Yetkileri işaretleyin:
+   - Siparişleri oku / çek
+   - Siparişleri güncelle
+   - Ürünleri oku / ekle / düzenle / sil
+   - Kategorileri oku, Markaları oku
+6. Oluşan **API Key** değerini kopyalayın
 
-> API kapalıysa `403 Web API kapalı` hatası alırsınız. Anahtar yoksa `503 API anahtarı yapılandırılmamış` döner.
+> Her partner için ayrı anahtar açabilirsiniz. Örn. BizimHesap’a sadece «Siparişleri oku» verin; Paroner’a ürün + sipariş yetkisi verin.
+>
+> API kapalıysa `403 Web API kapalı` hatası alırsınız. Anahtar yoksa veya yetkisiz istekte `403` döner.
 
 ---
 

@@ -350,8 +350,8 @@ class ReturnRequest
 		if ($order) {
 			Notification::returnRequestSubmitted($idUser, (string) $order['reference'], $idReturn);
 			AdminNotification::add(
-				'Yeni iade talebi',
-				'Sipariş #' . $order['reference'] . ' için iade talebi oluşturuldu.',
+				'New return request',
+				'Return request created for order #' . $order['reference'] . '.',
 				self::adminLink('return?id=' . $idReturn),
 				'return_request'
 			);
@@ -553,7 +553,7 @@ class ReturnRequest
 		global $domain;
 
 		if ($forAdmin) {
-			return self::adminUrl('return-image') . '?file=' . rawurlencode($filename);
+			return self::adminLink('return-image') . '?file=' . rawurlencode($filename);
 		}
 
 		return rtrim($domain, '/') . '/api/return-image.php?file=' . rawurlencode($filename);

@@ -18,7 +18,29 @@
 		$_SESSION['auth_redirect'] = $domain . 'checkout';
 	}
 
+	$cartRequiresShipping = Cart::requiresShipping($cart);
+
+	$paymentMethods = Module::getPaymentMethods();
+	$defaultPayment = isset($paymentMethods['bank_transfer'])
+		? 'bank_transfer'
+		: (array_key_first($paymentMethods) ?: 'bank_transfer');
+
+	if (Order::getSelectedPaymentMethod() === '') {
+		Order::setSelectedPaymentMethod($defaultPayment);
+	} elseif (!isset($paymentMethods[Order::getSelectedPaymentMethod()]) && $paymentMethods !== []) {
+		Order::setSelectedPaymentMethod($defaultPayment);
+	}
+
 	$checkoutTotals = Coupon::getCheckoutSummary((float) $cart['total']);
+	$afterDiscount = max(0.0, (float) $cart['total'] - (float) ($checkoutTotals['discount'] ?? 0));
+	$cargoOptions = [];
+
+	if ($cartRequiresShipping && class_exists('Cargo')) {
+		Cargo::ensureSelected();
+		$cargoOptions = Cargo::getCheckoutOptions($afterDiscount);
+		$checkoutTotals = Coupon::getCheckoutSummary((float) $cart['total']);
+	}
+
 	$orderError = '';
 	$idUser = Customer::getId();
 	$addresses = Address::getListForUser($idUser);
@@ -37,7 +59,8 @@
 		'address_text' => '',
 		'note' => '',
 		'address_label' => '',
-		'payment_method' => 'bank_transfer',
+		'payment_method' => Order::getSelectedPaymentMethod() ?: $defaultPayment,
+		'id_cargo' => class_exists('Cargo') ? Cargo::getSelectedId() : 0,
 	];
 
 	if ($defaultAddress && $selectedAddressId > 0) {
@@ -69,6 +92,7 @@
 				'note' => (string) Tools::getValue('note'),
 				'address_label' => (string) Tools::getValue('address_label'),
 				'payment_method' => (string) Tools::getValue('payment_method'),
+				'id_cargo' => (int) Tools::getValue('id_cargo'),
 			];
 
 			$result = Order::place([
@@ -84,6 +108,7 @@
 				'address_text' => $formData['address_text'],
 				'note' => $formData['note'],
 				'payment_method' => $formData['payment_method'],
+				'id_cargo' => $formData['id_cargo'],
 				'save_address' => Tools::getValue('save_address'),
 				'address_label' => $formData['address_label'],
 				'set_default_address' => Tools::getValue('set_default_address'),
@@ -114,11 +139,11 @@
 		'selectedAddressId' => $selectedAddressId,
 		'formData' => $formData,
 		'cartHasVirtual' => Cart::hasVirtualProducts($cart),
-		'cartRequiresShipping' => Cart::requiresShipping($cart),
+		'cartRequiresShipping' => $cartRequiresShipping,
+		'cargoOptions' => $cargoOptions,
 		'breadcrumb' => [
 			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => translate('My Cart'), 'url' => $domain . 'cart'],
-			['name' => translate('Checkout page title'), 'url' => ''],
+			['name' => translate('Checkout'), 'url' => ''],
 		],
 	]);
-	Module::refreshHook($smarty, 'order_payment', ['cart' => $cart]);

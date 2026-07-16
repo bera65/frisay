@@ -10,7 +10,7 @@
 
 	if (!$isNew && !$category) {
 		http_response_code(404);
-		AdminPage::add('404', 'Kategori Bulunamadı');
+		AdminPage::add('404', 'Category not found');
 		return;
 	}
 
@@ -18,7 +18,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = Category::save($_POST, $id);
 			$flash = $result['message'];
@@ -78,4 +78,4 @@
 		'parentOptions' => Category::getParentOptions($id),
 	]);
 
-	AdminPage::add('category', $isNew ? 'Yeni Kategori' : 'Kategori Düzenle');
+	AdminPage::add('category', $isNew ? 'New category' : 'Edit category');

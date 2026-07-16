@@ -759,6 +759,96 @@ a { text-decoration: none; }
 .ps-status-badge--returned { background: #7c3aed; }
 .ps-status-badge--default { background: var(--ps-blue); }
 
+.ps-orders-scroll {
+	max-height: min(560px, 68vh);
+	overflow: auto;
+}
+
+.dash-panel__body--scroll {
+	max-height: 360px;
+	overflow-y: auto;
+}
+
+.ps-cargo-cell {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 28px;
+}
+
+.ps-cargo-track {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: #eef4ff;
+	color: var(--ps-accent);
+	text-decoration: none;
+	flex-shrink: 0;
+}
+
+.ps-cargo-track svg {
+	width: 13px;
+	height: 13px;
+}
+
+.ps-cargo-logo {
+	display: block;
+	max-height: 22px;
+	max-width: 72px;
+	width: auto;
+	object-fit: contain;
+}
+
+.ps-cargo-name {
+	font-size: 12px;
+	color: #363a41;
+	white-space: nowrap;
+}
+
+.ps-order-status-select {
+	display: block;
+	width: 100%;
+	min-width: 150px;
+	max-width: 190px;
+	border: 0;
+	border-radius: 3px;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.2;
+	padding: 7px 28px 7px 10px;
+	cursor: pointer;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	background-size: 12px 12px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.ps-order-status-select.is-loading {
+	opacity: .75;
+	cursor: wait;
+}
+
+.ps-order-status-select.ps-status-select--pending { background-color: var(--ps-blue); }
+.ps-order-status-select.ps-status-select--processing { background-color: var(--ps-green); }
+.ps-order-status-select.ps-status-select--shipped { background-color: var(--ps-green); }
+.ps-order-status-select.ps-status-select--delivered { background-color: var(--ps-orange); }
+.ps-order-status-select.ps-status-select--cancelled { background-color: var(--navy-dark); }
+.ps-order-status-select.ps-status-select--return-pending { background-color: #9333ea; }
+.ps-order-status-select.ps-status-select--returned { background-color: #7c3aed; }
+.ps-order-status-select.ps-status-select--default { background-color: var(--ps-blue); }
+
+.ps-orders-table .ps-order-cargo,
+.ps-orders-table .ps-order-status {
+	white-space: nowrap;
+}
+
 .contact-admin-thread__item--customer .contact-admin-thread__body {
 	background: #f8fafc;
 	border: 1px solid #e2e8f0;
@@ -807,6 +897,11 @@ a { text-decoration: none; }
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
+}
+
+.ps-orders-filter .form-label {
+	color: #6c868e;
+	font-weight: 600;
 }
 
 .ps-filter-pill {

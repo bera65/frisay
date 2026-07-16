@@ -6,34 +6,34 @@
 	<div class="col-lg-8">
 		<div class="admin-panel mb-4">
 			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-				<h2 class="h6 mb-0">İptal Talebi #{$cancelItem.id_cancel}</h2>
+				<h2 class="h6 mb-0">{'Cancel request #'|adminT}{$cancelItem.id_cancel}</h2>
 				<span class="badge {$cancelItem.status_badge}">{$cancelItem.status_label|escape}</span>
 			</div>
 			<div class="row g-2 small">
-				<div class="col-md-6"><strong>Sipariş:</strong> <a href="{$adminUrl}order?id={$cancelItem.id_order}">#{$cancelItem.reference|escape}</a></div>
-				<div class="col-md-6"><strong>Talep tarihi:</strong> {$cancelItem.date_formatted}</div>
-				<div class="col-md-6"><strong>Müşteri:</strong> {$cancelItem.user_name|escape}</div>
-				<div class="col-md-6"><strong>Telefon:</strong> {$cancelItem.user_phone|escape}</div>
-				<div class="col-md-6"><strong>Sipariş durumu:</strong> {$cancelItem.order_status_label|escape}</div>
-				<div class="col-md-6"><strong>Sipariş tutarı:</strong> {$cancelItem.total_formatted}</div>
+				<div class="col-md-6"><strong>{'Order:'|adminT}</strong> <a href="{$adminUrl}order?id={$cancelItem.id_order}">#{$cancelItem.reference|escape}</a></div>
+				<div class="col-md-6"><strong>{'Request date:'|adminT}</strong> {$cancelItem.date_formatted}</div>
+				<div class="col-md-6"><strong>{'Customer:'|adminT}</strong> {$cancelItem.user_name|escape}</div>
+				<div class="col-md-6"><strong>{'Phone:'|adminT}</strong> {$cancelItem.user_phone|escape}</div>
+				<div class="col-md-6"><strong>{'Order status:'|adminT}</strong> {$cancelItem.order_status_label|escape}</div>
+				<div class="col-md-6"><strong>{'Order total:'|adminT}</strong> {$cancelItem.total_formatted}</div>
 			</div>
 		</div>
 
 		<div class="admin-panel mb-4">
-			<h2 class="h6 mb-3">Müşteri Mesajı</h2>
-			<p class="mb-0">{if $cancelItem.customer_message}{$cancelItem.customer_message|escape|nl2br}{else}<span class="text-muted">Mesaj yazılmadı</span>{/if}</p>
+			<h2 class="h6 mb-3">{'Customer message'|adminT}</h2>
+			<p class="mb-0">{if $cancelItem.customer_message}{$cancelItem.customer_message|escape|nl2br}{else}<span class="text-muted">{'No message provided'|adminT}</span>{/if}</p>
 		</div>
 
 		{if $cancelItem.admin_message && $cancelItem.status != $statusPending}
 		<div class="admin-panel{if $cancelItem.admin_receipt_url} mb-4{else}{/if}">
-			<h2 class="h6 mb-3">Mağaza Yanıtı</h2>
+			<h2 class="h6 mb-3">{'Store reply'|adminT}</h2>
 			<p class="mb-0">{$cancelItem.admin_message|escape|nl2br}</p>
 		</div>
 		{/if}
 
 		{if $cancelItem.admin_receipt_url}
 		<div class="admin-panel">
-			<h2 class="h6 mb-3">İptal Dekontu</h2>
+			<h2 class="h6 mb-3">{'Cancel receipt'|adminT}</h2>
 			<a href="{$cancelItem.admin_receipt_url|escape}" target="_blank" rel="noopener">
 				<img src="{$cancelItem.admin_receipt_url|escape}" alt="" class="rounded border" style="max-width:280px;max-height:280px;object-fit:contain;">
 			</a>
@@ -44,28 +44,28 @@
 	<div class="col-lg-4">
 		{if $cancelItem.status == $statusPending}
 		<div class="admin-panel mb-4">
-			<h2 class="h6 mb-3">Talebi İşle</h2>
-			<p class="small text-muted">Onayladığınızda sipariş iptal edilir. İsteğe bağlı dekont yükleyebilirsiniz.</p>
+			<h2 class="h6 mb-3">{'Process request'|adminT}</h2>
+			<p class="small text-muted">{'When approved, the order is cancelled. You may upload a receipt optionally.'|adminT}</p>
 			<form method="post" enctype="multipart/form-data">
 				<input type="hidden" name="token" value="{$adminToken}">
 				<div class="mb-3">
-					<label class="form-label">Müşteriye mesaj</label>
+					<label class="form-label">{'Message to customer'|adminT}</label>
 					<textarea name="admin_message" class="form-control" rows="4" required maxlength="5000"></textarea>
 				</div>
 				<div class="mb-3">
-					<label class="form-label">İptal dekontu (isteğe bağlı)</label>
+					<label class="form-label">{'Cancel receipt (optional)'|adminT}</label>
 					<input type="file" name="admin_receipt" class="form-control" accept="image/jpeg,image/png,image/webp">
 				</div>
 				<div class="d-grid gap-2">
-					<button type="submit" name="approveCancel" value="1" class="btn btn-primary">Onayla ve iptal et</button>
-					<button type="submit" name="rejectCancel" value="1" class="btn btn-outline-danger" onclick="return confirm('Reddedilsin mi?');">Reddet</button>
+					<button type="submit" name="approveCancel" value="1" class="btn btn-primary">{'Approve and cancel'|adminT}</button>
+					<button type="submit" name="rejectCancel" value="1" class="btn btn-outline-danger" onclick="return confirm('{'Reject this request?'|adminT}');">{'Reject'|adminT}</button>
 				</div>
 			</form>
 		</div>
 		{/if}
 
 		<div class="admin-panel">
-			<a href="{$adminUrl}cancellations" class="btn btn-outline-secondary btn-sm w-100">← İptal listesine dön</a>
+			<a href="{$adminUrl}cancellations" class="btn btn-outline-secondary btn-sm w-100">{'← Back to cancellations'|adminT}</a>
 		</div>
 	</div>
 </div>

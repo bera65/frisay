@@ -92,8 +92,13 @@ class Coupon
 		$coupon = self::getApplied();
 		$afterDiscount = max(0.0, $subtotal - $totalDiscount);
 		$requiresShipping = Cart::requiresShipping($cart);
-		$shipping = $requiresShipping ? Order::getShippingFee($afterDiscount) : 0.0;
-		$total = $afterDiscount + $shipping;
+		$idCargo = class_exists('Cargo') ? Cargo::getSelectedId() : 0;
+		$shipping = $requiresShipping ? Order::getShippingFee($afterDiscount, $idCargo > 0 ? $idCargo : null) : 0.0;
+		$paymentMethod = Order::getSelectedPaymentMethod();
+		$paymentInfo = Module::getPaymentDiscount($paymentMethod, $afterDiscount);
+		$paymentDiscount = min($afterDiscount, (float) ($paymentInfo['amount'] ?? 0));
+		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping;
+		$hints = class_exists('Cargo') ? Cargo::getDisplayHints() : ['free_shipping_min' => 0.0];
 
 		return [
 			'subtotal' => $subtotal,
@@ -110,14 +115,23 @@ class Coupon
 			'discount_formatted' => Tools::displayPrice($totalDiscount),
 			'coupon_code' => $coupon['code'] ?? '',
 			'has_coupon' => $couponDiscount > 0,
+			'payment_discount' => $paymentDiscount,
+			'payment_discount_formatted' => Tools::displayPrice($paymentDiscount),
+			'payment_discount_label' => (string) ($paymentInfo['label'] ?? ''),
+			'has_payment_discount' => $paymentDiscount > 0,
+			'payment_method' => $paymentMethod,
 			'shipping' => $shipping,
 			'shipping_formatted' => $requiresShipping && $shipping > 0
 				? Tools::displayPrice($shipping)
 				: ($requiresShipping ? 'Ücretsiz' : '—'),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
-			'free_shipping_min' => (float) (Settings::get('FREE_SHIPPING_MIN') ?: 1500),
+			'free_shipping_min' => (float) ($hints['free_shipping_min'] ?? 0),
 			'requires_shipping' => $requiresShipping,
+			'id_cargo' => $idCargo,
+			'cargo_options' => ($requiresShipping && class_exists('Cargo'))
+				? Cargo::getCheckoutOptions($afterDiscount)
+				: [],
 		];
 	}
 

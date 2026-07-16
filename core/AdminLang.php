@@ -26,7 +26,7 @@ class AdminLang
 			}
 		}
 
-		return 'tr';
+		return 'en';
 	}
 
 	public static function current(): string
@@ -118,7 +118,7 @@ class AdminLang
 			$path = dirname(__DIR__) . '/lang/admin/' . $langCode . '.php';
 
 			if (!is_file($path)) {
-				$path = dirname(__DIR__) . '/lang/admin/' . self::getDefault() . '.php';
+				$path = dirname(__DIR__) . '/lang/admin/en.php';
 			}
 
 			self::$strings = is_file($path) ? require $path : [];
@@ -132,8 +132,21 @@ class AdminLang
 			return (string) self::$strings[$text];
 		}
 
-		if (class_exists('Lang', false)) {
-			return Lang::translateFor($text, $langCode);
+		if ($langCode !== 'en') {
+			static $enStrings = null;
+
+			if ($enStrings === null) {
+				$enPath = dirname(__DIR__) . '/lang/admin/en.php';
+				$enStrings = is_file($enPath) ? require $enPath : [];
+
+				if (!is_array($enStrings)) {
+					$enStrings = [];
+				}
+			}
+
+			if (isset($enStrings[$text])) {
+				return (string) $enStrings[$text];
+			}
 		}
 
 		return $text;

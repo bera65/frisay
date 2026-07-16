@@ -10,7 +10,7 @@
 
 	if (!$isNew && !$brand) {
 		http_response_code(404);
-		AdminPage::add('404', 'Marka Bulunamadı');
+		AdminPage::add('404', 'Brand not found');
 		return;
 	}
 
@@ -18,7 +18,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = Brand::save($_POST, $id);
 			$flash = $result['message'];
@@ -76,4 +76,4 @@
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('brand', $isNew ? 'Yeni Marka' : 'Marka Düzenle');
+	AdminPage::add('brand', $isNew ? 'New brand' : 'Edit brand');

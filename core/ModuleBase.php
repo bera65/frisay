@@ -158,6 +158,52 @@ abstract class ModuleBase
 		return 'module-' . $this->name;
 	}
 
+	/**
+	 * Register a link in the admin sidebar (admin.menu hook).
+	 *
+	 * @param string $label English label key for adminT()
+	 * @param string $group general|catalog|system
+	 */
+	protected function registerAdminMenuLink(
+		string $label,
+		string $group = 'system',
+		int $position = 100,
+		?string $slug = null,
+		?string $url = null,
+		int $badge = 0
+	): void {
+		$slug = $slug ?? $this->getAdminSlug();
+
+		Module::registerHook('admin.menu', static function (array &$items) use (
+			$label,
+			$group,
+			$position,
+			$slug,
+			$url,
+			$badge
+		): void {
+			$itemUrl = $url ?? '';
+
+			if ($itemUrl === '') {
+				if (class_exists('Admin', false)) {
+					$itemUrl = Admin::url($slug);
+				} else {
+					global $domain;
+					$itemUrl = rtrim((string) ($domain ?? ''), '/') . '/admin/' . ltrim($slug, '/');
+				}
+			}
+
+			$items[] = [
+				'label' => $label,
+				'url' => $itemUrl,
+				'slug' => $slug,
+				'group' => $group,
+				'position' => $position,
+				'badge' => $badge,
+			];
+		});
+	}
+
 	public function getAdminPageTitle(): string
 	{
 		return $this->title . ' — Yapılandır';
@@ -297,6 +343,20 @@ abstract class ModuleBase
 	public function getPaymentMethodLabel(): string
 	{
 		return $this->paymentMethodLabel !== '' ? $this->paymentMethodLabel : $this->title;
+	}
+
+	/**
+	 * Ödeme yöntemine özel indirim (kupon/promosyon sonrası ürün tutarı üzerinden).
+	 *
+	 * @return array{amount:float,label:string,percent:float}
+	 */
+	public function getPaymentDiscount(float $amount): array
+	{
+		return [
+			'amount' => 0.0,
+			'label' => '',
+			'percent' => 0.0,
+		];
 	}
 
 	/** paysBeforeOrder = true olan modülün ödeme (kart) sayfası adresi */

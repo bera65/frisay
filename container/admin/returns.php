@@ -24,4 +24,4 @@
 		'statusOptions' => ReturnRequest::getStatusOptions(),
 	]);
 
-	AdminPage::add('returns', 'İadeler');
+	AdminPage::add('returns', 'Returns');

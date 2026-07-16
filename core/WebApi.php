@@ -17,9 +17,11 @@ class WebApi
 				self::handleProducts($method, $route['id'], $route['sub']);
 				break;
 			case 'categories':
+				ApiKey::requirePermission(ApiKey::PERM_CATEGORIES_READ);
 				self::handleCategories($method);
 				break;
 			case 'brands':
+				ApiKey::requirePermission(ApiKey::PERM_BRANDS_READ);
 				self::handleBrands($method);
 				break;
 			default:
@@ -29,26 +31,38 @@ class WebApi
 
 	private static function authenticate(): void
 	{
-		if (Settings::get('WEBAPI_ENABLED') !== '1') {
-			self::respond(403, ['success' => false, 'message' => 'Web API kapalı']);
-		}
+		require_once dirname(__DIR__) . '/core/ApiKey.php';
 
-		$storedKey = (string) Settings::get('WEBAPI_KEY');
-
-		if ($storedKey === '') {
-			self::respond(503, ['success' => false, 'message' => 'API anahtarı yapılandırılmamış. Admin → Ayarlar bölümünden oluşturun.']);
-		}
+		ApiKey::ensureSchema();
 
 		$provided = self::extractApiKey();
 		$ip = RateLimit::clientIp();
 
-		if ($provided === '' || !hash_equals($storedKey, $provided)) {
+		if ($provided === '') {
 			if (RateLimit::isLimited(RateLimit::SCOPE_WEBAPI . '_fail', $ip, 30, 900)) {
 				self::respond(429, ['success' => false, 'message' => 'Çok fazla başarısız istek. Daha sonra tekrar deneyin.']);
 			}
 
 			RateLimit::record(RateLimit::SCOPE_WEBAPI . '_fail', $ip);
-			self::respond(403, ['success' => false, 'message' => 'Geçersiz API anahtarı']);
+			self::respond(403, ['success' => false, 'message' => 'API anahtarı gerekli']);
+		}
+
+		$auth = ApiKey::authenticateProvidedKey($provided);
+
+		if (!$auth['ok']) {
+			if (RateLimit::isLimited(RateLimit::SCOPE_WEBAPI . '_fail', $ip, 30, 900)) {
+				self::respond(429, ['success' => false, 'message' => 'Çok fazla başarısız istek. Daha sonra tekrar deneyin.']);
+			}
+
+			RateLimit::record(RateLimit::SCOPE_WEBAPI . '_fail', $ip);
+
+			$keys = ApiKey::getList();
+
+			if ($keys === [] && Settings::get('WEBAPI_ENABLED') === '1') {
+				self::respond(503, ['success' => false, 'message' => 'API anahtarı yapılandırılmamış. Admin → API menüsünden oluşturun.']);
+			}
+
+			self::respond(403, ['success' => false, 'message' => (string) ($auth['message'] ?? 'Geçersiz API anahtarı')]);
 		}
 
 		if (RateLimit::isLimited(RateLimit::SCOPE_WEBAPI, $ip, 300, 900)) {
@@ -68,11 +82,24 @@ class WebApi
 
 		$auth = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
 
+		if ($auth === '' && function_exists('apache_request_headers')) {
+			$headers = apache_request_headers();
+
+			if (is_array($headers)) {
+				foreach ($headers as $name => $value) {
+					if (strtolower((string) $name) === 'authorization') {
+						$auth = trim((string) $value);
+						break;
+					}
+				}
+			}
+		}
+
 		if ($auth !== '' && preg_match('/^Bearer\s+(.+)$/i', $auth, $matches)) {
 			return trim($matches[1]);
 		}
 
-		return '';
+		return trim((string) Tools::getValue('api_key', ''));
 	}
 
 	private static function resolveMethod(): string
@@ -125,14 +152,17 @@ class WebApi
 	private static function handleOrders(string $method, int $id): void
 	{
 		if ($method === 'GET' && $id <= 0) {
+			ApiKey::requirePermission(ApiKey::PERM_ORDERS_READ);
 			self::listOrders();
 		}
 
 		if ($method === 'GET' && $id > 0) {
+			ApiKey::requirePermission(ApiKey::PERM_ORDERS_READ);
 			self::getOrder($id);
 		}
 
 		if (in_array($method, ['PUT', 'PATCH'], true) && $id > 0) {
+			ApiKey::requirePermission(ApiKey::PERM_ORDERS_WRITE);
 			self::updateOrder($id);
 		}
 
@@ -142,30 +172,37 @@ class WebApi
 	private static function handleProducts(string $method, int $id, string $sub = ''): void
 	{
 		if ($method === 'GET' && $id <= 0) {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_READ);
 			self::listProducts();
 		}
 
 		if ($method === 'GET' && $id > 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_READ);
 			self::getProduct($id);
 		}
 
 		if ($method === 'POST' && $id <= 0) {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_CREATE);
 			self::createProduct();
 		}
 
 		if ($method === 'POST' && $id > 0 && $sub === 'image') {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_UPDATE);
 			self::uploadProductImage($id);
 		}
 
 		if (in_array($method, ['PUT', 'PATCH'], true) && $id > 0 && $sub === 'quick') {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_UPDATE);
 			self::patchProductQuick($id);
 		}
 
 		if (in_array($method, ['PUT', 'PATCH'], true) && $id > 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_UPDATE);
 			self::updateProduct($id);
 		}
 
 		if ($method === 'DELETE' && $id > 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_PRODUCTS_DELETE);
 			self::deleteProduct($id);
 		}
 

@@ -26,4 +26,4 @@
 		'sonuc' 		=> $sonuc,
 	]);
 
-	AdminPage::add('categories', 'Kategoriler');
+	AdminPage::add('categories', 'Categories');

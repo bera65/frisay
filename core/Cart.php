@@ -317,9 +317,7 @@ class Cart
 		$afterPromotion = max(0.0, $total - $promotionDiscount);
 
 		if ($afterPromotion > 0 && self::requiresShipping(['items' => $items])) {
-			$freeMin = (float) Settings::get('FREE_SHIPPING_MIN');
-			$fee = (float) Settings::get('SHIPPING_FEE');
-			$shippingAmount = $afterPromotion >= $freeMin ? 0.0 : $fee;
+			$shippingAmount = Order::getShippingFee($afterPromotion);
 		}
 
 		$grandTotal = $afterPromotion + $shippingAmount;

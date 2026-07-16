@@ -8,7 +8,7 @@
 
 	if (!$order) {
 		http_response_code(404);
-		AdminPage::add('404', 'Sipariş Bulunamadı', true);
+		AdminPage::add('404', 'Order not found', true);
 		return;
 	}
 
@@ -20,4 +20,4 @@
 		'printContactEmail' => Settings::get('CONTACT_EMAIL') ?: '',
 	]);
 
-	AdminPage::add('order-print', 'Sipariş #' . $order['reference'], true);
+	AdminPage::add('order-print', adminT('Order #') . $order['reference'], true);

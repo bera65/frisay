@@ -10,7 +10,7 @@ $flash = '';
 
 if (!$detail) {
 	http_response_code(404);
-	AdminPage::add('404', 'Modül Bulunamadı');
+	AdminPage::add('404', 'Module not found');
 	return;
 }
 
@@ -33,7 +33,7 @@ if (Tools::isSubmit('moduleAction')) {
 	$postToken = (string) Tools::getValue('token');
 
 	if (!hash_equals($adminToken, $postToken)) {
-		$flash = 'Geçersiz istek';
+		$flash = adminT('Invalid request');
 	} else {
 		$action = trim((string) Tools::getValue('action'));
 
@@ -64,7 +64,7 @@ if (Tools::isSubmit('moduleAction')) {
 			default:
 				$result = [
 					'success' => false,
-					'message' => 'Geçersiz işlem'
+					'message' => adminT('Invalid action')
 				];
 				break;
 		}

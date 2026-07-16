@@ -31,6 +31,7 @@
 	require_once(dirname(__FILE__).'/../core/Cart.php');
 	require_once(dirname(__FILE__).'/../core/Customer.php');
 	require_once(dirname(__FILE__).'/../core/Order.php');
+	require_once(dirname(__FILE__).'/../core/Cargo.php');
 	require_once(dirname(__FILE__).'/../core/ReturnRequest.php');
 	require_once(dirname(__FILE__).'/../core/CancelRequest.php');
 	require_once(dirname(__FILE__).'/../core/AdminNotification.php');
@@ -146,6 +147,8 @@
 		'addToCart' => translate('Add To Cart'),
 	];
 	
+	$cargoHints = Cargo::getDisplayHints();
+
 	$smarty->assign(array(
 		'base_dir' 			=> _BASE_DIR_,
 		'rootDir' 			=> $rootDir,
@@ -165,8 +168,8 @@
 		'contactAddress'	=> Settings::get('CONTACT_ADDRESS') ?: '',
 		'contactPhone' 		=> Settings::get('CONTACT_PHONE') ?: '',
 		'contactPhoneTel' 	=> Settings::get('CONTACT_PHONE_TEL') ?: '',
-		'freeShippingMin' 	=> Settings::get('FREE_SHIPPING_MIN') ?: '0',
-		'shippingFee' 		=> Settings::get('SHIPPING_FEE') ?: '0',
+		'freeShippingMin' 	=> $cargoHints['free_shipping_min'],
+		'shippingFee' 		=> $cargoHints['shipping_fee'],
 		'postalCode' 		=> Settings::get('POSTAL_CODE') ?: '0',
 		'contactCity' 		=> Settings::get('CONTACT_CITY') ?: '',
 		'addressCountry' 	=> Settings::get('CONTACT_COUNTRY') ?: '',
@@ -176,6 +179,19 @@
 		'xLink' 			=> Settings::get('X_LINK') ?: '',
 		'instagramLink' 	=> Settings::get('INSTAGRAM_LINK') ?: '',
 		'youtubeLink' 		=> Settings::get('YOUTUBE_LINK') ?: '',
+		'linkedinLink' 		=> Settings::get('LINKEDIN_LINK') ?: '',
+		'pinterestLink' 	=> Settings::get('PINTEREST_LINK') ?: '',
+		'tiktokLink' 		=> Settings::get('TIKTOK_LINK') ?: '',
+		'socialLinks' => [
+			'facebook' => Settings::get('FACEBOOK_LINK') ?: '',
+			'instagram' => Settings::get('INSTAGRAM_LINK') ?: '',
+			'x' => Settings::get('X_LINK') ?: '',
+			'youtube' => Settings::get('YOUTUBE_LINK') ?: '',
+			'linkedin' => Settings::get('LINKEDIN_LINK') ?: '',
+			'pinterest' => Settings::get('PINTEREST_LINK') ?: '',
+			'tiktok' => Settings::get('TIKTOK_LINK') ?: '',
+		],
+		'themeColors'		=> Theme::getColors($theme),
 		'openHour' 			=> Settings::get('OPEN_HOUR') ?: '09:00',
 		'closeHour' 		=> Settings::get('CLOSE_HOUR') ?: '18:00',
 		'selectLang' 		=> $selectLang ?? 'en',

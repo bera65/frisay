@@ -38,6 +38,7 @@
 		} else {
 			$result = Contact::submitOrder($postOrderId, $idUser, (string) Tools::getValue('message'), [
 				'website' => (string) Tools::getValue('website'),
+				'attachment' => $_FILES['attachment'] ?? [],
 			]);
 
 			if ($result['success']) {

@@ -3,8 +3,8 @@
 {/if}
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-	<p class="text-muted small mb-0">İçerik sekmeleri sitedeki aktif dillere göre oluşturulur ({$shopLanguages|@count} dil).</p>
-	<a href="{$adminUrl}languages" class="btn btn-sm btn-outline-secondary">Dilleri Yönet</a>
+	<p class="text-muted small mb-0">{'Content tabs are created for active store languages'|adminT} ({$shopLanguages|@count} dil).</p>
+	<a href="{$adminUrl}languages" class="btn btn-sm btn-outline-secondary">{'Manage languages'|adminT}</a>
 </div>
 
 <div class="admin-panel">
@@ -14,21 +14,21 @@
 
 		<div class="row g-3 mb-4">
 			<div class="col-md-2">
-				<label class="form-label">Sıra</label>
+				<label class="form-label">{'Sort order'|adminT}</label>
 				<input type="number" name="position" class="form-control" value="{$cmsPage.position|default:0}">
 			</div>
 			<div class="col-md-3">
-				<label class="form-label d-block">Durum</label>
+				<label class="form-label d-block">{'Status'|adminT}</label>
 				<div class="form-check form-switch mt-2">
 					<input class="form-check-input" type="checkbox" name="active" value="1" id="cmsActive"{if $cmsPage.active|default:1} checked{/if}>
-					<label class="form-check-label" for="cmsActive">Yayında</label>
+					<label class="form-check-label" for="cmsActive">{'Published'|adminT}</label>
 				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label d-block">Footer</label>
 				<div class="form-check form-switch mt-2">
 					<input class="form-check-input" type="checkbox" name="show_footer" value="1" id="cmsFooter"{if $cmsPage.show_footer|default:1} checked{/if}>
-					<label class="form-check-label" for="cmsFooter">Footer'da göster</label>
+					<label class="form-check-label" for="cmsFooter">{'Show in footer'|adminT}</label>
 				</div>
 			</div>
 		</div>
@@ -47,37 +47,37 @@
 				<div class="mb-3">
 					<label class="form-label">URL Slug ({$langForm.label|escape})</label>
 					<input type="text" name="langs[{$langCode|escape}][slug]" class="form-control cms-lang-slug" data-lang="{$langCode|escape}" value="{$langForm.slug|escape}" placeholder="hakkimizda">
-					<div class="form-text">Adres: {$domain}<span class="cms-slug-preview" data-lang="{$langCode|escape}">{$langForm.slug|escape}</span></div>
+					<div class="form-text">{'Address:'|adminT} {$domain}<span class="cms-slug-preview" data-lang="{$langCode|escape}">{$langForm.slug|escape}</span></div>
 				</div>
 				<div class="mb-3">
-					<label class="form-label">Başlık ({$langForm.label|escape})</label>
+					<label class="form-label">{'Title'|adminT} ({$langForm.label|escape})</label>
 					<input type="text" name="langs[{$langCode|escape}][title]" class="form-control" value="{$langForm.title|escape}" maxlength="255">
 				</div>
 				<div class="mb-3">
-					<label class="form-label">Kısa açıklama</label>
+					<label class="form-label">{'Short description'|adminT}</label>
 					<input type="text" name="langs[{$langCode|escape}][summary]" class="form-control" value="{$langForm.summary|escape}" maxlength="512">
 				</div>
 				<div class="row g-3 mb-3">
 					<div class="col-md-6">
-						<label class="form-label">Meta başlık</label>
+						<label class="form-label">{'Meta title'|adminT}</label>
 						<input type="text" name="langs[{$langCode|escape}][meta_title]" class="form-control" value="{$langForm.meta_title|escape}" maxlength="255">
 					</div>
 					<div class="col-md-6">
-						<label class="form-label">Meta açıklama</label>
+						<label class="form-label">{'Meta description'|adminT}</label>
 						<input type="text" name="langs[{$langCode|escape}][meta_description]" class="form-control" value="{$langForm.meta_description|escape}" maxlength="512">
 					</div>
 				</div>
-				<label class="form-label">İçerik</label>
+				<label class="form-label">{'Content'|adminT}</label>
 				<textarea name="langs[{$langCode|escape}][content]" class="form-control wysiwyg-editor" rows="18">{$langForm.content|escape}</textarea>
 			</div>
 			{/foreach}
 		</div>
 
 		<div class="mt-4 d-flex gap-2">
-			<button type="submit" class="btn btn-dark">Kaydet</button>
-			<a href="{$adminUrl}cms" class="btn btn-outline-secondary">Geri</a>
+			<button type="submit" class="btn btn-dark">{'Save'|adminT}</button>
+			<a href="{$adminUrl}cms" class="btn btn-outline-secondary">{'Back'|adminT}</a>
 			{if !$isNewCms && $cmsPage.url}
-			<a href="{$cmsPage.url|escape}" class="btn btn-outline-dark" target="_blank" rel="noopener">Sitede Gör</a>
+			<a href="{$cmsPage.url|escape}" class="btn btn-outline-dark" target="_blank" rel="noopener">{'View on site'|adminT}</a>
 			{/if}
 		</div>
 	</form>

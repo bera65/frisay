@@ -19,7 +19,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$result = Performance::saveConfig([
@@ -43,7 +43,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$result = Performance::clearCaches();
@@ -65,4 +65,4 @@
 		'flashType' => $flashType,
 	]);
 
-	AdminPage::add('performance', 'Performans');
+	AdminPage::add('performance', 'Performance');

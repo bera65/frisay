@@ -53,6 +53,8 @@
 	require_once dirname(__FILE__) . '/../core/ModuleBase.php';
 	require_once dirname(__FILE__) . '/../core/Module.php';
 	require_once dirname(__FILE__) . '/../core/Schema.php';
+	require_once dirname(__FILE__) . '/../core/ApiKey.php';
+	require_once dirname(__FILE__) . '/../core/Cargo.php';
 	require_once dirname(__FILE__) . '/../core/Mail.php';
 	require_once dirname(__FILE__) . '/../core/SmtpMailer.php';
 	require_once dirname(__FILE__) . '/../core/Notification.php';
@@ -108,6 +110,8 @@
 		'messages' => Contact::countUnread(),
 	];
 
+	$adminMenuItems = Module::getAdminMenuItems();
+
 	$smarty->assign([
 		'domain' => $domain,
 		'adminUrl' => $adminUrl,
@@ -119,14 +123,20 @@
 			? mb_strtoupper(mb_substr($adminUser['full_name'], 0, 1, 'UTF-8'))
 			: 'A',
 		'adminNavBadges' => $adminNavBadges,
+		'adminMenuItems' => $adminMenuItems,
 		'year' => date('Y'),
 		'moduleAdminAssets' => ['css' => [], 'js' => []],
 		'adminUseCharts' => false,
+		'adminUseOrderStatus' => false,
 		'adminUseEditor' => false,
 		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin'),
 		'adminLang' => $adminLang,
 		'adminLangSwitcher' => AdminLang::getSwitcherList(),
 		'fshopVersion' => FShop::version(),
 		'fshopName' => FShop::NAME,
+		'adminI18n' => [
+			'confirmTitle' => adminT('Confirm action'),
+			'confirmMessage' => adminT('Are you sure you want to perform this action?'),
+		],
 	]);
 	$smarty->registerPlugin('modifier', 'adminT', 'adminT');

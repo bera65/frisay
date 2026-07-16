@@ -18,4 +18,4 @@
 		'searchQuery' => $query,
 	]);
 
-	AdminPage::add('customers', 'Müşteriler');
+	AdminPage::add('customers', 'Customers');

@@ -20,8 +20,8 @@
 						<div class="auth-modal__alert d-none" id="authLoginAlert"></div>
 						<form id="authModalLoginForm" class="auth-form">
 							<div class="mb-3">
-								<label class="form-label" for="authModalLoginPhone">{'Phone'|translate}</label>
-								<input type="tel" id="authModalLoginPhone" name="phone" class="form-control phone-input" placeholder="{'Phone placeholder'|translate}" required autocomplete="tel">
+								<label class="form-label" for="authModalLoginPhone">{'Email or phone'|translate}</label>
+								<input type="text" id="authModalLoginPhone" name="login" class="form-control" placeholder="{'Email or phone placeholder'|translate}" required autocomplete="username">
 							</div>
 							<div class="mb-3">
 								<label class="form-label" for="authModalLoginPassword">{'Password'|translate}</label>

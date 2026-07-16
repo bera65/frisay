@@ -13,7 +13,7 @@ class Security
 		return $slug;
 	}
 
-	public static function validatePassword(string $password): ?string
+	public static function validatePassword(string $password, bool $requireComplexity = true): ?string
 	{
 		$password = (string) $password;
 
@@ -21,7 +21,7 @@ class Security
 			return 'Şifre en az 8 karakter olmalı';
 		}
 
-		if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+		if ($requireComplexity && (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password))) {
 			return 'Şifre en az bir harf ve bir rakam içermeli';
 		}
 

@@ -2,7 +2,7 @@
 <div class="alert alert-info py-2">{$flash|escape}</div>
 {/if}
 
-<p class="mb-3"><a href="{$adminUrl}modules">&larr; Modül listesine dön</a></p>
+<p class="mb-3"><a href="{$adminUrl}modules">{'← Back to module list'|adminT}</a></p>
 
 <div class="row g-4">
 	<div class="col-lg-8">
@@ -13,11 +13,11 @@
 					<p class="text-muted small mb-0">{$mod.name|escape} · v{$mod.version|escape}{if $mod.author} · {$mod.author|escape}{/if}</p>
 				</div>
 				{if $mod.installed && $mod.active}
-				<span class="badge bg-success">Aktif</span>
+				<span class="badge bg-success">{'Active'|adminT}</span>
 				{elseif $mod.installed}
-				<span class="badge bg-secondary">Pasif</span>
+				<span class="badge bg-secondary">{'Inactive'|adminT}</span>
 				{else}
-				<span class="badge bg-light text-dark">Kurulu değil</span>
+				<span class="badge bg-light text-dark">{'Not installed'|adminT}</span>
 				{/if}
 			</div>
 			<p class="mb-0">{$mod.description|escape}</p>
@@ -25,11 +25,11 @@
 
 		{if $mod.display_hooks|@count}
 		<div class="admin-panel mb-4">
-			<h3 class="h6 mb-3">Görünür hook ataması</h3>
+			<h3 class="h6 mb-3">{'Display hook assignment'|adminT}</h3>
 			<p class="text-muted small mb-3">
-				Modülün sitede hangi alanda görüneceğini seçin. Mağazada
-				<code>{ldelim}$hooks.footer{rdelim}</code>, admin panelde
-				<code>{ldelim}$adminHooks.admin_product_button{rdelim}</code> gibi hook noktaları kullanılır.
+				{'Choose where the module appears on the site. On the storefront'|adminT}
+				<code>{ldelim}$hooks.footer{rdelim}</code>, {'in the admin panel'|adminT}
+				<code>{ldelim}$adminHooks.admin_product_button{rdelim}</code>{' hook points are used.'|adminT}
 			</p>
 			{if $mod.installed}
 			<form method="post" class="mb-0">
@@ -48,13 +48,13 @@
 							{if isset($mod.display_hooks[$hookKey])}
 							<span class="d-block small">{$mod.display_hooks[$hookKey]|escape}</span>
 							{else}
-							<span class="d-block small text-muted">Bu modül bu hook'u desteklemiyor</span>
+							<span class="d-block small text-muted">{'This module does not support this hook'|adminT}</span>
 							{/if}
 						</span>
 					</label>
 					{/foreach}
 				</div>
-				<button type="submit" name="action" value="save_hooks" class="btn btn-sm btn-dark">Hook atamalarını kaydet</button>
+				<button type="submit" name="action" value="save_hooks" class="btn btn-sm btn-dark">{'Save hook assignments'|adminT}</button>
 			</form>
 			{else}
 			<ul class="list-unstyled mb-0">
@@ -65,15 +65,15 @@
 				</li>
 				{/foreach}
 			</ul>
-			<p class="text-muted small mt-2 mb-0">Kurulumda varsayılan hook'lar otomatik atanır; kurduktan sonra buradan değiştirebilirsiniz.</p>
+			<p class="text-muted small mt-2 mb-0">{'Default hooks are assigned on install; you can change them here after installation.'|adminT}</p>
 			{/if}
 		</div>
 		{/if}
 
 		{if $mod.hooks_meta|@count}
 		<div class="admin-panel mb-4">
-			<h3 class="h6 mb-3">Kullandığı hook'lar</h3>
-			<p class="text-muted small">Hook'lar modülün <code>boot()</code> metodunda kayıt olur ve mağaza/admin akışına müdahale eder.</p>
+			<h3 class="h6 mb-3">{'Registered hooks'|adminT}</h3>
+			<p class="text-muted small">{'Hooks are registered in the module <code>boot()</code> method and affect storefront/admin flow.'|adminT}</p>
 			<ul class="list-unstyled mb-0">
 				{foreach $mod.hooks_meta as $hookName => $hookDesc}
 				<li class="mb-2">
@@ -88,12 +88,11 @@
 
 		{if $mod.installed}
 		<div class="admin-panel">
-			<h3 class="h6 mb-3">Yapılandırma</h3>
+			<h3 class="h6 mb-3">{'Configuration'|adminT}</h3>
 			<p class="text-muted small mb-3">
-				Modül ayarları <code>{$mod.name|escape}</code> klasöründeki
-				<code>adminPage()</code> ve <code>assets/templates/admin/admin.tpl</code> ile yönetilir.
+				{'Module settings are managed via <code>adminPage()</code> and <code>assets/templates/admin/admin.tpl</code> in the module folder.'|adminT}
 			</p>
-			<a href="{$mod.configure_url}" class="btn btn-sm btn-dark">{$mod.title|escape} — Yapılandır</a>
+			<a href="{$mod.configure_url}" class="btn btn-sm btn-dark">{$mod.title|escape}{' — Configure'|adminT}</a>
 		</div>
 		{/if}
 	</div>
@@ -104,32 +103,32 @@
 			{if $mod.logo_url}
 			<img src="{$mod.logo_url|escape}" alt="" width="48" height="48" class="rounded mb-3">
 			{/if}
-			<a href="{$mod.configure_url}" class="btn btn-primary w-100">Yapılandır</a>
+			<a href="{$mod.configure_url}" class="btn btn-primary w-100">{'Configure'|adminT}</a>
 			<p class="small text-muted mt-2 mb-0"><code>/admin/module-{$mod.name|escape}</code></p>
 		</div>
 		{/if}
 
 		<div class="admin-panel mb-4">
-			<h3 class="h6 mb-3">Durum ve işlemler</h3>
+			<h3 class="h6 mb-3">{'Status and actions'|adminT}</h3>
 			<form method="post" class="d-flex flex-column gap-2">
 				<input type="hidden" name="moduleAction" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 				{if !$mod.installed}
-				<button type="submit" name="action" value="install" class="btn btn-dark">Kur ve etkinleştir</button>
+				<button type="submit" name="action" value="install" class="btn btn-dark">{'Install and enable'|adminT}</button>
 				{else}
 					{if !$mod.active}
-					<button type="submit" name="action" value="enable" class="btn btn-dark">Etkinleştir</button>
+					<button type="submit" name="action" value="enable" class="btn btn-dark">{'Enable'|adminT}</button>
 					{else}
-					<button type="submit" name="action" value="disable" class="btn btn-outline-secondary">Devre dışı bırak</button>
+					<button type="submit" name="action" value="disable" class="btn btn-outline-secondary">{'Disable'|adminT}</button>
 					{/if}
-					<button type="submit" name="action" value="uninstall" class="btn btn-outline-danger" onclick="return confirm('Modül kaldırılsın mı? Veriler silinebilir.');">Kaldır</button>
+					<button type="submit" name="action" value="uninstall" class="btn btn-outline-danger" onclick="return confirm('{'Uninstall this module? Data may be deleted.'|adminT}');">{'Uninstall'|adminT}</button>
 				{/if}
 			</form>
 		</div>
 
 		{if $mod.api_actions|@count}
 		<div class="admin-panel">
-			<h3 class="h6 mb-3">API uçları</h3>
+			<h3 class="h6 mb-3">{'API endpoints'|adminT}</h3>
 			<ul class="list-unstyled small mb-0">
 				{foreach $mod.api_actions as $api}
 				<li class="mb-2">

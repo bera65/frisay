@@ -5,7 +5,7 @@
 
 	$idOrder = (int) Tools::getValue('order');
 	$id = (int) Tools::getValue('id');
-	$flash = Tools::getValue('sent') === '1' ? 'Yanıt müşteriye gönderildi' : '';
+	$flash = Tools::getValue('sent') === '1' ? adminT('Reply sent to customer') : '';
 	$flashType = $flash !== '' ? 'success' : 'info';
 	$replyToId = (int) Tools::getValue('reply_to');
 
@@ -13,7 +13,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			if ($replyToId <= 0) {
@@ -61,7 +61,7 @@
 
 	if (!$thread) {
 		http_response_code(404);
-		AdminPage::add('404', 'Mesaj Bulunamadı');
+		AdminPage::add('404', 'Message not found');
 		return;
 	}
 
@@ -70,4 +70,4 @@
 		'flash' => $flash,
 		'flashType' => $flashType,
 	]);
-	AdminPage::add('message', $thread['is_order_thread'] ? 'Sipariş Mesajları' : 'Mesaj Detayı');
+	AdminPage::add('message', $thread['is_order_thread'] ? 'Order Messages' : 'Message details');

@@ -27,6 +27,8 @@ class Order
 			'tax_number' => "varchar(20) NOT NULL DEFAULT '' AFTER `tax_office`",
 			'cargo_company' => "varchar(64) NOT NULL DEFAULT '' AFTER `status`",
 			'tracking_number' => "varchar(64) NOT NULL DEFAULT '' AFTER `cargo_company`",
+			'payment_discount' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `promotion_discount`",
+			'payment_discount_label' => "varchar(128) NOT NULL DEFAULT '' AFTER `payment_discount`",
 		];
 
 		foreach ($columns as $name => $definition) {
@@ -48,6 +50,38 @@ class Order
 				[self::STATUS_DELIVERED]
 			);
 		}
+	}
+
+	public const PAYMENT_SESSION_KEY = 'checkout_payment_method';
+
+	public static function getSelectedPaymentMethod(): string
+	{
+		return trim((string) ($_SESSION[self::PAYMENT_SESSION_KEY] ?? ''));
+	}
+
+	public static function setSelectedPaymentMethod(string $method): bool
+	{
+		$method = trim($method);
+
+		if ($method === '') {
+			unset($_SESSION[self::PAYMENT_SESSION_KEY]);
+
+			return true;
+		}
+
+		$methods = Module::getPaymentMethods();
+
+		if ($methods !== []) {
+			if (!isset($methods[$method])) {
+				return false;
+			}
+		} elseif (!in_array($method, ['bank_transfer', 'cash_on_delivery'], true)) {
+			return false;
+		}
+
+		$_SESSION[self::PAYMENT_SESSION_KEY] = $method;
+
+		return true;
 	}
 
 	public static function getStatusLabel(int $status): string
@@ -84,12 +118,19 @@ class Order
 		return isset($labels[$method]) ? $labels[$method] : $method;
 	}
 
-	public static function getShippingFee(float $subtotal): float
+	public static function getShippingFee(float $subtotal, ?int $idCargo = null): float
 	{
-		$min = (float) (Settings::get('FREE_SHIPPING_MIN') ?: 1500);
-		$fee = (float) (Settings::get('SHIPPING_FEE') ?: 49.90);
+		if (!class_exists('Cargo') && is_file(dirname(__DIR__) . '/core/Cargo.php')) {
+			require_once dirname(__DIR__) . '/core/Cargo.php';
+		}
 
-		return $subtotal >= $min ? 0.0 : $fee;
+		if (!class_exists('Cargo')) {
+			return 0.0;
+		}
+
+		$fee = Cargo::getFeeForAmount($subtotal, $idCargo);
+
+		return $fee !== null ? $fee : 0.0;
 	}
 
 	public static function isPaymentAccepted(int $status): bool
@@ -101,27 +142,40 @@ class Order
 		], true);
 	}
 
-	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0, ?array $cart = null): array
+	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0, ?array $cart = null, ?int $idCargo = null, ?string $paymentMethod = null): array
 	{
 		$discount = max(0.0, min($subtotal, $discount));
 		$afterDiscount = $subtotal - $discount;
 		$requiresShipping = Cart::requiresShipping($cart);
-		$shipping = $requiresShipping ? self::getShippingFee($afterDiscount) : 0.0;
-		$total = $afterDiscount + $shipping;
+		$shipping = $requiresShipping ? self::getShippingFee($afterDiscount, $idCargo) : 0.0;
+		$paymentMethod = $paymentMethod !== null ? trim($paymentMethod) : self::getSelectedPaymentMethod();
+		$paymentInfo = Module::getPaymentDiscount($paymentMethod, $afterDiscount);
+		$paymentDiscount = min($afterDiscount, (float) ($paymentInfo['amount'] ?? 0));
+		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping;
+		$hints = class_exists('Cargo') ? Cargo::getDisplayHints() : ['free_shipping_min' => 0.0];
 
 		return [
 			'subtotal' => $subtotal,
 			'subtotal_formatted' => Tools::displayPrice($subtotal),
 			'discount' => $discount,
 			'discount_formatted' => Tools::displayPrice($discount),
+			'payment_discount' => $paymentDiscount,
+			'payment_discount_formatted' => Tools::displayPrice($paymentDiscount),
+			'payment_discount_label' => (string) ($paymentInfo['label'] ?? ''),
+			'has_payment_discount' => $paymentDiscount > 0,
 			'shipping' => $shipping,
 			'shipping_formatted' => $requiresShipping && $shipping > 0
 				? Tools::displayPrice($shipping)
 				: ($requiresShipping ? translate('Free') : '—'),
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
-			'free_shipping_min' => (float) (Settings::get('FREE_SHIPPING_MIN') ?: 1500),
+			'free_shipping_min' => (float) ($hints['free_shipping_min'] ?? 0),
 			'requires_shipping' => $requiresShipping,
+			'shipping_from_cargo' => class_exists('Cargo') && Cargo::getFeeForAmount($afterDiscount, $idCargo) !== null,
+			'id_cargo' => $idCargo !== null && $idCargo > 0
+				? $idCargo
+				: (class_exists('Cargo') ? Cargo::getSelectedId() : 0),
+			'payment_method' => $paymentMethod,
 		];
 	}
 
@@ -235,6 +289,36 @@ class Order
 			return self::fail(translate('COD not for virtual'));
 		}
 
+		$requiresShipping = Cart::requiresShipping($cart);
+		$idCargo = (int) ($data['id_cargo'] ?? 0);
+		$cargoCompanyName = '';
+
+		if (!class_exists('Cargo') && is_file(dirname(__DIR__) . '/core/Cargo.php')) {
+			require_once dirname(__DIR__) . '/core/Cargo.php';
+		}
+
+		if (class_exists('Cargo') && $requiresShipping) {
+			$activeCargos = Cargo::getList(true);
+
+			if ($activeCargos !== []) {
+				if ($idCargo <= 0) {
+					$idCargo = Cargo::getSelectedId();
+				}
+
+				$cargoRow = Cargo::getById($idCargo);
+
+				if (!$cargoRow || empty($cargoRow['active'])) {
+					return self::fail('Lütfen bir kargo firması seçin');
+				}
+
+				Cargo::setSelectedId($idCargo);
+				$cargoCompanyName = (string) ($cargoRow['name'] ?? '');
+				$data['id_cargo'] = $idCargo;
+			}
+		}
+
+		self::setSelectedPaymentMethod($payment);
+
 		// "Önce ödeme" isteyen modül (sanal POS gibi): sipariş henüz OLUŞTURULMAZ.
 		// Form verisi session'da bekletilir, müşteri kart sayfasına yönlendirilir.
 		// Banka onayından sonra modül Order::placePending() ile siparişi oluşturur.
@@ -265,9 +349,17 @@ class Order
 		$couponDiscount = (float) ($checkoutSummary['coupon_discount'] ?? 0);
 		$promotionDiscount = (float) ($checkoutSummary['promotion_discount'] ?? 0);
 		$promotionName = (string) ($checkoutSummary['promotion_name'] ?? '');
+		$paymentDiscount = (float) ($checkoutSummary['payment_discount'] ?? 0);
+		$paymentDiscountLabel = (string) ($checkoutSummary['payment_discount_label'] ?? '');
 		$appliedCoupon = Coupon::getApplied();
 		$couponCode = $appliedCoupon ? (string) $appliedCoupon['code'] : '';
-		$totals = self::getCheckoutTotals($subtotal, (float) $checkoutSummary['discount'], $cart);
+		$totals = self::getCheckoutTotals(
+			$subtotal,
+			(float) $checkoutSummary['discount'],
+			$cart,
+			null,
+			$payment
+		);
 
 		if (!empty($data['_reference'])) {
 			$reference = (string) $data['_reference'];
@@ -323,6 +415,9 @@ class Order
 				'coupon_discount' => $couponDiscount,
 				'promotion_name' => $promotionName,
 				'promotion_discount' => $promotionDiscount,
+				'payment_discount' => $paymentDiscount,
+				'payment_discount_label' => mb_substr($paymentDiscountLabel, 0, 128),
+				'cargo_company' => $cargoCompanyName,
 				'subtotal' => $totals['subtotal'],
 				'shipping' => $totals['shipping'],
 				'total' => $totals['total'],
@@ -523,9 +618,23 @@ class Order
 
 		$order['status_label'] = self::getStatusLabel((int) $order['status']);
 		$order['payment_label'] = self::getPaymentLabel($order['payment_method']);
+		$order['subtotal'] = (float) ($order['subtotal'] ?? 0);
+		$order['shipping'] = (float) ($order['shipping'] ?? 0);
+		$order['total'] = (float) ($order['total'] ?? 0);
 		$order['subtotal_formatted'] = Tools::displayPrice($order['subtotal']);
-		$order['shipping_formatted'] = Tools::displayPrice($order['shipping']);
+		$order['shipping_formatted'] = $order['shipping'] > 0
+			? Tools::displayPrice($order['shipping'])
+			: translate('Free');
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
+		$order['coupon_code'] = (string) ($order['coupon_code'] ?? '');
+		$order['coupon_discount'] = (float) ($order['coupon_discount'] ?? 0);
+		$order['coupon_discount_formatted'] = Tools::displayPrice($order['coupon_discount']);
+		$order['promotion_name'] = (string) ($order['promotion_name'] ?? '');
+		$order['promotion_discount'] = (float) ($order['promotion_discount'] ?? 0);
+		$order['promotion_discount_formatted'] = Tools::displayPrice($order['promotion_discount']);
+		$order['payment_discount'] = (float) ($order['payment_discount'] ?? 0);
+		$order['payment_discount_formatted'] = Tools::displayPrice($order['payment_discount']);
+		$order['payment_discount_label'] = (string) ($order['payment_discount_label'] ?? '');
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
 			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind
@@ -707,7 +816,7 @@ class Order
 	{
 		$reference = strtoupper(trim($reference));
 
-		if ($reference === '' || !preg_match('/^FS[0-9A-Z]+$/', $reference)) {
+		if ($reference === '' || !self::isValidPublicReference($reference)) {
 			return null;
 		}
 
@@ -778,6 +887,20 @@ class Order
 			$row['status_class'] = self::getStatusBadgeClass((int) $row['status']);
 			$row['date_full'] = date('Y-m-d H:i:s', strtotime($row['date_add']));
 
+			$cargoName = trim((string) ($row['cargo_company'] ?? ''));
+			$cargo = class_exists('Cargo', false) && $cargoName !== '' ? Cargo::getByName($cargoName) : null;
+			$row['cargo_name'] = $cargoName;
+			$row['cargo_logo_url'] = class_exists('Cargo', false)
+				? (Cargo::resolveLogoUrl($cargoName, $cargo ? (int) $cargo['id_cargo'] : null) ?? '')
+				: '';
+			$row['tracking_url'] = '';
+
+			$trackingNumber = trim((string) ($row['tracking_number'] ?? ''));
+
+			if ($trackingNumber !== '' && class_exists('Cargo', false)) {
+				$row['tracking_url'] = Cargo::buildTrackingUrl($trackingNumber, $cargo ?: $cargoName);
+			}
+
 			$firstItem = DB::execute(
 				'SELECT od.product_name, od.id_product, i.id_image
 				 FROM order_detail od
@@ -806,17 +929,12 @@ class Order
 		return self::enrichAdminRows(self::getAdminList(0, $limit, 0));
 	}
 
-	public static function getAdminList(int $status = 0, int $limit = 30, int $offset = 0, string $dateFrom = '', string $dateTo = ''): array
+	public static function getAdminList(int $status = 0, int $limit = 30, int $offset = 0, string $dateFrom = '', string $dateTo = '', array $filters = []): array
 	{
 		$sql = 'SELECT * FROM orders WHERE 1=1';
 		$params = [];
 
-		if ($status > 0) {
-			$sql .= ' AND status = ?';
-			$params[] = $status;
-		}
-
-		self::applyDateFilters($sql, $params, $dateFrom, $dateTo);
+		self::applyAdminFilters($sql, $params, $status, $dateFrom, $dateTo, $filters);
 
 		$sql .= ' ORDER BY id_order DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
 
@@ -833,11 +951,49 @@ class Order
 		return $rows;
 	}
 
-	public static function countAdmin(int $status = 0, string $dateFrom = '', string $dateTo = ''): int
+	public static function countAdmin(int $status = 0, string $dateFrom = '', string $dateTo = '', array $filters = []): int
 	{
 		$sql = 'SELECT COUNT(*) FROM orders WHERE 1=1';
 		$params = [];
 
+		self::applyAdminFilters($sql, $params, $status, $dateFrom, $dateTo, $filters);
+
+		return (int) DB::getValue($sql, $params);
+	}
+
+	/** @return array{reference: string, customer: string, date_from: string, date_to: string} */
+	public static function normalizeAdminFilters(array $input): array
+	{
+		return [
+			'reference' => mb_substr(trim((string) ($input['reference'] ?? '')), 0, 32),
+			'customer' => mb_substr(trim((string) ($input['customer'] ?? '')), 0, 128),
+			'date_from' => trim((string) ($input['date_from'] ?? '')),
+			'date_to' => trim((string) ($input['date_to'] ?? '')),
+		];
+	}
+
+	/** @return array<string, int|string> */
+	public static function buildAdminFilterQuery(int $status, array $filters): array
+	{
+		$query = [];
+
+		foreach (['reference', 'customer', 'date_from', 'date_to'] as $key) {
+			$value = trim((string) ($filters[$key] ?? ''));
+
+			if ($value !== '') {
+				$query[$key] = $value;
+			}
+		}
+
+		if ($status > 0) {
+			$query['status'] = $status;
+		}
+
+		return $query;
+	}
+
+	private static function applyAdminFilters(string &$sql, array &$params, int $status, string $dateFrom, string $dateTo, array $filters = []): void
+	{
 		if ($status > 0) {
 			$sql .= ' AND status = ?';
 			$params[] = $status;
@@ -845,13 +1001,33 @@ class Order
 
 		self::applyDateFilters($sql, $params, $dateFrom, $dateTo);
 
-		return (int) DB::getValue($sql, $params);
+		$reference = trim((string) ($filters['reference'] ?? ''));
+
+		if ($reference !== '') {
+			$sql .= ' AND reference LIKE ?';
+			$params[] = '%' . $reference . '%';
+		}
+
+		$customer = trim((string) ($filters['customer'] ?? ''));
+
+		if ($customer !== '') {
+			$sql .= ' AND customer_name LIKE ?';
+			$params[] = '%' . $customer . '%';
+		}
 	}
 
 	private static function applyDateFilters(string &$sql, array &$params, string $dateFrom, string $dateTo): void
 	{
 		$dateFrom = trim($dateFrom);
 		$dateTo = trim($dateTo);
+
+		if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+			$dateFrom .= ' 00:00:00';
+		}
+
+		if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+			$dateTo .= ' 23:59:59';
+		}
 
 		if ($dateFrom !== '') {
 			$sql .= ' AND date_add >= ?';
@@ -877,6 +1053,13 @@ class Order
 		$order['subtotal_formatted'] = Tools::displayPrice($order['subtotal']);
 		$order['shipping_formatted'] = Tools::displayPrice($order['shipping']);
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
+		$order['coupon_discount'] = (float) ($order['coupon_discount'] ?? 0);
+		$order['coupon_discount_formatted'] = Tools::displayPrice($order['coupon_discount']);
+		$order['promotion_discount'] = (float) ($order['promotion_discount'] ?? 0);
+		$order['promotion_discount_formatted'] = Tools::displayPrice($order['promotion_discount']);
+		$order['payment_discount'] = (float) ($order['payment_discount'] ?? 0);
+		$order['payment_discount_formatted'] = Tools::displayPrice($order['payment_discount']);
+		$order['payment_discount_label'] = (string) ($order['payment_discount_label'] ?? '');
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
 		$order['items'] = DB::execute(
 			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind, p.virtual_file_name
@@ -1114,14 +1297,150 @@ class Order
 		return self::generateReference();
 	}
 
+	/** @return array<string, string> */
+	public static function getReferenceSuffixModes(): array
+	{
+		return [
+			'sequential' => 'Sequential number (00123)',
+			'timestamp' => 'Unix timestamp (time)',
+			'datetime' => 'Date and time (YmdHis)',
+			'random' => 'Random code',
+			'date_random' => 'Date + random (ymd + code)',
+		];
+	}
+
+	/** @return array{prefix: string, suffix_mode: string, pad: int} */
+	public static function getReferenceSettings(): array
+	{
+		$configured = trim((string) Settings::get('ORDER_REF_SUFFIX_MODE')) !== ''
+			|| trim((string) Settings::get('ORDER_REF_PREFIX')) !== '';
+
+		$prefix = self::sanitizeReferencePrefix((string) Settings::get('ORDER_REF_PREFIX'));
+		$mode = strtolower(trim((string) Settings::get('ORDER_REF_SUFFIX_MODE')));
+		$modes = array_keys(self::getReferenceSuffixModes());
+
+		if (!in_array($mode, $modes, true)) {
+			$mode = $configured ? 'sequential' : 'date_random';
+		}
+
+		if (!$configured && $prefix === '') {
+			$prefix = 'FS';
+		}
+
+		$pad = (int) Settings::get('ORDER_REF_PAD');
+
+		if ($pad < 3 || $pad > 10) {
+			$pad = 5;
+		}
+
+		return [
+			'prefix' => $prefix,
+			'suffix_mode' => $mode,
+			'pad' => $pad,
+		];
+	}
+
+	public static function previewReference(?array $override = null): string
+	{
+		$settings = $override ?? self::getReferenceSettings();
+
+		return self::composeReference($settings, true);
+	}
+
+	public static function sanitizeReferencePrefix(string $prefix): string
+	{
+		$prefix = strtoupper(trim($prefix));
+		$prefix = preg_replace('/[^A-Z0-9]/', '', $prefix) ?: '';
+
+		return mb_substr($prefix, 0, 12);
+	}
+
+	public static function isValidPublicReference(string $reference): bool
+	{
+		$reference = strtoupper(trim($reference));
+
+		return $reference !== '' && (bool) preg_match('/^[A-Z0-9]{4,32}$/', $reference);
+	}
+
 	private static function generateReference(): string
 	{
+		$settings = self::getReferenceSettings();
+
 		do {
-			$reference = 'FS' . date('ymd') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+			$reference = self::composeReference($settings, false);
 			$exists = DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
 		} while ($exists);
 
 		return $reference;
+	}
+
+	/** @param array{prefix: string, suffix_mode: string, pad: int} $settings */
+	private static function composeReference(array $settings, bool $preview): string
+	{
+		$prefix = self::sanitizeReferencePrefix((string) ($settings['prefix'] ?? ''));
+		$suffix = self::buildReferenceSuffix(
+			(string) ($settings['suffix_mode'] ?? 'sequential'),
+			(int) ($settings['pad'] ?? 5),
+			$preview
+		);
+		$reference = strtoupper($prefix . $suffix);
+		$reference = preg_replace('/[^A-Z0-9]/', '', $reference) ?: strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
+		return mb_substr($reference, 0, 32);
+	}
+
+	private static function buildReferenceSuffix(string $mode, int $pad, bool $preview): string
+	{
+		switch ($mode) {
+			case 'timestamp':
+				return $preview ? (string) time() : (string) time();
+
+			case 'datetime':
+				return date('YmdHis');
+
+			case 'random':
+				return strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+
+			case 'date_random':
+				return date('ymd') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+
+			case 'sequential':
+			default:
+				$next = $preview ? self::peekReferenceCounter() : self::nextReferenceCounter();
+
+				return str_pad((string) max(1, $next), max(3, min(10, $pad)), '0', STR_PAD_LEFT);
+		}
+	}
+
+	private static function peekReferenceCounter(): int
+	{
+		self::ensureReferenceCounter();
+
+		return max(1, (int) DB::getValue('SELECT value FROM settings WHERE title = ? LIMIT 1', ['ORDER_REF_COUNTER']) + 1);
+	}
+
+	private static function nextReferenceCounter(): int
+	{
+		self::ensureReferenceCounter();
+
+		DB::execute(
+			'UPDATE settings SET value = CAST(COALESCE(NULLIF(value, ""), "0") AS UNSIGNED) + 1 WHERE title = ?',
+			['ORDER_REF_COUNTER']
+		);
+
+		return max(1, (int) DB::getValue('SELECT value FROM settings WHERE title = ? LIMIT 1', ['ORDER_REF_COUNTER']));
+	}
+
+	private static function ensureReferenceCounter(): void
+	{
+		$val = DB::getValue('SELECT value FROM settings WHERE title = ? LIMIT 1', ['ORDER_REF_COUNTER']);
+
+		if ($val !== false && $val !== '') {
+			return;
+		}
+
+		$start = (int) DB::getValue('SELECT COALESCE(MAX(id_order), 0) FROM orders');
+		Settings::set('ORDER_REF_COUNTER', (string) $start);
 	}
 
 	private static function fail(string $message): array

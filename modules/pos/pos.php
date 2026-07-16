@@ -1263,7 +1263,7 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'Alınan tutar toplamdan az'];
 		}
 
-		$reference = $this->generatePosReference();
+		$reference = Order::reserveReference();
 		global $db;
 
 		try {
@@ -1358,16 +1358,6 @@ class PosModule extends ModuleBase
 			'payment_label' => self::getPaymentLabel($payment),
 			'cart' => $this->getCartSummary(),
 		];
-	}
-
-	private function generatePosReference(): string
-	{
-		do {
-			$reference = 'POS' . date('ymd') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
-			$exists = DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
-		} while ($exists);
-
-		return $reference;
 	}
 
 	public function requireApiAuth(): void

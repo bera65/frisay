@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Sipariş #{$order.reference|escape} — Yazdır</title>
+	<title>{'Order #'|adminT}{$order.reference|escape} — {'Print'|adminT}</title>
 	<style>
 		* { box-sizing: border-box; }
 		body {
@@ -120,42 +120,42 @@
 </head>
 <body>
 	<div class="print-toolbar">
-		<button type="button" onclick="window.print()">Yazdır</button>
-		<button type="button" class="secondary" onclick="window.close()">Kapat</button>
+		<button type="button" onclick="window.print()">{'Print'|adminT}</button>
+		<button type="button" class="secondary" onclick="window.close()">{'Close'|adminT}</button>
 	</div>
 
 	<div class="print-sheet">
 		<div class="print-head">
 			<div>
 				<h1>{$printSiteName|escape}</h1>
-				<div class="meta">Sipariş Fişi</div>
+				<div class="meta">{'Order slip'|adminT}</div>
 			</div>
 			<div class="meta text-end">
 				<strong>#{$order.reference|escape}</strong><br>
 				{$order.date_formatted|escape}<br>
-				Durum: {$order.status_label|escape}
+				{'Status:'|adminT} {$order.status_label|escape}
 			</div>
 		</div>
 
 		<div class="print-grid">
 			<div class="print-block">
-				<h2>Müşteri</h2>
+				<h2>{'Customer'|adminT}</h2>
 				<p><strong>{$order.customer_name|escape}</strong></p>
 				<p>{$order.customer_phone|escape}</p>
 				{if $order.customer_email}<p>{$order.customer_email|escape}</p>{/if}
 			</div>
 			<div class="print-block">
-				<h2>Teslimat Adresi</h2>
+				<h2>{'Delivery address'|adminT}</h2>
 				<p>{$order.address_city|escape} / {$order.address_district|escape}</p>
 				<p>{$order.address_text|escape}</p>
-				{if $order.company_name}<p>Firma: {$order.company_name|escape}</p>{/if}
-				{if $order.tax_number}<p>VKN/TCKN: {$order.tax_number|escape}</p>{/if}
+				{if $order.company_name}<p>{'Company:'|adminT} {$order.company_name|escape}</p>{/if}
+				{if $order.tax_number}<p>{'Tax/ID no:'|adminT} {$order.tax_number|escape}</p>{/if}
 			</div>
 		</div>
 
 		{if $order.note}
 		<div class="print-block" style="margin-bottom:16px;">
-			<h2>Sipariş Notu</h2>
+			<h2>{'Order note'|adminT}</h2>
 			<p>{$order.note|escape}</p>
 		</div>
 		{/if}
@@ -163,10 +163,10 @@
 		<table class="print-items">
 			<thead>
 				<tr>
-					<th>Ürün</th>
-					<th style="width:60px;">Adet</th>
-					<th style="width:100px;">Birim</th>
-					<th style="width:100px;">Toplam</th>
+					<th>{'Product'|adminT}</th>
+					<th style="width:60px;">{'Qty'|adminT}</th>
+					<th style="width:100px;">{'Unit'|adminT}</th>
+					<th style="width:100px;">{'Total'|adminT}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -182,19 +182,19 @@
 		</table>
 
 		<div class="print-totals">
-			<div class="row"><span>Ara Toplam</span><span>{$order.subtotal_formatted}</span></div>
-			<div class="row"><span>Kargo</span><span>{$order.shipping_formatted}</span></div>
-			<div class="row total"><span>Toplam</span><span>{$order.total_formatted}</span></div>
+			<div class="row"><span>{'Subtotal'|adminT}</span><span>{$order.subtotal_formatted}</span></div>
+			<div class="row"><span>{'Shipping'|adminT}</span><span>{$order.shipping_formatted}</span></div>
+			<div class="row total"><span>{'Total'|adminT}</span><span>{$order.total_formatted}</span></div>
 			<div class="row" style="margin-top:8px;font-size:12px;color:#666;">
-				<span>Ödeme</span><span>{$order.payment_label|escape}</span>
+				<span>{'Payment'|adminT}</span><span>{$order.payment_label|escape}</span>
 			</div>
 		</div>
 
 		{if $order.cargo_company || $order.tracking_number}
 		<div class="print-block" style="margin-top:20px;">
-			<h2>Kargo</h2>
-			{if $order.cargo_company}<p>Firma: {$order.cargo_company|escape}</p>{/if}
-			{if $order.tracking_number}<p>Takip No: {$order.tracking_number|escape}</p>{/if}
+			<h2>{'Shipping'|adminT}</h2>
+			{if $order.cargo_company}<p>{'Company:'|adminT} {$order.cargo_company|escape}</p>{/if}
+			{if $order.tracking_number}<p>{'Tracking no:'|adminT} {$order.tracking_number|escape}</p>{/if}
 		</div>
 		{/if}
 

@@ -10,7 +10,7 @@
 
 	<div>
 
-		<a href="{$adminUrl}templates" class="text-decoration-none small text-muted d-inline-block mb-2">&larr; Tüm temalar</a>
+		<a href="{$adminUrl}templates" class="text-decoration-none small text-muted d-inline-block mb-2">{'← All themes'|adminT}</a>
 
 		<h2 class="h5 mb-1">{$themeMeta.label|escape}</h2>
 
@@ -28,13 +28,13 @@
 
 		{if $editTheme == $activeTheme}
 
-		<span class="badge text-bg-success align-self-center">Aktif tema</span>
+		<span class="badge text-bg-success align-self-center">{'Active theme'|adminT}</span>
 
 		{/if}
 
 		<a href="{$domain}?theme_preview={$editTheme|escape:url}" target="_blank" rel="noopener" class="btn btn-outline-dark btn-sm">
 
-			Siteyi Önizle
+			{'Preview site'|adminT}
 
 		</a>
 
@@ -62,9 +62,9 @@
 
 			<div class="admin-panel p-3 mb-4">
 
-				<h3 class="h6 mb-1">Düzen &amp; Görünüm</h3>
+				<h3 class="h6 mb-1">{'Layout & appearance'|adminT}</h3>
 
-				<p class="text-muted small mb-3">Kayıt <code>custom.css</code> dosyasına yazılır.</p>
+				<p class="text-muted small mb-3">{'Saved to the <code>custom.css</code> file.'|adminT}</p>
 
 
 
@@ -102,7 +102,7 @@
 
 				<p class="text-muted small mt-3 mb-0">
 
-					Header varyantları <code>templates/{$editTheme|escape}/_mini/header*.tpl</code> dosyalarından algılanır.
+					{'Header variants are detected from <code>templates/{$editTheme|escape}/_mini/header*.tpl</code> files.'|adminT}
 
 				</p>
 
@@ -118,9 +118,9 @@
 
 			<div class="admin-panel p-3 mb-4">
 
-				<h3 class="h6 mb-1">Renkler</h3>
+				<h3 class="h6 mb-1">{'Colors'|adminT}</h3>
 
-				<p class="text-muted small mb-3">Kayıt <code>templates/{$editTheme|escape}/css/colors.css</code> dosyasına yazılır.</p>
+				<p class="text-muted small mb-3">{'Saved to <code>templates/{$editTheme|escape}/css/colors.css</code>.'|adminT}</p>
 
 
 
@@ -182,7 +182,7 @@
 
 			{if $themeOptionDefs|@count || $colorDefs|@count}
 
-			<button type="submit" class="btn btn-dark">Değişiklikleri Kaydet</button>
+			<button type="submit" class="btn btn-dark">{'Save changes'|adminT}</button>
 
 			{else}
 
@@ -190,7 +190,7 @@
 
 				<p class="text-muted small mb-0">
 
-					Bu tema için <code>theme.schema.json</code> tanımlı değil. Özelleştirme seçenekleri eklemek için tema klasörüne şema dosyası ekleyin.
+					{'No <code>theme.schema.json</code> for this theme. Add a schema file to the theme folder to enable customization options.'|adminT}
 
 				</p>
 
@@ -208,7 +208,7 @@
 
 		<div class="admin-panel p-3 mb-4 theme-customize-preview">
 
-			<h3 class="h6 mb-3">Önizleme</h3>
+			<h3 class="h6 mb-3">{'Preview'|adminT}</h3>
 
 			{if $previewUrl}
 
@@ -230,13 +230,13 @@
 
 		<div class="admin-panel p-3">
 
-			<h3 class="h6 mb-2">İpucu</h3>
+			<h3 class="h6 mb-2">{'Tip'|adminT}</h3>
 
 			<p class="text-muted small mb-0">
 
-				Tema geliştiricileri <code>theme.schema.json</code> ile hangi alanların adminde görüneceğini tanımlar.
+				{'Theme developers define which fields appear in admin via <code>theme.schema.json</code>.'|adminT}
 
-				Yeni tema eklemek için galeri sayfasındaki <strong>Tema Yükle</strong> veya <strong>Tema Kopyala</strong> seçeneklerini kullanın.
+				{'To add a new theme, use <strong>Upload theme</strong> or <strong>Copy theme</strong> on the gallery page.'|adminT}
 
 			</p>
 
@@ -250,9 +250,9 @@
 
 <div class="admin-panel p-3 mt-2">
 
-	<h2 class="h6 mb-3">Site Logoları</h2>
+	<h2 class="h6 mb-3">{'Site logos'|adminT}</h2>
 
-	<p class="text-muted small mb-3">JPG, PNG, WEBP, GIF veya SVG — en fazla 2 MB. Dosyalar <code>img/</code> klasörüne kaydedilir.</p>
+	<p class="text-muted small mb-3">{'JPG, PNG, WEBP, GIF or SVG — max 2 MB. Files are saved to the <code>img/</code> folder.'|adminT}</p>
 
 
 
@@ -284,7 +284,7 @@
 
 					<input type="file" name="logo_file" class="form-control form-control-sm mb-2" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" required>
 
-					<button type="submit" class="btn btn-sm btn-outline-dark w-100">Yükle</button>
+					<button type="submit" class="btn btn-sm btn-outline-dark w-100">{'Upload'|adminT}</button>
 
 				</form>
 

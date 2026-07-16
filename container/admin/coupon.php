@@ -9,7 +9,7 @@
 
 	if ($idCoupon > 0 && !$coupon) {
 		http_response_code(404);
-		AdminPage::add('404', 'Kupon Bulunamadı');
+		AdminPage::add('404', 'Coupon not found');
 		return;
 	}
 
@@ -17,7 +17,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = Coupon::save([
 				'code' => Tools::getValue('code'),
@@ -70,4 +70,4 @@
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('coupon', $idCoupon > 0 ? 'Kupon: ' . $coupon['code'] : 'Yeni Kupon');
+	AdminPage::add('coupon', $idCoupon > 0 ? 'Kupon: ' . $coupon['code'] : 'New coupon');

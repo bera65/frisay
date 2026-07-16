@@ -139,7 +139,7 @@ class Module
 			'smarty.assign' => 'Mağaza şablonlarına değişken ekler (footer, header vb.)',
 			'head.assets' => 'Sayfaya ek CSS/JS yükler',
 			'footer.html' => 'Footer alanına HTML ekler (eski; tercih: display hook)',
-			'admin.menu' => 'Admin menüsüne öğe ekler (varsayılan: kapalı, detay sayfası kullanın)',
+			'admin.menu' => 'Admin sidebar menüsüne öğe ekler (registerAdminMenuLink veya registerHook)',
 			'order.placed' => 'Sipariş oluşturulunca tetiklenir',
 			'product.updated' => 'Ürün admin veya API üzerinden kaydedilince tetiklenir',
 			'order.updated' => 'Sipariş admin veya API üzerinden güncellenince tetiklenir',
@@ -152,6 +152,8 @@ class Module
 		return [
 			'footer' 			=> 'Footer — {$hooks.footer}',
 			'header' 			=> 'Üst bar — {$hooks.header}',
+			'main_menu' 		=> 'Ana menü (kategori menüsü) — {$hooks.main_menu}',
+			'head.top' 			=> 'Head üst alanı — {$hooks.head.top}',
 			'home' 				=> 'Ana sayfa — {$hooks.home}',
 			'home_slider' 		=> 'Ana sayfa üst slayt — {$hooks.home_slider}',
 			'home_promo_slider' => 'Ana sayfa kampanya slaytı — {$hooks.home_promo_slider}',
@@ -204,7 +206,7 @@ class Module
 			$hooks = [];
 		}
 
-		$hooks[$hookName] = self::renderDisplayHook($hookName, $context);
+		self::assignHookValue($hooks, $hookName, self::renderDisplayHook($hookName, $context));
 		$smarty->assign('hooks', $hooks);
 	}
 
@@ -321,12 +323,39 @@ class Module
 		];
 
 		foreach (array_keys(self::getDisplayHookCatalog()) as $hookName) {
-			$hooks[$hookName] = in_array($hookName, $deferred, true)
-				? ''
-				: self::renderDisplayHook($hookName);
+			self::assignHookValue(
+				$hooks,
+				$hookName,
+				in_array($hookName, $deferred, true)
+					? ''
+					: self::renderDisplayHook($hookName)
+			);
 		}
 
 		return $hooks;
+	}
+
+	private static function assignHookValue(array &$hooks, string $hookName, string $value): void
+	{
+		if (strpos($hookName, '.') === false) {
+			$hooks[$hookName] = $value;
+
+			return;
+		}
+
+		$parts = explode('.', $hookName);
+		$leaf = array_pop($parts);
+		$ref = &$hooks;
+
+		foreach ($parts as $part) {
+			if (!isset($ref[$part]) || !is_array($ref[$part])) {
+				$ref[$part] = [];
+			}
+
+			$ref = &$ref[$part];
+		}
+
+		$ref[$leaf] = $value;
 	}
 
 	public static function getAdminList(): array
@@ -632,6 +661,38 @@ class Module
 		return null;
 	}
 
+	/**
+	 * Seçilen ödeme yönteminin indirimi.
+	 *
+	 * @return array{amount:float,label:string,percent:float}
+	 */
+	public static function getPaymentDiscount(string $methodId, float $amount): array
+	{
+		$empty = [
+			'amount' => 0.0,
+			'label' => '',
+			'percent' => 0.0,
+		];
+
+		if ($methodId === '' || $amount <= 0) {
+			return $empty;
+		}
+
+		$module = self::getPaymentModule($methodId);
+
+		if (!$module) {
+			return $empty;
+		}
+
+		$result = $module->getPaymentDiscount($amount);
+
+		return [
+			'amount' => max(0.0, (float) ($result['amount'] ?? 0)),
+			'label' => (string) ($result['label'] ?? ''),
+			'percent' => max(0.0, (float) ($result['percent'] ?? 0)),
+		];
+	}
+
 	public static function registerHook(string $hook, callable $listener): void
 	{
 		if (!in_array($hook, self::HOOKS, true)) {
@@ -654,6 +715,108 @@ class Module
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Admin sidebar items from the admin.menu hook, grouped for header.tpl.
+	 *
+	 * @return array{general: array<int, array<string, mixed>>, catalog: array<int, array<string, mixed>>, system: array<int, array<string, mixed>>}
+	 */
+	public static function getAdminMenuItems(): array
+	{
+		$items = [];
+		$returns = self::runHook('admin.menu', [&$items]);
+
+		foreach ($returns as $result) {
+			if (!is_array($result)) {
+				continue;
+			}
+
+			if (isset($result['label'])) {
+				$items[] = $result;
+				continue;
+			}
+
+			foreach ($result as $row) {
+				if (is_array($row) && isset($row['label'])) {
+					$items[] = $row;
+				}
+			}
+		}
+
+		$normalized = [];
+
+		foreach ($items as $item) {
+			if (!is_array($item)) {
+				continue;
+			}
+
+			$label = trim((string) ($item['label'] ?? ''));
+			$url = trim((string) ($item['url'] ?? ''));
+
+			if ($label === '' || $url === '') {
+				continue;
+			}
+
+			$group = strtolower(trim((string) ($item['group'] ?? 'system')));
+
+			if (!in_array($group, ['general', 'catalog', 'system'], true)) {
+				$group = 'system';
+			}
+
+			$slug = trim((string) ($item['slug'] ?? ''));
+
+			if ($slug === '') {
+				$slug = self::inferAdminMenuSlug($url);
+			}
+
+			$normalized[] = [
+				'label' => $label,
+				'url' => $url,
+				'slug' => $slug,
+				'group' => $group,
+				'position' => (int) ($item['position'] ?? 100),
+				'badge' => max(0, (int) ($item['badge'] ?? 0)),
+				'target' => trim((string) ($item['target'] ?? '')),
+			];
+		}
+
+		usort($normalized, static function (array $a, array $b): int {
+			if ($a['group'] !== $b['group']) {
+				return strcmp($a['group'], $b['group']);
+			}
+
+			if ($a['position'] !== $b['position']) {
+				return $a['position'] <=> $b['position'];
+			}
+
+			return strcmp($a['label'], $b['label']);
+		});
+
+		$grouped = [
+			'general' => [],
+			'catalog' => [],
+			'system' => [],
+		];
+
+		foreach ($normalized as $item) {
+			$grouped[$item['group']][] = $item;
+		}
+
+		return $grouped;
+	}
+
+	private static function inferAdminMenuSlug(string $url): string
+	{
+		$path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+
+		if (preg_match('#/admin/([^/?]+)#', $path, $matches)) {
+			return $matches[1];
+		}
+
+		$path = trim($path, '/');
+
+		return $path !== '' ? basename(str_replace('\\', '/', $path)) : '';
 	}
 
 	public static function getHeadAssets(): array

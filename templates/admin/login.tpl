@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>{'Admin Giriş'|adminT} | {$siteName|escape}</title>
+	<title>{'Admin Login'|adminT} | {$siteName|escape}</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
 				<img src="{$adminLogoUrl|escape}?v={$smarty.now}" alt="{$siteName|escape}">
 			</div>
 			<h2>{$siteName|escape}</h2>
-			<p>{'Mağazanızı tek panelden yönetin — siparişler, ürünler ve müşteriler elinizin altında.'|adminT}</p>
+			<p>{'Manage your store from one place — orders, products and customers at your fingertips.'|adminT}</p>
 		</div>
 	</div>
 	<div class="admin-login-panel">
@@ -38,8 +38,8 @@
 					</ul>
 				</div>
 			</div>
-			<h1 class="h4 mb-1">{'Hoş geldiniz'|adminT}</h1>
-			<p class="text-muted small mb-4">{'Yönetim paneline giriş yapın'|adminT}</p>
+			<h1 class="h4 mb-1">{'Welcome'|adminT}</h1>
+			<p class="text-muted small mb-4">{'Sign in to the admin panel'|adminT}</p>
 
 			{if $loginError}
 			<div class="alert alert-danger py-2">{$loginError|escape}</div>
@@ -50,18 +50,18 @@
 				<input type="hidden" name="token" value="{$adminToken}">
 
 				<div class="mb-3">
-					<label class="form-label">{'E-posta'|adminT}</label>
+					<label class="form-label">{'Email'|adminT}</label>
 					<input type="email" name="email" class="form-control" required autofocus placeholder="admin@ornek.com">
 				</div>
 				<div class="mb-4">
-					<label class="form-label">{'Şifre'|adminT}</label>
+					<label class="form-label">{'Password'|adminT}</label>
 					<input type="password" name="password" class="form-control" required placeholder="••••••••">
 				</div>
-				<button type="submit" class="btn btn-admin-primary w-100">{'Giriş Yap'|adminT}</button>
+				<button type="submit" class="btn btn-admin-primary w-100">{'Sign In'|adminT}</button>
 			</form>
 
 			<p class="text-center text-muted small mt-4 mb-0">
-				<a href="{$domain}" class="text-decoration-none">{'← Mağazaya dön'|adminT}</a>
+				<a href="{$domain}" class="text-decoration-none">{'← Back to store'|adminT}</a>
 			</p>
 		</div>
 	</div>

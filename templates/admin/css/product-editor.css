@@ -1,0 +1,333 @@
+/* Product editor layout */
+.product-editor {
+	--pe-gap: 1.25rem;
+	--pe-card-radius: 14px;
+	--pe-accent: var(--adm-accent);
+	max-width: 1280px;
+	margin: 0 auto 5rem;
+}
+
+.pe-topbar {
+	position: sticky;
+	top: calc(var(--header-height, 64px) + 8px);
+	z-index: 40;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1rem;
+	padding: 0.85rem 1.1rem;
+	margin-bottom: 1.25rem;
+	background: rgba(255, 255, 255, 0.92);
+	border: 1px solid var(--adm-border);
+	border-radius: 14px;
+	box-shadow: var(--adm-shadow);
+	backdrop-filter: blur(10px);
+}
+
+.pe-topbar-title {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	min-width: 0;
+}
+
+.pe-topbar-title h1 {
+	margin: 0;
+	font-size: 1.15rem;
+	font-weight: 700;
+	color: var(--adm-heading);
+	letter-spacing: -0.02em;
+}
+
+.pe-topbar-title span {
+	font-size: 0.8rem;
+	color: var(--adm-text-muted);
+}
+
+.pe-topbar-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.pe-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 340px;
+	gap: var(--pe-gap);
+	align-items: start;
+}
+
+@media (max-width: 991.98px) {
+	.pe-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.pe-aside {
+		order: -1;
+	}
+}
+
+.pe-card {
+	background: var(--adm-surface);
+	border: 1px solid var(--adm-border);
+	border-radius: var(--pe-card-radius);
+	box-shadow: var(--adm-shadow);
+	padding: 1.15rem 1.25rem;
+	margin-bottom: var(--pe-gap);
+}
+
+.pe-card:last-child {
+	margin-bottom: 0;
+}
+
+.pe-card-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	margin-bottom: 1rem;
+	padding-bottom: 0.75rem;
+	border-bottom: 1px solid var(--adm-border);
+}
+
+.pe-card-head h2 {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: var(--adm-heading);
+	letter-spacing: -0.01em;
+}
+
+.pe-card-head p {
+	margin: 0.2rem 0 0;
+	font-size: 0.78rem;
+	color: var(--adm-text-muted);
+	max-width: 42rem;
+}
+
+.pe-section-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--adm-text-muted);
+	margin-bottom: 0.35rem;
+}
+
+.pe-lang-tabs .nav-tabs {
+	border-bottom: 1px solid var(--adm-border);
+	gap: 0.25rem;
+}
+
+.pe-lang-tabs .nav-link {
+	border: 0;
+	border-radius: 8px 8px 0 0;
+	color: var(--adm-text-muted);
+	font-weight: 600;
+	font-size: 0.85rem;
+	padding: 0.55rem 0.9rem;
+}
+
+.pe-lang-tabs .nav-link.active {
+	color: var(--pe-accent);
+	background: var(--adm-accent-soft);
+}
+
+.pe-aside-sticky {
+	position: sticky;
+	top: calc(var(--header-height, 64px) + 88px);
+}
+
+/* Media uploader */
+.pe-media {
+	position: relative;
+}
+
+.pe-dropzone {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
+	min-height: 148px;
+	padding: 1.25rem 1rem;
+	border: 2px dashed #cbd5e1;
+	border-radius: 12px;
+	background:
+		linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+	text-align: center;
+	user-select: none;
+	width: 100%;
+	font: inherit;
+	color: inherit;
+}
+
+.pe-dropzone:hover,
+.pe-dropzone.is-dragover {
+	border-color: var(--pe-accent);
+	background: var(--adm-accent-soft);
+	transform: translateY(-1px);
+}
+
+.pe-dropzone.is-disabled {
+	cursor: not-allowed;
+	opacity: 0.85;
+}
+
+.pe-dropzone.is-disabled:hover {
+	transform: none;
+	border-color: #cbd5e1;
+	background: #f8fafc;
+}
+
+.pe-dropzone-icon {
+	width: 42px;
+	height: 42px;
+	border-radius: 12px;
+	display: grid;
+	place-items: center;
+	background: #fff;
+	border: 1px solid var(--adm-border);
+	color: var(--pe-accent);
+	margin-bottom: 0.25rem;
+}
+
+.pe-dropzone strong {
+	font-size: 0.92rem;
+	color: var(--adm-heading);
+}
+
+.pe-dropzone span {
+	font-size: 0.78rem;
+	color: var(--adm-text-muted);
+}
+
+.pe-media.is-uploading .pe-dropzone {
+	pointer-events: none;
+	opacity: 0.7;
+}
+
+.pe-media-status {
+	min-height: 1.2em;
+	margin: 0.65rem 0 0;
+	font-size: 0.78rem;
+	color: var(--adm-text-muted);
+}
+
+.pe-media-status.is-success { color: var(--adm-success); }
+.pe-media-status.is-error { color: var(--adm-danger); }
+.pe-media-status.is-info { color: var(--pe-accent); }
+
+.pe-media-gallery {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.65rem;
+	margin-top: 0.85rem;
+}
+
+.pe-media-empty {
+	grid-column: 1 / -1;
+	margin: 0;
+	padding: 0.75rem;
+	text-align: center;
+	font-size: 0.8rem;
+	color: var(--adm-text-muted);
+	background: #f8fafc;
+	border-radius: 10px;
+	border: 1px dashed var(--adm-border);
+}
+
+.pe-media-card {
+	position: relative;
+	border: 1px solid var(--adm-border);
+	border-radius: 12px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.pe-media-card.is-cover {
+	border-color: var(--pe-accent);
+	box-shadow: 0 0 0 2px var(--adm-accent-ring);
+}
+
+.pe-media-thumb {
+	aspect-ratio: 1;
+	background: #f1f5f9;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+}
+
+.pe-media-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.pe-media-badge {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	padding: 0.2rem 0.45rem;
+	border-radius: 999px;
+	background: var(--adm-heading);
+	color: #fff;
+}
+
+.pe-media-actions {
+	display: flex;
+	gap: 0.35rem;
+	padding: 0.45rem;
+	background: #fff;
+}
+
+.pe-media-actions .btn {
+	flex: 1;
+	font-size: 0.72rem;
+	padding: 0.25rem 0.35rem;
+}
+
+.pe-price-grid .form-label {
+	font-size: 0.8rem;
+}
+
+.pe-soft-box {
+	border: 1px solid var(--adm-border);
+	border-radius: 12px;
+	background: #f8fafc;
+	padding: 1rem;
+}
+
+.product-editor .adminSaveButton {
+	position: static;
+	width: auto;
+	padding: 0;
+	box-shadow: none;
+	background: transparent;
+}
+
+.product-editor .adminSaveButton button {
+	margin-left: 0;
+}
+
+@media (max-width: 575.98px) {
+	.pe-media-gallery {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.pe-topbar {
+		top: 8px;
+	}
+}

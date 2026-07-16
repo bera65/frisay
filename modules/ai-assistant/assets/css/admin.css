@@ -1,0 +1,25 @@
+.ai-settings-card,
+.ai-assist-panel,
+.ai-dash-panel {
+	background: #fff;
+}
+
+.ai-assist-preview {
+	max-height: 220px;
+	overflow: auto;
+}
+
+.ai-dash-result {
+	max-height: 420px;
+	overflow: auto;
+	line-height: 1.5;
+}
+
+.ai-dash-result ul {
+	margin-bottom: 0.75rem;
+}
+
+.ai-guide-list code {
+	font-size: 0.72rem;
+	word-break: break-all;
+}

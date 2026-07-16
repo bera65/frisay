@@ -13,6 +13,16 @@ class Schema
 		self::$ready = true;
 		Product::ensureSchema();
 
+		if (is_file(dirname(__DIR__) . '/core/ApiKey.php')) {
+			require_once dirname(__DIR__) . '/core/ApiKey.php';
+			ApiKey::ensureSchema();
+		}
+
+		if (is_file(dirname(__DIR__) . '/core/Cargo.php')) {
+			require_once dirname(__DIR__) . '/core/Cargo.php';
+			Cargo::ensureSchema();
+		}
+
 		$userCol = DB::execute("SHOW COLUMNS FROM `users` LIKE 'email'");
 		if (empty($userCol)) {
 			DB::execute(

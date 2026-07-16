@@ -26,4 +26,4 @@
 		'sonuc' 		=> $sonuc,
 	]);
 
-	AdminPage::add('brands', 'Markalar');
+	AdminPage::add('brands', 'Brands');

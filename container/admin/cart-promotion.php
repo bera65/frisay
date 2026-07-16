@@ -9,7 +9,7 @@
 
 	if ($idPromotion > 0 && !$promotion) {
 		http_response_code(404);
-		AdminPage::add('404', 'Kampanya Bulunamadı');
+		AdminPage::add('404', 'Promotion not found');
 		return;
 	}
 
@@ -17,7 +17,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = CartPromotion::save([
 				'name' => Tools::getValue('name'),
@@ -78,4 +78,4 @@
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('cart-promotion', $idPromotion > 0 ? 'Kampanya: ' . $promotion['name'] : 'Yeni Sepet Kampanyası');
+	AdminPage::add('cart-promotion', $idPromotion > 0 ? 'Kampanya: ' . $promotion['name'] : 'New Cart Promotion');

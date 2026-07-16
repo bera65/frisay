@@ -761,7 +761,39 @@ public function boot(): void
 | `smarty.assign` | Tüm mağaza şablonlarına ek değişken |
 | `head.assets` | CSS/JS dizilerine ekleme (`&$assets`) |
 | `footer.html` | Eski yöntem (display hook tercih edin) |
-| `admin.menu` | Admin menüsü (varsayılan kapalı) |
+| `admin.menu` | Admin sol menüsüne link ekler (`registerAdminMenuLink()` veya `registerHook`) |
+
+### Admin sol menüsü
+
+Modül yapılandırma sayfasını sol menüde göstermek için `boot()` içinde:
+
+```php
+public function boot(): void
+{
+	$this->registerAdminMenuLink('Blog', 'catalog', 95);
+}
+```
+
+| Parametre | Açıklama |
+|-----------|----------|
+| `$label` | Menü metni (İngilizce anahtar → `adminT`) |
+| `$group` | `general`, `catalog` veya `system` |
+| `$position` | Grup içi sıra (küçük = üstte) |
+
+Manuel hook:
+
+```php
+Module::registerHook('admin.menu', function (array &$items): void {
+	$items[] = [
+		'label' => 'Blog',
+		'url' => Admin::url('module-blog'),
+		'slug' => 'module-blog',
+		'group' => 'catalog',
+		'position' => 95,
+		'badge' => 0,
+	];
+});
+```
 | `order.placed` | Sipariş sonrası |
 
 ---

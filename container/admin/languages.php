@@ -10,7 +10,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$action = trim((string) Tools::getValue('action'));
@@ -42,15 +42,15 @@
 					$adminCode = strtolower(trim((string) Tools::getValue('code')));
 
 					if (!AdminLang::isValid($adminCode)) {
-						$result = ['success' => false, 'message' => 'Geçersiz admin dili'];
+						$result = ['success' => false, 'message' => adminT('Invalid admin language')];
 					} else {
 						Settings::set('ADMIN_DEFAULT_LANG', $adminCode);
-						$result = ['success' => true, 'message' => 'Admin panel varsayılan dili güncellendi'];
+						$result = ['success' => true, 'message' => adminT('Default admin language updated')];
 					}
 					break;
 
 				default:
-					$result = ['success' => false, 'message' => 'Geçersiz işlem'];
+					$result = ['success' => false, 'message' => adminT('Invalid action')];
 					break;
 			}
 
@@ -68,4 +68,4 @@
 		'flashType' => $flashType,
 	]);
 
-	AdminPage::add('languages', 'Diller');
+	AdminPage::add('languages', 'Languages');

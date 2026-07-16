@@ -1,4 +1,4 @@
-﻿RewriteEngine On
+RewriteEngine On
 RewriteBase /fshop/
 
 # 404 Sayfası
@@ -25,6 +25,12 @@ RewriteRule ^api/cron$ api/cron.php [L,QSA]
 # 4d. Web API (uzaktan sipariş / ürün)
 RewriteRule ^api/v1/?$ api/webapi.php [L,QSA]
 RewriteRule ^api/v1/(.*)$ api/webapi.php?route=$1 [L,QSA]
+
+# 5a0. Blog kategori (yazı kuralından önce)
+RewriteRule ^blog/kategori/(.+)-([0-9]+)/?$ index.php?container=blog&cat_slug=$1&id_category=$2 [L,QSA,NC]
+
+# 5a. Blog yazı (ürün kuralından önce — /blog/slug-id ürün gibi eşleşmesin)
+RewriteRule ^blog/(.+)-([0-9]+)/?$ index.php?container=blog-post&slug=$1&id=$2 [L,QSA,NC]
 
 # 5. Ürün linki
 RewriteRule ^([a-zA-Z0-9-]+)/(.+)-([0-9]+)$ index.php?container=product&category=$1&slug=$2&id=$3 [L,QSA,NC]

@@ -9,7 +9,11 @@ class Theme
 		'yuzey' => 'Yüzey',
 		'metin' => 'Metin',
 		'ek' => 'Buton & Header',
+		'fiyat' => 'Fiyat & Rozet',
 		'footer' => 'Footer',
+		'social' => 'Sosyal',
+		'kategori' => 'Kategori',
+		'gelismis' => 'Gelişmiş',
 	];
 
 	public static function templatesPath(): string
@@ -46,7 +50,7 @@ class Theme
 		return is_array($decoded) ? $decoded : null;
 	}
 
-	/** @return array{label: string, description: string, preview: string, has_schema: bool} */
+	/** @return array{label: string, description: string, preview: string, edit: string, has_schema: bool} */
 	public static function getMeta(string $theme): array
 	{
 		$schema = self::loadSchema($theme);
@@ -55,8 +59,24 @@ class Theme
 			'label' => (string) ($schema['label'] ?? self::labelFor($theme)),
 			'description' => (string) ($schema['description'] ?? ''),
 			'preview' => (string) ($schema['preview'] ?? 'theme-preview.png'),
+			'edit' => (string) ($schema['edit'] ?? ''),
 			'has_schema' => $schema !== null,
 		];
+	}
+
+	public static function resolveEditModule(string $theme): ?string
+	{
+		if (!self::isValidName($theme)) {
+			return null;
+		}
+
+		$edit = self::getMeta($theme)['edit'];
+
+		if ($edit === '' || !preg_match('/^[a-z0-9\-]+$/', $edit)) {
+			return null;
+		}
+
+		return $edit;
 	}
 
 	public static function getPreviewUrl(string $theme, string $domain): string
@@ -109,8 +129,11 @@ class Theme
 				'name' => $entry,
 				'label' => $meta['label'],
 				'description' => $meta['description'],
+				'edit_module' => self::resolveEditModule($entry),
 				'has_colors' => is_file(self::colorsPath($entry)) || isset(self::loadSchema($entry)['colors']),
 				'has_schema' => $meta['has_schema'],
+				'screenshot' => self::getScreenshotUrl($entry),
+				'preview_url' => self::getScreenshotUrl($entry),
 			];
 		}
 
@@ -121,6 +144,26 @@ class Theme
 
 	public static function labelFor(string $name): string
 	{
+		$schema = self::loadSchema($name);
+
+		if (is_array($schema) && !empty($schema['label'])) {
+			$label = (string) $schema['label'];
+
+			if ($label !== self::sanitizeName($name)) {
+				return $label;
+			}
+		}
+
+		$themeJsonPath = self::templatesPath() . '/' . $name . '/theme.json';
+
+		if (is_file($themeJsonPath)) {
+			$data = json_decode((string) file_get_contents($themeJsonPath), true);
+
+			if (is_array($data) && !empty($data['name'])) {
+				return (string) $data['name'];
+			}
+		}
+
 		$labels = [
 			'default' => 'Varsayılan Tema',
 			'blue' => 'Blue',
@@ -129,6 +172,7 @@ class Theme
 			'chapan' => 'Chapan',
 			'dress' => 'Dress',
 			'prime' => 'Prime',
+			'fyazilim' => 'Frisay',
 		];
 
 		return $labels[$name] ?? ucfirst(str_replace(['-', '_'], ' ', $name));
@@ -240,10 +284,9 @@ class Theme
 	public static function getOptionDefinitions(string $theme): array
 	{
 		$schema = self::loadSchema($theme);
+		$defs = [];
 
 		if (is_array($schema['options'] ?? null) && $schema['options'] !== []) {
-			$defs = [];
-
 			foreach ($schema['options'] as $key => $field) {
 				if (!is_array($field)) {
 					continue;
@@ -251,77 +294,82 @@ class Theme
 
 				$key = (string) $key;
 				$options = self::resolveSchemaFieldOptions($theme, $field);
+				$type = (string) ($field['type'] ?? 'select');
 				$defs[$key] = [
 					'label' => (string) ($field['label'] ?? $key),
-					'type' => (string) ($field['type'] ?? 'select'),
-					'default' => (string) ($field['default'] ?? ''),
+					'type' => $type,
+					'default' => (string) ($field['default'] ?? ($type === 'switch' ? '0' : '')),
 					'options' => $options,
 				];
 			}
-
-			return $defs;
+		} else {
+			$defs = [
+				'font' => [
+					'label' => 'Yazı tipi',
+					'type' => 'select',
+					'default' => 'system',
+					'options' => self::getFontChoices(),
+				],
+				'container_width' => [
+					'label' => 'Site genişliği',
+					'type' => 'select',
+					'default' => '1320',
+					'options' => self::getContainerWidthChoices(),
+				],
+			];
 		}
 
-		$fonts = self::getFontChoices();
-		$widths = self::getContainerWidthChoices();
-		$defs = [
-			'font' => [
+		if (self::sanitizeName($theme) === 'nova') {
+			$defs['font'] = [
 				'label' => 'Yazı tipi',
 				'type' => 'select',
 				'default' => 'system',
-				'options' => $fonts,
-			],
-			'container_width' => [
+				'options' => ['system' => 'Sistem font yığını'],
+			];
+			$defs['container_width'] = [
 				'label' => 'Site genişliği',
 				'type' => 'select',
 				'default' => '1320',
-				'options' => $widths,
-			],
-		];
-
-		if (self::sanitizeName($theme) === 'nova') {
-			$defs['font']['default'] = 'system';
-			$defs['font']['options'] = ['system' => 'Sistem font yığını'];
-			$defs['container_width']['default'] = '1320';
-			$defs = array_merge($defs, [
-				'dark_mode' => [
-					'label' => 'Koyu mod varsayılanı',
-					'type' => 'select',
-					'default' => 'off',
-					'options' => ['off' => 'Kapalı', 'on' => 'Açık'],
-				],
-				'border_radius' => [
-					'label' => 'Köşe yuvarlaklığı',
-					'type' => 'select',
-					'default' => 'md',
-					'options' => ['sm' => 'Küçük (8px)', 'md' => 'Orta (12px)', 'lg' => 'Büyük (16px)'],
-				],
-				'home_slider' => [
-					'label' => 'Ana sayfa slider',
-					'type' => 'select',
-					'default' => 'on',
-					'options' => ['on' => 'Açık', 'off' => 'Kapalı'],
-				],
-			]);
+				'options' => self::getContainerWidthChoices(),
+			];
+			$defs['dark_mode'] = [
+				'label' => 'Koyu mod varsayılanı',
+				'type' => 'select',
+				'default' => 'off',
+				'options' => ['off' => 'Kapalı', 'on' => 'Açık'],
+			];
+			$defs['border_radius'] = [
+				'label' => 'Köşe yuvarlaklığı',
+				'type' => 'select',
+				'default' => 'md',
+				'options' => ['sm' => 'Küçük (8px)', 'md' => 'Orta (12px)', 'lg' => 'Büyük (16px)'],
+			];
+			$defs['home_slider'] = [
+				'label' => 'Ana sayfa slider',
+				'type' => 'select',
+				'default' => 'on',
+				'options' => ['on' => 'Açık', 'off' => 'Kapalı'],
+			];
 		}
 
 		$headers = self::discoverHeaderVariants($theme);
 
 		if ($headers !== []) {
-			$defaultHeader = 'header2';
-			if (self::sanitizeName($theme) !== 'nova' && !isset($headers['header2'])) {
-				$defaultHeader = (string) array_key_first($headers);
-			} elseif (!isset($headers['header2'])) {
-				$defaultHeader = (string) array_key_first($headers);
+			$defaultHeader = isset($headers['header2']) ? 'header2' : (string) array_key_first($headers);
+			$existingDefault = (string) ($defs['header']['default'] ?? '');
+
+			if ($existingDefault !== '' && isset($headers[$existingDefault])) {
+				$defaultHeader = $existingDefault;
 			}
-			$defs = array_merge([
-				'header' => [
-					'label' => 'Header stili',
-					'type' => 'select',
-					'default' => (string) $defaultHeader,
-					'options' => $headers,
-				],
-			], $defs);
+
+			$defs['header'] = [
+				'label' => (string) ($defs['header']['label'] ?? 'Header stili'),
+				'type' => 'select',
+				'default' => $defaultHeader,
+				'options' => $headers,
+			];
+		} elseif (isset($defs['header'])) {
+			unset($defs['header']);
 		}
 
 		return $defs;
@@ -449,10 +497,19 @@ class Theme
 
 		foreach ($defs as $key => $meta) {
 			if (!array_key_exists($key, $options)) {
+				if (($meta['type'] ?? '') === 'switch') {
+					$normalized[$key] = '0';
+				}
+
 				continue;
 			}
 
 			$value = trim((string) $options[$key]);
+
+			if (($meta['type'] ?? '') === 'switch') {
+				$value = ($value === '1' || $value === 'on' || $value === 'true') ? '1' : '0';
+			}
+
 			$allowed = $meta['options'] ?? null;
 
 			if (is_array($allowed) && $allowed !== [] && !isset($allowed[$value])) {
@@ -509,28 +566,40 @@ class Theme
 		$maxWidth = $widthMap[$widthKey] ?? '1320px';
 		$paddingX = $widthKey === 'fluid' ? '16px' : '12px';
 
-		$radiusMap = ['sm' => '8px', 'md' => '12px', 'lg' => '16px'];
+		$radiusMap = [
+			'sm' => '8px',
+			'md' => '12px',
+			'lg' => '16px',
+			'none' => '0',
+			'light' => '4px',
+			'normal' => '6px',
+			'large' => '12px',
+		];
 		$radius = $radiusMap[$options['border_radius'] ?? 'md'] ?? '12px';
 		$darkDefault = ($options['dark_mode'] ?? 'off') === 'on' ? 'dark' : 'light';
 
 		$css = implode("\n", [
 			'/**',
 			' * Tema özelleştirme — Admin > Temalar ekranından düzenlenir.',
+			' * Kaynak: settings.THEME_OPTIONS_{tema} (JSON) + bu dosya.',
 			' */',
 			':root {',
 			"\t--theme-font-family: {$font['font_family']};",
 			"\t--theme-container-max: {$maxWidth};",
 			"\t--theme-container-padding-x: {$paddingX};",
+			"\t--container: var(--theme-container-max);",
 			"\t--nova-radius: {$radius};",
 			'}',
 			'',
 			'html[data-theme-init="' . $darkDefault . '"] { color-scheme: ' . ($darkDefault === 'dark' ? 'dark' : 'light') . '; }',
 			'',
-			'body, .prime-body {',
+			'body, .prime-body, .fy-body {',
 			"\tfont-family: var(--theme-font-family);",
 			'}',
 			'',
 			'.custom-container,',
+			'.fy-container,',
+			'.prime-container,',
 			'.page > .container,',
 			'.page .container.custom-container {',
 			"\tmax-width: var(--theme-container-max);",
@@ -542,6 +611,16 @@ class Theme
 			'}',
 			'',
 		]);
+
+		$userCssPath = $dir . '/user.css';
+
+		if (is_file($userCssPath)) {
+			$userCss = (string) file_get_contents($userCssPath);
+
+			if (trim($userCss) !== '') {
+				$css .= "\n/* --- Özel CSS --- */\n" . $userCss . "\n";
+			}
+		}
 
 		file_put_contents($path, $css);
 	}
@@ -558,16 +637,20 @@ class Theme
 			$header = isset($variants['header2']) ? 'header2' : ($variants ? (string) array_key_first($variants) : '');
 		}
 
-		return [
+		$widthKey = (string) ($options['container_width'] ?? '1320');
+		$widthMap = [
+			'1140' => '1140px',
+			'1320' => '1320px',
+			'1440' => '1440px',
+			'fluid' => '100%',
+		];
+
+		return array_merge($options, [
 			'header' => $header,
-			'font' => $options['font'] ?? 'system',
-			'container_width' => $options['container_width'] ?? '1320',
-			'dark_mode' => $options['dark_mode'] ?? 'off',
-			'border_radius' => $options['border_radius'] ?? 'md',
-			'home_slider' => $options['home_slider'] ?? 'on',
 			'font_family' => $font['font_family'],
 			'google_font_url' => $font['google_font_url'],
-		];
+			'container_max' => $widthMap[$widthKey] ?? '1320px',
+		]);
 	}
 
 	public static function isValidName(string $theme): bool
@@ -584,29 +667,7 @@ class Theme
 	/** @return array<string, array{label: string, default: string, group: string}> */
 	public static function getColorDefinitions(?string $theme = null): array
 	{
-		if ($theme !== null && self::isValidName($theme)) {
-			$schema = self::loadSchema($theme);
-
-			if (is_array($schema['colors'] ?? null) && $schema['colors'] !== []) {
-				$defs = [];
-
-				foreach ($schema['colors'] as $key => $field) {
-					if (!is_array($field)) {
-						continue;
-					}
-
-					$defs[(string) $key] = [
-						'label' => (string) ($field['label'] ?? $key),
-						'default' => (string) ($field['default'] ?? '#000000'),
-						'group' => (string) ($field['group'] ?? 'marka'),
-					];
-				}
-
-				return $defs;
-			}
-		}
-
-		return [
+		$base = [
 			'brand-primary' => ['label' => 'Ana renk (buton)', 'default' => '#1a1a1a', 'group' => 'marka'],
 			'brand-primary-dark' => ['label' => 'Ana renk koyu', 'default' => '#000000', 'group' => 'marka'],
 			'brand-accent' => ['label' => 'Vurgu rengi', 'default' => '#d6001c', 'group' => 'marka'],
@@ -616,17 +677,59 @@ class Theme
 			'border-color' => ['label' => 'Kenarlık rengi', 'default' => '#ebebeb', 'group' => 'yuzey'],
 			'text-primary' => ['label' => 'Ana metin', 'default' => '#1a1a1a', 'group' => 'metin'],
 			'text-secondary' => ['label' => 'İkincil metin', 'default' => '#767676', 'group' => 'metin'],
+			'link-color' => ['label' => 'Bağlantı rengi', 'default' => '#1a1a1a', 'group' => 'metin'],
+			'link-hover-color' => ['label' => 'Bağlantı hover rengi', 'default' => '#d6001c', 'group' => 'metin'],
 			'color-dark' => ['label' => 'Koyu ton', 'default' => '#000000', 'group' => 'ek'],
 			'color1' => ['label' => 'Buton / aksan 1', 'default' => '#1a1a1a', 'group' => 'ek'],
 			'color1-hover' => ['label' => 'Buton hover 1', 'default' => '#000000', 'group' => 'ek'],
 			'color2' => ['label' => 'Header arka plan', 'default' => '#f6f6f6', 'group' => 'ek'],
 			'color3' => ['label' => 'Aksan 3', 'default' => '#1a1a1a', 'group' => 'ek'],
 			'color3-hover' => ['label' => 'Aksan 3 hover', 'default' => '#000000', 'group' => 'ek'],
+			'price-color' => ['label' => 'Fiyat rengi', 'default' => '#1a1a1a', 'group' => 'fiyat'],
+			'old-price-color' => ['label' => 'Eski fiyat rengi', 'default' => '#767676', 'group' => 'fiyat'],
+			'discount-bg' => ['label' => 'İndirim rozeti arka plan', 'default' => '#d6001c', 'group' => 'fiyat'],
+			'discount-color' => ['label' => 'İndirim rozeti metni', 'default' => '#ffffff', 'group' => 'fiyat'],
 			'footer-bg' => ['label' => 'Footer arka plan', 'default' => '#0c0c0c', 'group' => 'footer'],
 			'footer-heading' => ['label' => 'Footer başlık', 'default' => '#ffffff', 'group' => 'footer'],
 			'footer-text' => ['label' => 'Footer metin', 'default' => '#a3a3a3', 'group' => 'footer'],
 			'footer-accent' => ['label' => 'Footer vurgu', 'default' => '#ffffff', 'group' => 'footer'],
+			'footer-border' => ['label' => 'Footer kenarlık rengi', 'default' => '#0c0c0c', 'group' => 'footer'],
+			'social-icon-color' => ['label' => 'Sosyal medya ikon rengi', 'default' => '#a3a3a3', 'group' => 'social'],
+			'social-icon-hover' => ['label' => 'Sosyal medya ikon hover', 'default' => '#ffffff', 'group' => 'social'],
+			'social-icon-bg' => ['label' => 'Sosyal medya ikon arka planı', 'default' => 'rgba(255,255,255,0.1)', 'group' => 'social'],
+			'social-icon-bg-hover' => ['label' => 'Sosyal medya ikon arka plan hover', 'default' => '#d6001c', 'group' => 'social'],
+			'theme-color' => ['label' => 'Tarayıcı tema rengi (theme-color)', 'default' => '#213c8b', 'group' => 'gelismis'],
+			'active-category-color' => ['label' => 'Aktif kategori rengi', 'default' => '#d6001c', 'group' => 'kategori'],
+			'category-hover-color' => ['label' => 'Kategori hover rengi', 'default' => '#d6001c', 'group' => 'kategori'],
+			'mobile-menu-bg' => ['label' => 'Mobil menü arka plan', 'default' => '#ffffff', 'group' => 'kategori'],
+			'mobile-category-icon-color' => ['label' => 'Mobil kategori ikon rengi', 'default' => '#213c8b', 'group' => 'kategori'],
 		];
+
+		if ($theme === null || !self::isValidName($theme)) {
+			return $base;
+		}
+
+		$schema = self::loadSchema($theme);
+
+		if (is_array($schema['colors'] ?? null) && $schema['colors'] !== []) {
+			$defs = [];
+
+			foreach ($schema['colors'] as $key => $field) {
+				if (!is_array($field)) {
+					continue;
+				}
+
+				$defs[(string) $key] = [
+					'label' => (string) ($field['label'] ?? $key),
+					'default' => (string) ($field['default'] ?? '#000000'),
+					'group' => (string) ($field['group'] ?? 'marka'),
+				];
+			}
+
+			return $defs;
+		}
+
+		return $base;
 	}
 
 	/** @return array<string, string> */
@@ -674,10 +777,15 @@ class Theme
 		}
 
 		$defs = self::getColorDefinitions($theme);
+		$current = self::getColors($theme);
 		$normalized = [];
 
 		foreach ($defs as $key => $meta) {
-			$value = trim((string) ($colors[$key] ?? $meta['default']));
+			$value = trim((string) ($colors[$key] ?? ''));
+
+			if ($value === '') {
+				$value = (string) ($current[$key] ?? $meta['default']);
+			}
 
 			if (!self::isValidColor($value)) {
 				return ['success' => false, 'message' => 'Geçersiz renk: ' . $meta['label']];
@@ -760,6 +868,24 @@ class Theme
 		foreach ($defs as $key => $meta) {
 			$value = $colors[$key] ?? $meta['default'];
 			$lines[] = "\t--{$key}: {$value};";
+		}
+
+		$path = self::colorsPath($theme);
+
+		if (is_file($path)) {
+			$existing = (string) file_get_contents($path);
+
+			if (preg_match_all('/--([a-z0-9-]+)\s*:\s*([^;]+);/i', $existing, $matches, PREG_SET_ORDER)) {
+				foreach ($matches as $match) {
+					$key = $match[1];
+
+					if (isset($defs[$key])) {
+						continue;
+					}
+
+					$lines[] = "\t--{$key}: " . trim($match[2]) . ';';
+				}
+			}
 		}
 
 		if (is_array($schema['color_aliases'] ?? null)) {
@@ -1152,5 +1278,161 @@ class Theme
 		}
 
 		rmdir($dir);
+	}
+
+	public static function getScreenshotUrl(string $theme): string
+	{
+		$domain = rtrim((string) Settings::get('DOMAIN'), '/') . '/';
+		$preview = self::getPreviewUrl($theme, $domain);
+
+		if ($preview !== '') {
+			return $preview;
+		}
+
+		$dir = self::templatesPath() . '/' . self::sanitizeName($theme);
+		$extensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+		foreach ($extensions as $ext) {
+			$file = $dir . '/screenshot.' . $ext;
+
+			if (is_file($file)) {
+				return $domain . 'templates/' . $theme . '/screenshot.' . $ext . '?v=' . filemtime($file);
+			}
+		}
+
+		$label = self::labelFor($theme);
+		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">'
+			. '<rect width="100%" height="100%" fill="#f1f5f9"/>'
+			. '<rect x="15" y="15" width="370" height="220" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>'
+			. '<circle cx="200" cy="100" r="32" fill="#eef2ff"/>'
+			. '<path d="M188 100a12 12 0 1 1 24 0M178 116h44c0-7-5.5-12-12-12h-20c-6.5 0-12 5-12 12z" fill="#2563EB"/>'
+			. '<text x="50%" y="165" dominant-baseline="middle" text-anchor="middle" font-family="Segoe UI,sans-serif" font-size="18" font-weight="600" fill="#1e293b">'
+			. htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</text>'
+			. '<text x="50%" y="195" dominant-baseline="middle" text-anchor="middle" font-family="Segoe UI,sans-serif" font-size="12" font-weight="500" fill="#64748b">'
+			. htmlspecialchars('/templates/' . $theme, ENT_QUOTES, 'UTF-8') . '</text>'
+			. '</svg>';
+
+		return 'data:image/svg+xml;base64,' . base64_encode($svg);
+	}
+
+	public static function getUserCss(string $theme): string
+	{
+		if (!self::isValidName($theme)) {
+			return '';
+		}
+
+		$path = self::templatesPath() . '/' . self::sanitizeName($theme) . '/css/user.css';
+
+		if (is_file($path)) {
+			return (string) file_get_contents($path);
+		}
+
+		return '';
+	}
+
+	public static function saveUserCss(string $theme, string $css): array
+	{
+		if (!self::isValidName($theme)) {
+			return ['success' => false, 'message' => 'Geçersiz tema'];
+		}
+
+		$path = self::templatesPath() . '/' . self::sanitizeName($theme) . '/css/user.css';
+		$dir = dirname($path);
+
+		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return ['success' => false, 'message' => 'Tema CSS klasörü oluşturulamadı'];
+		}
+
+		if (file_put_contents($path, $css) === false) {
+			return ['success' => false, 'message' => 'user.css dosyası yazılamadı'];
+		}
+
+		self::writeCustomCss($theme, self::getOptions($theme));
+
+		return ['success' => true, 'message' => 'Özel CSS başarıyla kaydedildi'];
+	}
+
+	public static function deleteTheme(string $theme): array
+	{
+		$theme = self::sanitizeName($theme);
+
+		if (!self::isValidName($theme)) {
+			return ['success' => false, 'message' => 'Geçersiz tema'];
+		}
+
+		if (in_array($theme, ['admin', 'blue', 'restoran'], true)) {
+			return ['success' => false, 'message' => 'Sistem teması silinemez'];
+		}
+
+		$activeTheme = Settings::get('THEME') ?: 'default';
+
+		if ($theme === $activeTheme) {
+			return ['success' => false, 'message' => 'Aktif kullanılan tema silinemez'];
+		}
+
+		$dir = self::templatesPath() . '/' . $theme;
+
+		if (!is_dir($dir)) {
+			return ['success' => false, 'message' => 'Tema bulunamadı'];
+		}
+
+		self::removeDirectory($dir);
+
+		return ['success' => true, 'message' => 'Tema başarıyla silindi'];
+	}
+
+	public static function addTheme(string $themeName, string $themeLabel, ?string $cloneFrom = null, ?array $zipFile = null): array
+	{
+		$themeName = self::sanitizeName($themeName);
+
+		if ($themeName === '' || $themeName === 'admin') {
+			return ['success' => false, 'message' => 'Geçersiz tema klasör adı'];
+		}
+
+		$destDir = self::templatesPath() . '/' . $themeName;
+
+		if (is_dir($destDir)) {
+			return ['success' => false, 'message' => 'Bu isimde bir tema zaten mevcut'];
+		}
+
+		if ($zipFile !== null) {
+			$result = self::installFromZip($zipFile, $themeName);
+
+			if (!$result['success']) {
+				return $result;
+			}
+
+			$schemaPath = $destDir . '/theme.schema.json';
+
+			if (!is_file($schemaPath)) {
+				file_put_contents($schemaPath, json_encode([
+					'label' => $themeLabel !== '' ? $themeLabel : ucfirst($themeName),
+					'description' => '',
+					'preview' => 'theme-preview.png',
+				], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+			}
+
+			file_put_contents($destDir . '/theme.json', json_encode([
+				'name' => $themeLabel !== '' ? $themeLabel : ucfirst($themeName),
+				'created_at' => date('Y-m-d H:i:s'),
+			], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+			return ['success' => true, 'message' => 'Tema başarıyla yüklendi'];
+		}
+
+		if ($cloneFrom !== null && $cloneFrom !== '') {
+			$result = self::copyTheme($cloneFrom, $themeName, $themeLabel);
+
+			if ($result['success']) {
+				file_put_contents($destDir . '/theme.json', json_encode([
+					'name' => $themeLabel !== '' ? $themeLabel : ucfirst($themeName),
+					'created_at' => date('Y-m-d H:i:s'),
+				], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+			}
+
+			return $result;
+		}
+
+		return ['success' => false, 'message' => 'Geçersiz parametreler'];
 	}
 }

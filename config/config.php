@@ -30,21 +30,22 @@
 		public static function getEditableKeys(): array
 		{
 			return [
-				'SITE_NAME' => ['label' => 'Site Adı', 'group' => 'genel'],
-				'CONTACT_EMAIL' => ['label' => 'İletişim E-posta', 'group' => 'iletisim'],
-				'CONTACT_PHONE' => ['label' => 'Telefon (görünen)', 'group' => 'iletisim'],
-				'CONTACT_PHONE_TEL' => ['label' => 'Telefon (tel: linki)', 'group' => 'iletisim'],
-				'FREE_SHIPPING_MIN' => ['label' => 'Ücretsiz kargo limiti', 'group' => 'kargo'],
-				'SHIPPING_FEE' => ['label' => 'Kargo ücreti', 'group' => 'kargo'],
-				'RETURN_REQUEST_DAYS' => ['label' => 'İade talebi süresi (gün)', 'group' => 'iade'],
-				'MAIL_DRIVER' => ['label' => 'E-posta gönderim yöntemi', 'group' => 'mail', 'type' => 'select'],
-				'SMTP_HOST' => ['label' => 'SMTP Sunucu', 'group' => 'smtp', 'type' => 'text'],
-				'SMTP_PORT' => ['label' => 'SMTP Port', 'group' => 'smtp', 'type' => 'text'],
-				'SMTP_USER' => ['label' => 'SMTP Kullanıcı (e-posta)', 'group' => 'smtp', 'type' => 'text'],
-				'SMTP_PASS' => ['label' => 'SMTP Şifre', 'group' => 'smtp', 'type' => 'password'],
-				'SMTP_ENCRYPTION' => ['label' => 'Şifreleme (ssl / tls)', 'group' => 'smtp', 'type' => 'text'],
-				'SMTP_FROM_EMAIL' => ['label' => 'Gönderen e-posta', 'group' => 'smtp', 'type' => 'text'],
-				'SMTP_FROM_NAME' => ['label' => 'Gönderen adı (boş = site adı)', 'group' => 'smtp', 'type' => 'text'],
+				'SITE_NAME' => ['label' => 'Site name', 'group' => 'general'],
+				'CONTACT_EMAIL' => ['label' => 'Contact email', 'group' => 'contact'],
+				'CONTACT_PHONE' => ['label' => 'Phone (display)', 'group' => 'contact'],
+				'CONTACT_PHONE_TEL' => ['label' => 'Phone (tel link)', 'group' => 'contact'],
+				'RETURN_REQUEST_DAYS' => ['label' => 'Return request window (days)', 'group' => 'returns'],
+				'ORDER_REF_PREFIX' => ['label' => 'Order number prefix', 'group' => 'orders'],
+				'ORDER_REF_SUFFIX_MODE' => ['label' => 'Order number format', 'group' => 'orders', 'type' => 'select'],
+				'ORDER_REF_PAD' => ['label' => 'Sequential digit count', 'group' => 'orders'],
+				'MAIL_DRIVER' => ['label' => 'Mail driver', 'group' => 'mail', 'type' => 'select'],
+				'SMTP_HOST' => ['label' => 'SMTP host', 'group' => 'smtp', 'type' => 'text'],
+				'SMTP_PORT' => ['label' => 'SMTP port', 'group' => 'smtp', 'type' => 'text'],
+				'SMTP_USER' => ['label' => 'SMTP user (email)', 'group' => 'smtp', 'type' => 'text'],
+				'SMTP_PASS' => ['label' => 'SMTP password', 'group' => 'smtp', 'type' => 'password'],
+				'SMTP_ENCRYPTION' => ['label' => 'Encryption (ssl / tls)', 'group' => 'smtp', 'type' => 'text'],
+				'SMTP_FROM_EMAIL' => ['label' => 'From email', 'group' => 'smtp', 'type' => 'text'],
+				'SMTP_FROM_NAME' => ['label' => 'From name (empty = site name)', 'group' => 'smtp', 'type' => 'text'],
 			];
 		}
 

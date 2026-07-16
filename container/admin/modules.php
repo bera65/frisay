@@ -10,7 +10,7 @@ if (Tools::isSubmit('moduleAction')) {
 	$postToken = (string) Tools::getValue('token');
 
 	if (!hash_equals($adminToken, $postToken)) {
-		$flash = 'Geçersiz istek';
+		$flash = adminT('Invalid request');
 	} else {
 		$name = trim((string) Tools::getValue('name'));
 		$action = trim((string) Tools::getValue('action'));
@@ -35,7 +35,7 @@ if (Tools::isSubmit('moduleAction')) {
 			default:
 				$result = [
 					'success' => false,
-					'message' => 'Geçersiz işlem'
+					'message' => adminT('Invalid action')
 				];
 				break;
 		}
@@ -54,4 +54,4 @@ $smarty->assign([
 	'flash' => $flash,
 ]);
 
-AdminPage::add('modules', 'Modüller');
+AdminPage::add('modules', 'Modules');

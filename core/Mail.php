@@ -56,6 +56,11 @@ class Mail
 
 	private static function sendViaPhpMail(string $to, string $subject, string $bodyHtml): bool
 	{
+		if (!function_exists('mail')) {
+			self::$lastError = 'PHP mail() is disabled on this server. Configure SMTP in Admin → Settings.';
+			return false;
+		}
+
 		$from = self::getFromEmail();
 
 		if ($from === '') {

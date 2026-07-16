@@ -91,30 +91,39 @@ class Customer
 		return self::ok('Kayıt başarılı');
 	}
 
-	public static function login(string $phone, string $password, bool $remember = true): array
+	public static function login(string $login, string $password, bool $remember = true): array
 	{
-		$phone = self::normalizePhone($phone);
-		$identifier = RateLimit::loginIdentifier($phone);
+		$login = trim($login);
+		$rateKey = RateLimit::loginIdentifier($login !== '' ? $login : 'empty');
 
-		if (RateLimit::isLimited(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier, 8, 900)) {
+		if (RateLimit::isLimited(RateLimit::SCOPE_CUSTOMER_LOGIN, $rateKey, 8, 900)) {
 			return self::fail('Çok fazla başarısız giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.');
 		}
 
-		if (!self::isValidPhone($phone)) {
-			RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
+		$user = null;
 
-			return self::fail('Telefon veya şifre hatalı');
+		if ($login !== '' && filter_var($login, FILTER_VALIDATE_EMAIL)) {
+			$email = strtolower($login);
+			$user = DB::getRowSafe('users', 'email = ? AND active = 1', [$email]);
+		} else {
+			$phone = self::normalizePhone($login);
+
+			if (!self::isValidPhone($phone)) {
+				RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $rateKey);
+
+				return self::fail('E-posta / telefon veya şifre hatalı');
+			}
+
+			$user = DB::getRowSafe('users', 'phone = ? AND active = 1', [$phone]);
 		}
-
-		$user = DB::getRowSafe('users', 'phone = ? AND active = 1', [$phone]);
 
 		if (!$user || !self::verifyPassword($password, $user['password'])) {
-			RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
+			RateLimit::record(RateLimit::SCOPE_CUSTOMER_LOGIN, $rateKey);
 
-			return self::fail('Telefon veya şifre hatalı');
+			return self::fail('E-posta / telefon veya şifre hatalı');
 		}
 
-		RateLimit::clear(RateLimit::SCOPE_CUSTOMER_LOGIN, $identifier);
+		RateLimit::clear(RateLimit::SCOPE_CUSTOMER_LOGIN, $rateKey);
 
 		self::upgradePasswordIfNeeded((int) $user['id_user'], $password, $user['password']);
 		self::loginSession((int) $user['id_user'], $remember);
@@ -487,6 +496,132 @@ class Customer
 		return [
 			'success' => true,
 			'message' => $active ? 'Müşteri aktif edildi' : 'Müşteri pasif edildi',
+		];
+	}
+
+	public static function updateByAdmin(int $idUser, string $fullName, string $phone, string $email = ''): array
+	{
+		if ($idUser <= 0) {
+			return self::fail('Geçersiz müşteri');
+		}
+
+		$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
+
+		if (!$user) {
+			return self::fail('Müşteri bulunamadı');
+		}
+
+		$fullName = trim($fullName);
+		$phone = self::normalizePhone($phone);
+		$email = trim(strtolower($email));
+
+		if (!Validate::isName($fullName)) {
+			return self::fail('Geçerli bir ad soyad girin');
+		}
+
+		if (!self::isValidPhone($phone)) {
+			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+		}
+
+		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return self::fail('Geçerli bir e-posta adresi girin');
+		}
+
+		if ($phone !== (string) ($user['phone'] ?? '')) {
+			$exists = DB::getValue(
+				'SELECT id_user FROM users WHERE phone = ? AND id_user != ? LIMIT 1',
+				[$phone, $idUser]
+			);
+
+			if ($exists) {
+				return self::fail('Bu telefon numarası başka bir hesapta kayıtlı');
+			}
+		}
+
+		if ($email !== '' && $email !== (string) ($user['email'] ?? '')) {
+			$emailExists = DB::getValue(
+				'SELECT id_user FROM users WHERE email = ? AND id_user != ? LIMIT 1',
+				[$email, $idUser]
+			);
+
+			if ($emailExists) {
+				return self::fail('Bu e-posta adresi başka bir hesapta kayıtlı');
+			}
+		}
+
+		$updated = DB::update(
+			'users',
+			[
+				'user_full_name' => $fullName,
+				'phone' => $phone,
+				'email' => $email,
+			],
+			'id_user = :id_user',
+			['id_user' => $idUser]
+		);
+
+		if ($updated === false) {
+			return self::fail('Müşteri güncellenemedi');
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Müşteri bilgileri güncellendi',
+		];
+	}
+
+	public static function setPasswordByAdmin(int $idUser, string $password, string $password2): array
+	{
+		if ($idUser <= 0) {
+			return self::fail('Geçersiz müşteri');
+		}
+
+		$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
+
+		if (!$user) {
+			return self::fail('Müşteri bulunamadı');
+		}
+
+		$passwordError = Security::validatePassword($password, false);
+
+		if ($passwordError !== null) {
+			return self::fail($passwordError);
+		}
+
+		if ($password !== $password2) {
+			return self::fail('Şifreler eşleşmiyor');
+		}
+
+		$hash = self::hashPassword($password);
+
+		$updated = DB::update(
+			'users',
+			[
+				'password' => $hash,
+				'reset_token' => '',
+				'reset_expires' => null,
+				'login_code' => '',
+			],
+			'id_user = :id_user',
+			['id_user' => $idUser]
+		);
+
+		if ($updated === false) {
+			return self::fail('Şifre güncellenemedi');
+		}
+
+		$stored = (string) DB::getValue(
+			'SELECT password FROM users WHERE id_user = ? LIMIT 1',
+			[$idUser]
+		);
+
+		if ($stored === '' || !self::verifyPassword($password, $stored)) {
+			return self::fail('Şifre kaydedildi ama doğrulanamadı. Lütfen tekrar deneyin.');
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Müşteri şifresi güncellendi. Giriş için telefon + yeni şifreyi kullanın.',
 		];
 	}
 

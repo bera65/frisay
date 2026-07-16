@@ -33,4 +33,4 @@
 		'unreadCount' => AdminNotification::countUnread(),
 	]);
 
-	AdminPage::add('notifications', 'Bildirimler');
+	AdminPage::add('notifications', 'Notifications');

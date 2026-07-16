@@ -12,7 +12,7 @@
 
 	if (!$isNew && !$product) {
 		http_response_code(404);
-		AdminPage::add('404', 'Ürün Bulunamadı');
+		AdminPage::add('404', 'Product not found');
 		return;
 	}
 
@@ -20,7 +20,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$result = Product::save($_POST, $id);
@@ -36,16 +36,78 @@
 
 	if (Tools::isSubmit('uploadImage') && $id > 0) {
 		$postToken = (string) Tools::getValue('token');
+		$isAjax = Tools::getValue('ajax') === '1'
+			|| (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			if ($isAjax) {
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode(['success' => false, 'message' => adminT('Invalid request')]);
+				exit;
+			}
+
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
-			$result = Product::uploadImage($id, $_FILES['image'] ?? []);
-			$flash = $result['message'];
-			$flashType = !empty($result['success']) ? 'success' : 'danger';
+			$files = [];
 
-			if ($result['success']) {
+			if (!empty($_FILES['images']) && is_array($_FILES['images']['name'] ?? null)) {
+				$count = count($_FILES['images']['name']);
+
+				for ($i = 0; $i < $count; $i++) {
+					$files[] = [
+						'name' => $_FILES['images']['name'][$i] ?? '',
+						'type' => $_FILES['images']['type'][$i] ?? '',
+						'tmp_name' => $_FILES['images']['tmp_name'][$i] ?? '',
+						'error' => $_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+						'size' => $_FILES['images']['size'][$i] ?? 0,
+					];
+				}
+			} elseif (!empty($_FILES['image'])) {
+				$files[] = $_FILES['image'];
+			}
+
+			$uploaded = [];
+			$errors = [];
+
+			foreach ($files as $file) {
+				if (empty($file['tmp_name'])) {
+					continue;
+				}
+
+				$result = Product::uploadImage($id, $file);
+
+				if (!empty($result['success'])) {
+					$uploaded[] = [
+						'id_image' => (int) ($result['id_image'] ?? $result['id'] ?? 0),
+						'url' => (string) ($result['url'] ?? ''),
+						'cover' => (int) ($result['cover'] ?? 0),
+					];
+				} else {
+					$errors[] = (string) ($result['message'] ?? 'Yükleme hatası');
+				}
+			}
+
+			if ($isAjax) {
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode([
+					'success' => $uploaded !== [],
+					'message' => $uploaded !== []
+						? count($uploaded) . ' görsel yüklendi'
+						: ($errors[0] ?? 'Görsel yüklenemedi'),
+					'images' => Product::getImages($id),
+					'uploaded' => $uploaded,
+					'errors' => $errors,
+				]);
+				exit;
+			}
+
+			$flash = $uploaded !== []
+				? count($uploaded) . ' görsel yüklendi'
+				: ($errors[0] ?? 'Görsel yüklenemedi');
+			$flashType = $uploaded !== [] ? 'success' : 'danger';
+
+			if ($uploaded !== []) {
 				header('Location: ' . Admin::url('product?id=' . $id . '&saved=1'));
 				exit;
 			}
@@ -54,23 +116,57 @@
 
 	if (Tools::isSubmit('setCover') && $id > 0) {
 		$postToken = (string) Tools::getValue('token');
+		$isAjax = Tools::getValue('ajax') === '1'
+			|| (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 		if (hash_equals($adminToken, $postToken)) {
 			$result = Product::setCover((int) Tools::getValue('id_image'));
+
+			if ($isAjax) {
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode([
+					'success' => !empty($result['success']),
+					'message' => (string) ($result['message'] ?? ''),
+					'images' => Product::getImages($id),
+				]);
+				exit;
+			}
+
 			$flash = $result['message'];
 			$flashType = !empty($result['success']) ? 'success' : 'danger';
 			$product = Product::getByIdAdmin($id);
+		} elseif ($isAjax) {
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => false, 'message' => adminT('Invalid request')]);
+			exit;
 		}
 	}
 
 	if (Tools::isSubmit('deleteImage') && $id > 0) {
 		$postToken = (string) Tools::getValue('token');
+		$isAjax = Tools::getValue('ajax') === '1'
+			|| (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
 		if (hash_equals($adminToken, $postToken)) {
 			$result = Product::deleteImage((int) Tools::getValue('id_image'));
+
+			if ($isAjax) {
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode([
+					'success' => !empty($result['success']),
+					'message' => (string) ($result['message'] ?? ''),
+					'images' => Product::getImages($id),
+				]);
+				exit;
+			}
+
 			$flash = $result['message'];
 			$flashType = !empty($result['success']) ? 'success' : 'danger';
 			$product = Product::getByIdAdmin($id);
+		} elseif ($isAjax) {
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => false, 'message' => adminT('Invalid request')]);
+			exit;
 		}
 	}
 
@@ -78,7 +174,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$result = VirtualProduct::uploadFile($id, $_FILES['virtual_file'] ?? []);
@@ -121,6 +217,7 @@
 		'description' 		=> '',
 		'id_category' 		=> 0,
 		'id_brand' 			=> 0,
+		'cost' 				=> '0.00',
 		'price' 			=> '0.00',
 		'doviz' 			=> 'try',
 		'doviz_price' 		=> '0.00',
@@ -221,4 +318,4 @@
 		'shopCurrencyLabel' => Currency::label(),
 	]);
 
-	AdminPage::add('product', $isNew ? 'Yeni Ürün' : 'Ürün Düzenle');
+	AdminPage::add('product', $isNew ? 'New Product' : 'Edit product');

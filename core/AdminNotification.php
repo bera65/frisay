@@ -67,10 +67,63 @@ class AdminNotification
 		foreach ($rows as &$row) {
 			$row['date_formatted'] = Tools::formatDate3($row['date_add']);
 			$row['is_read'] = (int) $row['is_read'];
+			$row['title'] = self::localizeTitle((string) ($row['title'] ?? ''));
+			$row['message'] = self::localizeMessage((string) ($row['message'] ?? ''));
 		}
 		unset($row);
 
 		return $rows;
+	}
+
+	private static function translate(string $text): string
+	{
+		if (!class_exists('AdminLang', false)) {
+			require_once dirname(__FILE__) . '/AdminLang.php';
+		}
+
+		return AdminLang::translate($text);
+	}
+
+	private static function localizeTitle(string $title): string
+	{
+		$legacy = [
+			'Yeni iptal talebi' => 'New cancel request',
+			'Yeni iade talebi' => 'New return request',
+			'Yeni iletişim mesajı' => 'New contact message',
+			'Sipariş sorusu' => 'Order question',
+		];
+
+		if (isset($legacy[$title])) {
+			$title = $legacy[$title];
+		}
+
+		return self::translate($title);
+	}
+
+	private static function localizeMessage(string $message): string
+	{
+		if ($message === '') {
+			return '';
+		}
+
+		$patterns = [
+			'/^Sipariş #(.+) için iptal talebi oluşturuldu\.$/u' => 'Cancel request created for order #%s.',
+			'/^Sipariş #(.+) için iade talebi oluşturuldu\.$/u' => 'Return request created for order #%s.',
+			'/^Cancel request created for order #(.+)\.$/u' => 'Cancel request created for order #%s.',
+			'/^Return request created for order #(.+)\.$/u' => 'Return request created for order #%s.',
+		];
+
+		foreach ($patterns as $pattern => $templateKey) {
+			if (preg_match($pattern, $message, $matches)) {
+				return sprintf(self::translate($templateKey), $matches[1]);
+			}
+		}
+
+		if (preg_match('/^(.+) — (Genel|General)$/u', $message, $matches)) {
+			return $matches[1] . ' — ' . self::translate('General');
+		}
+
+		return self::translate($message);
 	}
 
 	public static function markRead(int $idNotification): bool

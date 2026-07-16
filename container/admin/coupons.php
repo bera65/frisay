@@ -9,7 +9,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = Coupon::delete((int) Tools::getValue('id_coupon'));
 			$flash = $result['message'];
@@ -20,7 +20,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} else {
 			$result = CartPromotion::delete((int) Tools::getValue('id_promotion'));
 			$flash = $result['message'];
@@ -33,4 +33,4 @@
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('coupons', 'Kuponlar & Kampanyalar');
+	AdminPage::add('coupons', 'Coupons & Promotions');

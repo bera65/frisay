@@ -374,13 +374,15 @@ class WapioModule extends ModuleBase
 
 	private function buildTrackingUrl(string $trackingNumber, string $cargoCompany): string
 	{
-		$trackingNumber = rawurlencode($trackingNumber);
+		if (class_exists('Cargo')) {
+			$url = Cargo::buildTrackingUrl($trackingNumber, $cargoCompany);
 
-		if ($cargoCompany !== '') {
-			return $trackingNumber;
+			if ($url !== '') {
+				return $url;
+			}
 		}
 
-		return $trackingNumber;
+		return '';
 	}
 
 	public function normalizePhone(string $phone): string

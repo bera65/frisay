@@ -1,9 +1,9 @@
 {if $pagination && $pagination.total_pages > 1}
-<nav class="catalog-pagination mt-4" aria-label="Sayfalama">
+<nav class="catalog-pagination mt-4" aria-label="{'Pagination'|adminT}">
 	<ul class="pagination justify-content-center flex-wrap mb-0">
 		{if $pagination.has_prev}
 		<li class="page-item">
-			<a class="page-link" href="{$pagination.prev_url|escape}">Önceki</a>
+			<a class="page-link" href="{$pagination.prev_url|escape}">{'Previous'|adminT}</a>
 		</li>
 		{/if}
 		{foreach $pagination.pages as $pageItem}
@@ -17,10 +17,10 @@
 		{/foreach}
 		{if $pagination.has_next}
 		<li class="page-item">
-			<a class="page-link" href="{$pagination.next_url|escape}">Sonraki</a>
+			<a class="page-link" href="{$pagination.next_url|escape}">{'Next'|adminT}</a>
 		</li>
 		{/if}
 	</ul>
-	<p class="text-center text-muted small mt-2 mb-0">Sayfa {$pagination.page} / {$pagination.total_pages}</p>
+	<p class="text-center text-muted small mt-2 mb-0">{'Page'|adminT} {$pagination.page} / {$pagination.total_pages}</p>
 </nav>
 {/if}

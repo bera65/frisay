@@ -30,7 +30,7 @@
 
 	$formData = [
 
-		'phone' => '',
+		'login' => '',
 
 	];
 
@@ -64,9 +64,14 @@
 
 
 
+		$loginValue = (string) Tools::getValue('login');
+		if ($loginValue === '') {
+			$loginValue = (string) Tools::getValue('phone');
+		}
+
 		$formData = [
 
-			'phone' => (string) Tools::getValue('phone'),
+			'login' => $loginValue,
 
 		];
 
@@ -82,7 +87,7 @@
 
 			$result = Customer::login(
 
-				$formData['phone'],
+				$formData['login'],
 
 				(string) Tools::getValue('password'),
 

@@ -90,6 +90,37 @@
 		{/foreach}
 	</div>
 
+	<div class="dress-account-card mb-4">
+		<h3 class="fs-6 mb-3">{'Order Summary'|translate}</h3>
+		<div class="vstack gap-2 small">
+			<div class="d-flex justify-content-between"><span>{'Subtotal'|translate}</span><span>{$selectedOrder.subtotal_formatted}</span></div>
+			{if $selectedOrder.promotion_discount > 0}
+			<div class="d-flex justify-content-between text-success">
+				<span>{if $selectedOrder.promotion_name}{$selectedOrder.promotion_name|escape}{else}{'Discount'|translate}{/if}</span>
+				<span>-{$selectedOrder.promotion_discount_formatted}</span>
+			</div>
+			{/if}
+			{if $selectedOrder.coupon_discount > 0}
+			<div class="d-flex justify-content-between text-success">
+				<span>{'Coupon'|translate}{if $selectedOrder.coupon_code}: {$selectedOrder.coupon_code|escape}{/if}</span>
+				<span>-{$selectedOrder.coupon_discount_formatted}</span>
+			</div>
+			{/if}
+			{if $selectedOrder.payment_discount > 0}
+			<div class="d-flex justify-content-between text-success">
+				<span>{if $selectedOrder.payment_discount_label}{$selectedOrder.payment_discount_label|escape}{else}{'Discount'|translate}{/if}</span>
+				<span>-{$selectedOrder.payment_discount_formatted}</span>
+			</div>
+			{/if}
+			<div class="d-flex justify-content-between"><span>{'Cargo'|translate}</span><span>{$selectedOrder.shipping_formatted}</span></div>
+			<div class="d-flex justify-content-between"><span>{'Payment'|translate}</span><span>{$selectedOrder.payment_label|escape}</span></div>
+			{if $selectedOrder.cargo_company}
+			<div class="d-flex justify-content-between"><span>{'Cargo company'|translate}</span><span>{$selectedOrder.cargo_company|escape}{if $selectedOrder.tracking_number} — {$selectedOrder.tracking_number|escape}{/if}</span></div>
+			{/if}
+			<div class="d-flex justify-content-between fw-bold border-top pt-2 mt-1"><span>{'Total'|translate}</span><span>{$selectedOrder.total_formatted}</span></div>
+		</div>
+	</div>
+
 	{if $hooks.order_confirmation}
 	<div class="dress-account-card mb-4">
 		{$hooks.order_confirmation nofilter}

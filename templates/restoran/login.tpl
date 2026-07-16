@@ -64,9 +64,9 @@
 
 					<div class="mb-3">
 
-						<label class="form-label" for="loginPagePhone">{'Phone'|translate}</label>
+						<label class="form-label" for="loginPagePhone">{'Email or phone'|translate}</label>
 
-						<input type="tel" id="loginPagePhone" name="phone" class="form-control phone-input" placeholder="{'Phone placeholder'|translate}" value="{$formData.phone|escape}" required autocomplete="tel">
+						<input type="text" id="loginPagePhone" name="login" class="form-control" placeholder="{'Email or phone placeholder'|translate}" value="{$formData.login|default:$formData.phone|default:''|escape}" required autocomplete="username">
 
 					</div>
 

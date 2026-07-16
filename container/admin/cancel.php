@@ -10,7 +10,7 @@
 
 	if (!$cancel) {
 		http_response_code(404);
-		AdminPage::add('404', 'İptal Talebi Bulunamadı');
+		AdminPage::add('404', 'Cancel request not found');
 		return;
 	}
 
@@ -18,7 +18,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 			$flashType = 'danger';
 		} else {
 			$adminMessage = (string) Tools::getValue('admin_message');
@@ -47,4 +47,4 @@
 		'statusRejected' => CancelRequest::STATUS_REJECTED,
 	]);
 
-	AdminPage::add('cancel', 'İptal #' . $cancel['id_cancel']);
+	AdminPage::add('cancel', adminT('Cancel #') . $cancel['id_cancel']);

@@ -24,4 +24,4 @@
 		'statusOptions' => CancelRequest::getStatusOptions(),
 	]);
 
-	AdminPage::add('cancellations', 'İptaller');
+	AdminPage::add('cancellations', 'Cancellations');

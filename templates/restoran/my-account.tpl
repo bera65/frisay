@@ -1,4 +1,4 @@
-﻿<div class="prime-container prime-page prime-account-page">
+<div class="prime-container prime-page prime-account-page">
 
 <div class="dress-account">
 

@@ -233,14 +233,15 @@ class GoogleShoppingModule extends ModuleBase
                 }
             }
 
-            // Kargo — Türkiye varsayılanı
+            // Kargo — varsayılan kargo firması aralıklarından
             $shipping = $dom->createElementNS('http://base.google.com/ns/1.0', 'g:shipping');
             self::addGNode($dom, $shipping, 'country', 'TR');
             self::addGNode($dom, $shipping, 'service', 'Standart Kargo');
-            // Kargo ücreti: settings'den çekmeye çalış, yoksa 0
-            $freeMin = (float)(Settings::get('FREE_SHIPPING_MIN') ?: 0);
-            $shippingCost = ($freeMin > 0 && (float)$p['price'] >= $freeMin) ? '0.00' : (Settings::get('SHIPPING_COST') ?: '0.00');
-            self::addGNode($dom, $shipping, 'price', number_format((float)$shippingCost, 2, '.', '') . ' ' . $currency);
+            $cargoHints = class_exists('Cargo') ? Cargo::getDisplayHints() : ['free_shipping_min' => 0.0, 'shipping_fee' => 0.0];
+            $freeMin = (float) ($cargoHints['free_shipping_min'] ?? 0);
+            $shippingFee = (float) ($cargoHints['shipping_fee'] ?? 0);
+            $shippingCost = ($freeMin > 0 && (float) $p['price'] >= $freeMin) ? 0.0 : $shippingFee;
+            self::addGNode($dom, $shipping, 'price', number_format($shippingCost, 2, '.', '') . ' ' . $currency);
             $item->appendChild($shipping);
 
             // Custom label

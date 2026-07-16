@@ -1365,6 +1365,9 @@ class Product
 			'success' => true,
 			'message' => 'Görsel yüklendi',
 			'id' => (int) $idImage,
+			'id_image' => (int) $idImage,
+			'url' => self::getImageUrl((int) $idImage),
+			'cover' => $hasCover > 0 ? 0 : 1,
 		];
 	}
 

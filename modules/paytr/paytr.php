@@ -235,12 +235,18 @@ class PaytrModule extends ModuleBase
 
 		DB::execute(
 			'CREATE TABLE IF NOT EXISTS paytr_pending_checkouts (
-				reference VARCHAR(16) NOT NULL,
+				reference VARCHAR(32) NOT NULL,
 				payload LONGTEXT NOT NULL,
 				date_add DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY (reference)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 		);
+
+		$col = DB::execute("SHOW COLUMNS FROM paytr_pending_checkouts LIKE 'reference'");
+
+		if (!empty($col) && stripos((string) ($col[0]['Type'] ?? ''), 'varchar(16)') !== false) {
+			DB::execute('ALTER TABLE paytr_pending_checkouts MODIFY reference VARCHAR(32) NOT NULL');
+		}
 	}
 
 	public static function persistPendingCheckout(string $reference, array $checkoutData, array $cart): void

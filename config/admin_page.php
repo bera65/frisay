@@ -52,9 +52,7 @@ class AdminPage
 		$smarty->assign([
 			'pageName' => $pageName,
 			'pageTitle' => $pageTitle !== '' && function_exists('adminT') ? adminT($pageTitle) : $pageTitle,
-			'moduleNavActive' => $pageName === 'modules'
-				|| $pageName === 'module'
-				|| strpos($pageName, 'module-') === 0,
+			'moduleNavActive' => $pageName === 'modules' || $pageName === 'module',
 		]);
 	}
 }

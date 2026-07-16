@@ -10,7 +10,7 @@
 		$idCms = (int) Tools::getValue('id');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$flash = 'Geçersiz istek';
+			$flash = adminT('Invalid request');
 		} elseif ($idCms > 0) {
 			$result = Cms::delete($idCms);
 			$flash = $result['message'];
@@ -22,4 +22,4 @@
 		'flash' => $flash,
 	]);
 
-	AdminPage::add('cms', 'CMS Sayfaları');
+	AdminPage::add('cms', 'CMS Pages');

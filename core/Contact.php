@@ -25,6 +25,7 @@ class Contact
 					`phone` varchar(20) NOT NULL DEFAULT '',
 					`subject` varchar(128) NOT NULL DEFAULT '',
 					`message` text NOT NULL,
+					`attachment_file` varchar(255) NOT NULL DEFAULT '',
 					`ip_address` varchar(45) NOT NULL DEFAULT '',
 					`is_read` tinyint(1) NOT NULL DEFAULT 0,
 					`date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -44,6 +45,17 @@ class Contact
 				);
 			}
 		}
+
+		$attachCol = DB::execute("SHOW COLUMNS FROM `contact_messages` LIKE 'attachment_file'");
+
+		if (empty($attachCol)) {
+			DB::execute(
+				"ALTER TABLE `contact_messages`
+				 ADD COLUMN `attachment_file` varchar(255) NOT NULL DEFAULT '' AFTER `message`"
+			);
+		}
+
+		self::ensureAttachmentDir();
 
 		$replies = DB::execute("SHOW TABLES LIKE 'contact_replies'");
 
@@ -172,6 +184,19 @@ class Contact
 			return self::fail(self::t('You are sending messages too frequently, please wait'));
 		}
 
+		$attachmentFile = '';
+		$file = $extra['attachment'] ?? null;
+
+		if (is_array($file) && !empty($file['tmp_name'])) {
+			$stored = self::storeAttachment($file);
+
+			if (!$stored['success']) {
+				return $stored;
+			}
+
+			$attachmentFile = (string) ($stored['filename'] ?? '');
+		}
+
 		$reference = (string) ($order['reference'] ?? '');
 		$subject = 'Sipariş #' . $reference;
 
@@ -183,6 +208,7 @@ class Contact
 			'phone' => $phone,
 			'subject' => $subject,
 			'message' => trim($message),
+			'attachment_file' => $attachmentFile,
 			'ip_address' => $ip,
 		]);
 
@@ -297,6 +323,8 @@ class Contact
 	{
 		foreach ($rows as &$row) {
 			$row['date_formatted'] = Tools::formatDate3($row['date_add']);
+			$row['attachment_file'] = (string) ($row['attachment_file'] ?? '');
+			$row['attachment_url'] = self::getAttachmentUrl($row['attachment_file']);
 			$row['replies'] = self::getReplies((int) $row['id_message']);
 		}
 		unset($row);
@@ -316,10 +344,168 @@ class Contact
 			'phone' => (string) ($data['phone'] ?? ''),
 			'subject' => (string) ($data['subject'] ?? ''),
 			'message' => (string) ($data['message'] ?? ''),
+			'attachment_file' => (string) ($data['attachment_file'] ?? ''),
 			'ip_address' => (string) ($data['ip_address'] ?? ''),
 		]);
 
 		return $id ? (int) $id : 0;
+	}
+
+	private static function ensureAttachmentDir(): void
+	{
+		$dir = self::attachmentDir();
+
+		if (!is_dir($dir)) {
+			@mkdir($dir, 0755, true);
+		}
+
+		$htaccess = $dir . '/.htaccess';
+
+		if (!is_file($htaccess)) {
+			@file_put_contents(
+				$htaccess,
+				"<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n"
+				. "<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\n"
+			);
+		}
+
+		$index = $dir . '/index.php';
+
+		if (!is_file($index)) {
+			@file_put_contents($index, "<?php\nhttp_response_code(403);\n");
+		}
+	}
+
+	public static function attachmentDir(): string
+	{
+		return dirname(__DIR__) . '/img/contact';
+	}
+
+	public static function getAttachmentUrl(string $filename): string
+	{
+		$filename = trim($filename);
+
+		if ($filename === '') {
+			return '';
+		}
+
+		global $domain;
+
+		return rtrim($domain, '/') . '/api/contact-file.php?file=' . rawurlencode($filename);
+	}
+
+	public static function isAllowedAttachmentFilename(string $filename): bool
+	{
+		return (bool) preg_match('/^contact-[a-f0-9]+\.(jpg|jpeg|png|webp|pdf)$/i', $filename);
+	}
+
+	public static function canAccessAttachment(string $filename, int $idUser, bool $isAdmin): bool
+	{
+		if (!self::isAllowedAttachmentFilename($filename)) {
+			return false;
+		}
+
+		if ($isAdmin) {
+			return true;
+		}
+
+		if ($idUser <= 0) {
+			return false;
+		}
+
+		$owner = (int) DB::getValue(
+			'SELECT id_user FROM contact_messages WHERE attachment_file = ? LIMIT 1',
+			[$filename]
+		);
+
+		return $owner === $idUser;
+	}
+
+	public static function serveAttachment(string $filename): void
+	{
+		if (!self::isAllowedAttachmentFilename($filename)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$path = self::attachmentDir() . '/' . $filename;
+
+		if (!is_file($path)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		$types = [
+			'jpg' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'png' => 'image/png',
+			'webp' => 'image/webp',
+			'pdf' => 'application/pdf',
+		];
+
+		header('Content-Type: ' . ($types[$ext] ?? 'application/octet-stream'));
+		header('Content-Length: ' . (string) filesize($path));
+		header('Content-Disposition: inline; filename="' . $filename . '"');
+		header('X-Content-Type-Options: nosniff');
+		readfile($path);
+		exit;
+	}
+
+	/**
+	 * @param array<string, mixed> $file
+	 * @return array{success:bool,message?:string,filename?:string}
+	 */
+	private static function storeAttachment(array $file): array
+	{
+		self::ensureAttachmentDir();
+
+		if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+			return ['success' => true, 'filename' => ''];
+		}
+
+		if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+			return self::fail(self::t('Could not upload attachment'));
+		}
+
+		if ((int) ($file['size'] ?? 0) > 5242880) {
+			return self::fail(self::t('Attachment too large'));
+		}
+
+		$tmp = (string) ($file['tmp_name'] ?? '');
+
+		if ($tmp === '' || !is_uploaded_file($tmp)) {
+			return self::fail(self::t('Could not upload attachment'));
+		}
+
+		$binary = file_get_contents($tmp);
+
+		if (!is_string($binary) || $binary === '') {
+			return self::fail(self::t('Could not upload attachment'));
+		}
+
+		$ext = '';
+		$info = @getimagesizefromstring($binary);
+
+		if ($info && in_array((int) $info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+			$map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+			$ext = $map[(int) $info[2]] ?? '';
+		} elseif (strncmp($binary, '%PDF', 4) === 0) {
+			$ext = 'pdf';
+		}
+
+		if ($ext === '') {
+			return self::fail(self::t('Invalid attachment type'));
+		}
+
+		$filename = 'contact-' . bin2hex(random_bytes(12)) . '.' . $ext;
+		$path = self::attachmentDir() . '/' . $filename;
+
+		if (@file_put_contents($path, $binary) === false) {
+			return self::fail(self::t('Could not upload attachment'));
+		}
+
+		return ['success' => true, 'filename' => $filename];
 	}
 
 	private static function validateMessage(string $message): array
@@ -366,20 +552,20 @@ class Contact
 			return;
 		}
 
-		$subjectLine = '[FShop] ' . ($subject !== '' ? $subject : 'İletişim Formu');
-		$body = "Ad Soyad: {$name}\nE-posta: {$email}\nKonu: {$subject}\n";
+		$subjectLine = '[FShop] ' . ($subject !== '' ? $subject : 'Contact form');
+		$bodyHtml = '<p><strong>Name:</strong> ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</p>'
+			. '<p><strong>Email:</strong> ' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '</p>'
+			. '<p><strong>Subject:</strong> ' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</p>';
 
 		if ($idOrder > 0) {
-			$body .= 'Sipariş No: #' . ($orderReference !== '' ? $orderReference : $idOrder) . "\n";
+			$bodyHtml .= '<p><strong>Order:</strong> #'
+				. htmlspecialchars($orderReference !== '' ? $orderReference : (string) $idOrder, ENT_QUOTES, 'UTF-8')
+				. '</p>';
 		}
 
-		$body .= "\n{$message}";
+		$bodyHtml .= '<hr><p>' . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . '</p>';
 
-		$headers = 'From: noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n"
-			. 'Reply-To: ' . $email . "\r\n"
-			. 'Content-Type: text/plain; charset=UTF-8';
-
-		@mail($to, $subjectLine, $body, $headers);
+		Mail::send($to, $subjectLine, $bodyHtml);
 
 		if (class_exists('AdminNotification', false) || file_exists(dirname(__FILE__) . '/AdminNotification.php')) {
 			if (!class_exists('AdminNotification', false)) {
@@ -391,8 +577,8 @@ class Contact
 				? ($idOrder > 0 ? Admin::url('message') . '?order=' . $idOrder : Admin::url('messages'))
 				: rtrim($domain, '/') . '/admin/messages';
 
-			$title = $idOrder > 0 ? 'Sipariş sorusu' : 'Yeni iletişim mesajı';
-			$summary = $name . ' — ' . ($subject !== '' ? $subject : 'Genel');
+			$title = $idOrder > 0 ? 'Order question' : 'New contact message';
+			$summary = $name . ' — ' . ($subject !== '' ? $subject : 'General');
 
 			AdminNotification::add($title, $summary, $adminLink, 'contact');
 		}
@@ -744,6 +930,8 @@ class Contact
 				'id_message' => (int) $msg['id_message'],
 				'author' => (string) $msg['full_name'],
 				'message' => (string) $msg['message'],
+				'attachment_file' => (string) ($msg['attachment_file'] ?? ''),
+				'attachment_url' => (string) ($msg['attachment_url'] ?? self::getAttachmentUrl((string) ($msg['attachment_file'] ?? ''))),
 				'date_formatted' => $msg['date_formatted'],
 				'date_add' => (string) $msg['date_add'],
 			];
@@ -754,6 +942,8 @@ class Contact
 					'id_message' => (int) $msg['id_message'],
 					'author' => (string) ($reply['admin_name'] ?: 'Admin'),
 					'message' => (string) $reply['message'],
+					'attachment_file' => '',
+					'attachment_url' => '',
 					'date_formatted' => $reply['date_formatted'],
 					'date_add' => (string) $reply['date_add'],
 				];

@@ -23,4 +23,4 @@
 		'readFilter' => $readFilter,
 	]);
 
-	AdminPage::add('messages', 'İletişim Mesajları');
+	AdminPage::add('messages', 'Contact messages');

@@ -22,6 +22,40 @@
 			<span class="dress-mobile-menu__label">{'Home Page'|translate}</span>
 		</a>
 
+		{if $mainMenuItems|default:[]|@count > 0}
+		{foreach $mainMenuItems as $item}
+		{if $item.children|default:[]|@count > 0}
+		<div class="mm-m-group">
+			<div class="mm-m-head">
+				<a href="{$item.url|escape}" class="dress-mobile-menu__item" {if $item.target == '_blank'}target="_blank" rel="noopener"{/if}>
+					<span class="dress-mobile-menu__icon" aria-hidden="true">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+					</span>
+					<span class="dress-mobile-menu__label">{$item.label|escape}</span>
+				</a>
+				<button type="button" class="mm-m-toggle" data-mm-m-toggle aria-expanded="false" aria-label="{$item.label|escape} alt menü">
+					<span class="mm-caret" aria-hidden="true"></span>
+				</button>
+			</div>
+			<div class="mm-m-children">
+				{foreach $item.children as $child}
+				<a href="{$child.url|escape}" class="dress-mobile-menu__item dress-mobile-menu__item--child">
+					<span class="dress-mobile-menu__icon" aria-hidden="true"></span>
+					<span class="dress-mobile-menu__label">{$child.label|escape}</span>
+				</a>
+				{/foreach}
+			</div>
+		</div>
+		{else}
+		<a href="{$item.url|escape}" class="dress-mobile-menu__item" {if $item.target == '_blank'}target="_blank" rel="noopener"{/if}>
+			<span class="dress-mobile-menu__icon" aria-hidden="true">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+			</span>
+			<span class="dress-mobile-menu__label">{$item.label|escape}</span>
+		</a>
+		{/if}
+		{/foreach}
+		{else}
 		{foreach $menuCategories as $cat}
 		<a href="{$domain}{$cat.category_link}" class="dress-mobile-menu__item{if isset($category) && $category.category_link == $cat.category_link} is-active{/if}">
 			<span class="dress-mobile-menu__icon" aria-hidden="true">
@@ -30,6 +64,7 @@
 			<span class="dress-mobile-menu__label">{$cat.category_name|escape}</span>
 		</a>
 		{/foreach}
+		{/if}
 
 		<a href="{$domain}special" class="dress-mobile-menu__item{if $pageName == 'special'} is-active{/if}">
 			<span class="dress-mobile-menu__icon" aria-hidden="true">

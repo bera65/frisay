@@ -9,7 +9,7 @@
 		$postToken = (string) Tools::getValue('token');
 
 		if (!hash_equals($adminToken, $postToken)) {
-			$error = 'Geçersiz istek';
+			$error = adminT('Invalid request');
 		} else {
 			$result = Admin::login(
 				(string) Tools::getValue('email'),
@@ -26,4 +26,4 @@
 	}
 
 	$smarty->assign('loginError', $error);
-	AdminPage::add('login', 'Admin Giriş', true);
+	AdminPage::add('login', 'Admin login', true);
