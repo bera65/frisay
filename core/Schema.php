@@ -60,15 +60,19 @@ class Schema
 					`min_cart` decimal(10,2) NOT NULL DEFAULT 0.00,
 					`max_uses` int(11) NOT NULL DEFAULT 0,
 					`used_count` int(11) NOT NULL DEFAULT 0,
+					`id_user` int(11) NOT NULL DEFAULT 0,
 					`date_from` datetime DEFAULT NULL,
 					`date_to` datetime DEFAULT NULL,
 					`active` tinyint(1) NOT NULL DEFAULT 1,
 					`date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 					PRIMARY KEY (`id_coupon`),
-					UNIQUE KEY `code` (`code`)
+					UNIQUE KEY `code` (`code`),
+					KEY `id_user` (`id_user`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 			);
 		}
+
+		Coupon::ensureSchema();
 
 		$orderCoupon = DB::execute("SHOW COLUMNS FROM `orders` LIKE 'coupon_code'");
 		if (empty($orderCoupon)) {
@@ -90,6 +94,24 @@ class Schema
 
 		self::ensureSetting('THEME', 'blue');
 		self::ensureSetting('MAIL_DRIVER', 'php');
+		self::ensureSetting('MAIL_HEADER', '');
+		self::ensureSetting('MAIL_FOOTER', '');
+		self::ensureSetting('SHOP_ACTIVE', '1');
+		self::ensureSetting('SHOP_MAINTENANCE_MESSAGE', '');
+		self::ensureSetting('SHOP_MAINTENANCE_IPS', '');
+		self::ensureSetting('CONTACT_ADDRESS', '');
+		self::ensureSetting('CONTACT_CITY', '');
+		self::ensureSetting('CONTACT_COUNTRY', '');
+		self::ensureSetting('POSTAL_CODE', '');
+		self::ensureSetting('OPEN_HOUR', '09:00');
+		self::ensureSetting('CLOSE_HOUR', '18:00');
+		self::ensureSetting('FACEBOOK_LINK', '');
+		self::ensureSetting('INSTAGRAM_LINK', '');
+		self::ensureSetting('X_LINK', '');
+		self::ensureSetting('YOUTUBE_LINK', '');
+		self::ensureSetting('LINKEDIN_LINK', '');
+		self::ensureSetting('PINTEREST_LINK', '');
+		self::ensureSetting('TIKTOK_LINK', '');
 		self::ensureSetting('DEFAULT_LANG', 'tr');
 		self::ensureSetting('SHOP_LANGUAGES', 'tr,en');
 		self::ensureSetting('ADMIN_DEFAULT_LANG', 'tr');

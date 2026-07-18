@@ -26,7 +26,7 @@
 				{if !$isNew && $pLink}
 				<a href="{$pLink}" class="btn btn-sm btn-outline-warning" target="_blank" rel="noopener">{'View product'|adminT}</a>
 				{/if}
-				<button type="submit" class="btn btn-dark">
+				<button type="submit" class="btn btn-dark btn-sm">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
 					{'Save'|adminT}
 				</button>
@@ -112,8 +112,9 @@
 						<div class="col-md-3">
 							<label class="form-label">{'Product type'|adminT}</label>
 							<select name="product_type" id="productType" class="form-select">
-								<option value="physical"{if $product.product_type|default:'physical' != 'virtual'} selected{/if}>{'Physical product'|adminT}</option>
-								<option value="virtual"{if $product.product_type|default:'physical' == 'virtual'} selected{/if}>{'Virtual / digital product'|adminT}</option>
+								<option value="physical"{if ($product.product_type|default:'physical') == 'physical'} selected{/if}>{'Physical product'|adminT}</option>
+								<option value="virtual"{if ($product.product_type|default:'physical') == 'virtual'} selected{/if}>{'Virtual / digital product'|adminT}</option>
+								<option value="pack"{if ($product.product_type|default:'physical') == 'pack'} selected{/if}>Set (paket)</option>
 							</select>
 						</div>
 						<div class="col-md-3" id="virtualKindWrap">
@@ -495,6 +496,7 @@
 
 	function refreshVirtualFields() {
 		var isVirtual = typeEl && typeEl.value === 'virtual';
+		var isPack = typeEl && typeEl.value === 'pack';
 		var kind = kindEl ? kindEl.value : '';
 
 		if (kindWrap) kindWrap.style.display = isVirtual ? '' : 'none';
@@ -503,13 +505,16 @@
 		if (filePanel) filePanel.style.display = isVirtual && kind === 'download' ? '' : 'none';
 		if (stockHint) stockHint.style.display = isVirtual ? '' : 'none';
 		if (stockInput) {
-			stockInput.readOnly = isVirtual && kind === 'license';
+			stockInput.readOnly = (isVirtual && kind === 'license') || isPack;
+			stockInput.title = isPack ? 'Set stoğu bileşenlerden hesaplanır' : '';
 		}
 
 		if (window.ProductVariations) {
-			window.ProductVariations.refreshForProductType(isVirtual);
+			window.ProductVariations.refreshForProductType(isVirtual || isPack);
 		}
 	}
+
+	window.refreshVirtualFields = refreshVirtualFields;
 
 	if (typeEl) typeEl.addEventListener('change', refreshVirtualFields);
 	if (kindEl) kindEl.addEventListener('change', refreshVirtualFields);

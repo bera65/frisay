@@ -77,7 +77,7 @@
 				require_once dirname(__DIR__) . '/core/Currency.php';
 			}
 
-			return Currency::format((float) $price);
+			return Currency::formatFromShop((float) $price);
 		}
 		public static function formatNumber($price)
 		{

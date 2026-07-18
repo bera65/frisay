@@ -10,7 +10,7 @@ class PosModule extends ModuleBase
 {
 	public string $name = 'pos';
 	public string $title = 'Point of Sale (Kasa)';
-	public string $version = '1.0.0';
+	public string $version = '1.4.0';
 	public string $description = 'Mağaza içi satış ekranı — PIN veya admin ile giriş';
 	public string $author = 'FShop';
 
@@ -36,11 +36,16 @@ class PosModule extends ModuleBase
 		'lock' => 'api/lock.php',
 		'unlock' => 'api/unlock.php',
 		'prepare-card' => 'api/prepare-card.php',
+		'receipt' => 'api/receipt.php',
 		'login' => 'api/login.php',
 		'logout' => 'api/logout.php',
 	];
 
 	public array $adminStylesheets = ['admin.css'];
+
+	/** POS CSS/JS yalnızca POS şablonlarında yüklenir (getHeadAssets otomatik taramasını kapatır). */
+	public array $frontStylesheets = ['.no-global-assets'];
+	public array $frontScripts = ['.no-global-assets'];
 
 	public const SESSION_AUTH = 'pos_auth';
 	public const SESSION_CART = 'pos_cart';
@@ -57,6 +62,13 @@ class PosModule extends ModuleBase
 	private const SET_ORDER_STATUS = 'POS_ORDER_STATUS';
 	private const SET_STORE_LABEL = 'POS_STORE_LABEL';
 	private const SET_CARD_URL = 'POS_CARD_URL';
+	private const SET_FULLSCREEN_AUTO = 'POS_FULLSCREEN_AUTO';
+	private const SET_HIDE_OUT_OF_STOCK = 'POS_HIDE_OUT_OF_STOCK';
+	private const SET_ALLOW_OUT_OF_STOCK_SALE = 'POS_ALLOW_OUT_OF_STOCK_SALE';
+	private const SET_CARD_ADJ_TYPE = 'POS_CARD_ADJ_TYPE';
+	private const SET_CARD_ADJ_PERCENT = 'POS_CARD_ADJ_PERCENT';
+	private const SET_TRANSFER_ADJ_TYPE = 'POS_TRANSFER_ADJ_TYPE';
+	private const SET_TRANSFER_ADJ_PERCENT = 'POS_TRANSFER_ADJ_PERCENT';
 
 	public function install(): bool
 	{
@@ -64,6 +76,13 @@ class PosModule extends ModuleBase
 		Settings::set(self::SET_ORDER_STATUS, (string) Order::STATUS_DELIVERED);
 		Settings::set(self::SET_STORE_LABEL, 'Mağaza Satış');
 		Settings::set(self::SET_CARD_URL, '');
+		Settings::set(self::SET_FULLSCREEN_AUTO, '0');
+		Settings::set(self::SET_HIDE_OUT_OF_STOCK, '0');
+		Settings::set(self::SET_ALLOW_OUT_OF_STOCK_SALE, '0');
+		Settings::set(self::SET_CARD_ADJ_TYPE, 'none');
+		Settings::set(self::SET_CARD_ADJ_PERCENT, '0');
+		Settings::set(self::SET_TRANSFER_ADJ_TYPE, 'none');
+		Settings::set(self::SET_TRANSFER_ADJ_PERCENT, '0');
 
 		return true;
 	}
@@ -75,8 +94,20 @@ class PosModule extends ModuleBase
 		Settings::set(self::SET_ORDER_STATUS, '');
 		Settings::set(self::SET_STORE_LABEL, '');
 		Settings::set(self::SET_CARD_URL, '');
+		Settings::set(self::SET_FULLSCREEN_AUTO, '0');
+		Settings::set(self::SET_HIDE_OUT_OF_STOCK, '0');
+		Settings::set(self::SET_ALLOW_OUT_OF_STOCK_SALE, '0');
+		Settings::set(self::SET_CARD_ADJ_TYPE, 'none');
+		Settings::set(self::SET_CARD_ADJ_PERCENT, '0');
+		Settings::set(self::SET_TRANSFER_ADJ_TYPE, 'none');
+		Settings::set(self::SET_TRANSFER_ADJ_PERCENT, '0');
 
 		return true;
+	}
+
+	public function boot(): void
+	{
+		$this->registerAdminMenuLink('Point of Sale', 'general', 72, 'pos');
 	}
 
 	public function isEnabled(): bool
@@ -200,8 +231,11 @@ class PosModule extends ModuleBase
 			];
 		}
 
+		$payable = $this->calculatePaymentTotal((float) $cart['subtotal'], self::PAYMENT_CARD);
+
 		$_SESSION[self::SESSION_CARD_PENDING] = [
-			'total' => (float) $cart['subtotal'],
+			'total' => (float) $payable['total'],
+			'subtotal' => (float) $payable['subtotal'],
 			'customer' => $this->getSessionCustomer(),
 			'prepared_at' => time(),
 		];
@@ -258,7 +292,8 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'Kart modülü kullanılamıyor'];
 		}
 
-		$amount = (float) $cart['subtotal'];
+		$payable = $this->calculatePaymentTotal((float) $cart['subtotal'], self::PAYMENT_CARD);
+		$amount = (float) $payable['total'];
 		$bank = $gateway->chargeCard($card, $amount);
 
 		if (empty($bank['success'])) {
@@ -572,6 +607,241 @@ class PosModule extends ModuleBase
 		return $list;
 	}
 
+	/** @return array{success: bool, message: string, customer?: array<string, mixed>, id_user?: int} */
+	public function createCustomer(string $fullName, string $phone, string $email = ''): array
+	{
+		$result = Customer::createByAdmin($fullName, $phone, $email);
+
+		if (empty($result['success'])) {
+			return $result;
+		}
+
+		$idUser = (int) ($result['id_user'] ?? 0);
+
+		return [
+			'success' => true,
+			'message' => (string) ($result['message'] ?? 'Müşteri oluşturuldu'),
+			'id_user' => $idUser,
+			'customer' => [
+				'id_user' => $idUser,
+				'name' => trim($fullName),
+				'phone' => Customer::normalizePhone($phone),
+				'email' => trim(strtolower($email)),
+			],
+		];
+	}
+
+	/** @return array<int, array{label: string, url: string}> */
+	public function getCardUrlSuggestions(): array
+	{
+		global $domain, $adminUrl;
+
+		$base = rtrim((string) $domain, '/');
+		$adminBase = rtrim((string) ($adminUrl ?? $base . '/admin'), '/');
+
+		return [
+			['label' => 'Site ana sayfa', 'url' => $base . '/'],
+			['label' => 'Mağaza POS (vitrin)', 'url' => $base . '/pos'],
+			['label' => 'Admin POS', 'url' => $adminBase . '/pos'],
+		];
+	}
+
+	public function resolveCardUrl(): string
+	{
+		return trim((string) Settings::get(self::SET_CARD_URL, ''));
+	}
+
+	public function isFullscreenAuto(): bool
+	{
+		return Settings::get(self::SET_FULLSCREEN_AUTO, '0') === '1';
+	}
+
+	public function hideOutOfStock(): bool
+	{
+		return Settings::get(self::SET_HIDE_OUT_OF_STOCK, '0') === '1';
+	}
+
+	public function allowOutOfStockSale(): bool
+	{
+		return Settings::get(self::SET_ALLOW_OUT_OF_STOCK_SALE, '0') === '1';
+	}
+
+	private function normalizeAdjustmentType(string $type): string
+	{
+		$type = strtolower(trim($type));
+
+		return in_array($type, ['discount', 'commission'], true) ? $type : 'none';
+	}
+
+	private function getAdjustmentPercent(string $settingKey): float
+	{
+		$value = (float) str_replace(',', '.', (string) Settings::get($settingKey, '0'));
+
+		return max(0.0, min(100.0, round($value, 2)));
+	}
+
+	/** @return array<string, array{type: string, percent: float}> */
+	public function getPaymentAdjustmentConfig(): array
+	{
+		return [
+			self::PAYMENT_CASH => ['type' => 'none', 'percent' => 0.0],
+			self::PAYMENT_CARD => [
+				'type' => $this->normalizeAdjustmentType((string) Settings::get(self::SET_CARD_ADJ_TYPE, 'none')),
+				'percent' => $this->getAdjustmentPercent(self::SET_CARD_ADJ_PERCENT),
+			],
+			self::PAYMENT_TRANSFER => [
+				'type' => $this->normalizeAdjustmentType((string) Settings::get(self::SET_TRANSFER_ADJ_TYPE, 'none')),
+				'percent' => $this->getAdjustmentPercent(self::SET_TRANSFER_ADJ_PERCENT),
+			],
+		];
+	}
+
+	/** @return array<string, mixed> */
+	public function calculatePaymentTotal(float $subtotal, string $paymentMethod): array
+	{
+		$subtotal = max(0.0, round($subtotal, 2));
+		$config = $this->getPaymentAdjustmentConfig();
+		$rule = $config[$paymentMethod] ?? ['type' => 'none', 'percent' => 0.0];
+		$type = (string) ($rule['type'] ?? 'none');
+		$percent = (float) ($rule['percent'] ?? 0.0);
+		$adjustment = 0.0;
+		$label = '';
+
+		if ($percent > 0 && $type === 'discount') {
+			$adjustment = -round($subtotal * $percent / 100, 2);
+			$label = 'Havale indirimi';
+			if ($paymentMethod === self::PAYMENT_CARD) {
+				$label = 'Kart indirimi';
+			}
+			$label .= ' (%' . rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.') . ')';
+		} elseif ($percent > 0 && $type === 'commission') {
+			$adjustment = round($subtotal * $percent / 100, 2);
+			$label = 'Kart komisyonu';
+			if ($paymentMethod === self::PAYMENT_TRANSFER) {
+				$label = 'Havale komisyonu';
+			}
+			$label .= ' (%' . rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.') . ')';
+		}
+
+		$total = max(0.0, round($subtotal + $adjustment, 2));
+
+		return [
+			'subtotal' => $subtotal,
+			'subtotal_formatted' => Tools::displayPrice($subtotal),
+			'adjustment' => $adjustment,
+			'adjustment_formatted' => Tools::displayPrice(abs($adjustment)),
+			'adjustment_signed_formatted' => ($adjustment >= 0 ? '+' : '−') . Tools::displayPrice(abs($adjustment)),
+			'adjustment_label' => $label,
+			'adjustment_type' => $type,
+			'adjustment_percent' => $percent,
+			'total' => $total,
+			'total_formatted' => Tools::displayPrice($total),
+		];
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	private function queryProductsRaw(int $idCategory, string $query, int $limit, int $offset): array
+	{
+		if ($query !== '' && Tools::strlen($query) >= 2) {
+			return Product::search($query, $limit, $offset, 'name_asc');
+		}
+
+		return Product::getActiveList($idCategory > 0 ? $idCategory : null, $limit, $offset, 'name_asc');
+	}
+
+	private function countProductsRaw(int $idCategory, string $query): int
+	{
+		if ($query !== '' && Tools::strlen($query) >= 2) {
+			return Product::countSearch($query);
+		}
+
+		return Product::countActive($idCategory > 0 ? $idCategory : null);
+	}
+
+	/** @param array<string, mixed> $product */
+	public function isProductInStockForPos(array $product): bool
+	{
+		return !empty($product['in_stock']);
+	}
+
+	/**
+	 * @return array{products: array<int, array<string, mixed>>, total: int}
+	 */
+	public function listProductsForPos(int $idCategory, string $query, int $page, int $limit): array
+	{
+		$page = max(1, $page);
+		$limit = max(1, min(48, $limit));
+		$offset = ($page - 1) * $limit;
+
+		if (!$this->hideOutOfStock()) {
+			$rows = $this->queryProductsRaw($idCategory, $query, $limit, $offset);
+
+			return [
+				'products' => $this->formatProductsForPos($rows),
+				'total' => $this->countProductsRaw($idCategory, $query),
+			];
+		}
+
+		$batchSize = max($limit * 4, 40);
+		$scanOffset = 0;
+		$inStockRows = [];
+		$needCount = $offset + $limit;
+
+		while (count($inStockRows) < $needCount) {
+			$batch = $this->queryProductsRaw($idCategory, $query, $batchSize, $scanOffset);
+
+			if ($batch === []) {
+				break;
+			}
+
+			foreach ($batch as $product) {
+				if ($this->isProductInStockForPos($product)) {
+					$inStockRows[] = $product;
+				}
+			}
+
+			$scanOffset += $batchSize;
+
+			if (count($batch) < $batchSize) {
+				break;
+			}
+		}
+
+		return [
+			'products' => $this->formatProductsForPos(array_slice($inStockRows, $offset, $limit)),
+			'total' => $this->countInStockProductsForPos($idCategory, $query),
+		];
+	}
+
+	public function countInStockProductsForPos(int $idCategory, string $query): int
+	{
+		$batchSize = 100;
+		$scanOffset = 0;
+		$count = 0;
+
+		while (true) {
+			$batch = $this->queryProductsRaw($idCategory, $query, $batchSize, $scanOffset);
+
+			if ($batch === []) {
+				break;
+			}
+
+			foreach ($batch as $product) {
+				if ($this->isProductInStockForPos($product)) {
+					$count++;
+				}
+			}
+
+			$scanOffset += $batchSize;
+
+			if (count($batch) < $batchSize) {
+				break;
+			}
+		}
+
+		return $count;
+	}
+
 	/** @return array<string, mixed> */
 	public function getTodayStats(): array
 	{
@@ -697,6 +967,27 @@ class PosModule extends ModuleBase
 		}
 
 		Settings::set(self::SET_CARD_URL, $cardUrl);
+		Settings::set(self::SET_FULLSCREEN_AUTO, !empty($post['pos_fullscreen_auto']) ? '1' : '0');
+		Settings::set(self::SET_HIDE_OUT_OF_STOCK, !empty($post['pos_hide_out_of_stock']) ? '1' : '0');
+		Settings::set(self::SET_ALLOW_OUT_OF_STOCK_SALE, !empty($post['pos_allow_out_of_stock_sale']) ? '1' : '0');
+
+		$cardAdjType = $this->normalizeAdjustmentType((string) ($post['pos_card_adj_type'] ?? 'none'));
+		$transferAdjType = $this->normalizeAdjustmentType((string) ($post['pos_transfer_adj_type'] ?? 'none'));
+		$cardAdjPercent = max(0.0, min(100.0, (float) str_replace(',', '.', (string) ($post['pos_card_adj_percent'] ?? '0'))));
+		$transferAdjPercent = max(0.0, min(100.0, (float) str_replace(',', '.', (string) ($post['pos_transfer_adj_percent'] ?? '0'))));
+
+		if ($cardAdjType === 'none') {
+			$cardAdjPercent = 0.0;
+		}
+
+		if ($transferAdjType === 'none') {
+			$transferAdjPercent = 0.0;
+		}
+
+		Settings::set(self::SET_CARD_ADJ_TYPE, $cardAdjType);
+		Settings::set(self::SET_CARD_ADJ_PERCENT, (string) $cardAdjPercent);
+		Settings::set(self::SET_TRANSFER_ADJ_TYPE, $transferAdjType);
+		Settings::set(self::SET_TRANSFER_ADJ_PERCENT, (string) $transferAdjPercent);
 
 		return ['success' => true, 'message' => 'Ayarlar kaydedildi'];
 	}
@@ -734,7 +1025,15 @@ class PosModule extends ModuleBase
 			'posStatusOptions' => $statusOptions,
 			'posFrontUrl' => rtrim($domain, '/') . '/pos',
 			'posAdminUrl' => rtrim($adminUrl, '/') . '/pos',
-			'posCardUrl' => Settings::get(self::SET_CARD_URL, ''),
+			'posCardUrl' => $this->resolveCardUrl(),
+			'posCardUrlSuggestions' => $this->getCardUrlSuggestions(),
+			'posFullscreenAuto' => $this->isFullscreenAuto(),
+			'posHideOutOfStock' => $this->hideOutOfStock(),
+			'posAllowOutOfStockSale' => $this->allowOutOfStockSale(),
+			'posCardAdjType' => $this->normalizeAdjustmentType((string) Settings::get(self::SET_CARD_ADJ_TYPE, 'none')),
+			'posCardAdjPercent' => $this->getAdjustmentPercent(self::SET_CARD_ADJ_PERCENT),
+			'posTransferAdjType' => $this->normalizeAdjustmentType((string) Settings::get(self::SET_TRANSFER_ADJ_TYPE, 'none')),
+			'posTransferAdjPercent' => $this->getAdjustmentPercent(self::SET_TRANSFER_ADJ_PERCENT),
 			'posFlash' => $flash,
 			'posFlashType' => $flashType,
 		]);
@@ -813,7 +1112,11 @@ class PosModule extends ModuleBase
 			'posStoreLabel' => Settings::get(self::SET_STORE_LABEL, 'Mağaza Satış'),
 			'posCssUrl' => $this->getAssetUrl('css/pos.css'),
 			'posJsUrl' => $this->getAssetUrl('js/pos.js'),
-			'posCardUrl' => Settings::get(self::SET_CARD_URL, ''),
+			'posCardUrl' => $this->resolveCardUrl(),
+			'posFullscreenAuto' => $this->isFullscreenAuto(),
+			'posHideOutOfStock' => $this->hideOutOfStock(),
+			'posAllowOutOfStockSale' => $this->allowOutOfStockSale(),
+			'posPaymentAdjustmentsJson' => json_encode($this->getPaymentAdjustmentConfig(), JSON_UNESCAPED_UNICODE),
 			'posIsAdmin' => $isAdminContext,
 			'posExitUrl' => $exitUrl,
 			'posAdminUrl' => rtrim($adminUrl, '/'),
@@ -1058,8 +1361,10 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'Geçersiz varyasyon'];
 		}
 
-		if (!Product::isInStock($product, $qty, $idVariation)) {
-			return ['success' => false, 'message' => 'Yetersiz stok'];
+		if (!$this->allowOutOfStockSale()) {
+			if (!Product::isInStock($product, $qty, $idVariation)) {
+				return ['success' => false, 'message' => 'Yetersiz stok'];
+			}
 		}
 
 		$key = $this->cartItemKey($idProduct, $idVariation);
@@ -1075,7 +1380,7 @@ class PosModule extends ModuleBase
 			$newQty = (int) $cart[$key]['qty'] + $qty;
 		}
 
-		if (!Product::isInStock($product, $newQty, $idVariation)) {
+		if (!$this->allowOutOfStockSale() && !Product::isInStock($product, $newQty, $idVariation)) {
 			return ['success' => false, 'message' => 'Yetersiz stok'];
 		}
 
@@ -1133,7 +1438,7 @@ class PosModule extends ModuleBase
 			return ['success' => false, 'message' => 'Ürün artık mevcut değil'];
 		}
 
-		if (!Product::isInStock($product, $qty, (int) ($item['id_variation'] ?? 0))) {
+		if (!$this->allowOutOfStockSale() && !Product::isInStock($product, $qty, (int) ($item['id_variation'] ?? 0))) {
 			return ['success' => false, 'message' => 'Yetersiz stok'];
 		}
 
@@ -1239,8 +1544,16 @@ class PosModule extends ModuleBase
 		$note = trim(strip_tags($note));
 		$posNote = '[POS] ' . self::getPaymentLabel($payment);
 
+		$subtotal = (float) $cart['subtotal'];
+		$payable = $this->calculatePaymentTotal($subtotal, $payment);
+		$orderTotal = (float) $payable['total'];
+
+		if (abs((float) $payable['adjustment']) > 0.009 && ($payable['adjustment_label'] ?? '') !== '') {
+			$posNote .= ' | ' . $payable['adjustment_label'] . ': ' . $payable['adjustment_signed_formatted'];
+		}
+
 		if ($payment === self::PAYMENT_CASH && $cashPaid > 0) {
-			$change = max(0.0, $cashPaid - (float) $cart['subtotal']);
+			$change = max(0.0, $cashPaid - $orderTotal);
 			$posNote .= ' | Alınan: ' . Tools::displayPrice($cashPaid)
 				. ' | Para üstü: ' . Tools::displayPrice($change);
 		}
@@ -1259,12 +1572,14 @@ class PosModule extends ModuleBase
 
 		$subtotal = (float) $cart['subtotal'];
 
-		if ($payment === self::PAYMENT_CASH && $cashPaid > 0 && $cashPaid + 0.009 < $subtotal) {
+		if ($payment === self::PAYMENT_CASH && $cashPaid > 0 && $cashPaid + 0.009 < $orderTotal) {
 			return ['success' => false, 'message' => 'Alınan tutar toplamdan az'];
 		}
 
 		$reference = Order::reserveReference();
 		global $db;
+
+		$allowOutOfStock = $this->allowOutOfStockSale();
 
 		try {
 			$db->beginTransaction();
@@ -1273,12 +1588,20 @@ class PosModule extends ModuleBase
 				$idVariation = (int) ($item['id_variation'] ?? 0);
 				$product = Product::getById((int) $item['id_product']);
 
-				if (!$product || !Product::isInStock($product, (int) $item['qty'], $idVariation)) {
+				if (!$product) {
+					throw new RuntimeException('Ürün bulunamadı: ' . ($item['product_name'] ?? ''));
+				}
+
+				if (!$allowOutOfStock && !Product::isInStock($product, (int) $item['qty'], $idVariation)) {
 					throw new RuntimeException('Stok yetersiz: ' . ($item['product_name'] ?? ''));
 				}
 
-				if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation)) {
-					throw new RuntimeException('Stok güncellenemedi: ' . ($item['product_name'] ?? ''));
+				if (!$allowOutOfStock) {
+					if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation)) {
+						throw new RuntimeException('Stok güncellenemedi: ' . ($item['product_name'] ?? ''));
+					}
+				} else {
+					Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation);
 				}
 			}
 
@@ -1298,7 +1621,7 @@ class PosModule extends ModuleBase
 				'coupon_discount' => 0,
 				'subtotal' => $subtotal,
 				'shipping' => 0,
-				'total' => $subtotal,
+				'total' => $orderTotal,
 			]);
 
 			if (!$idOrder) {
@@ -1348,16 +1671,165 @@ class PosModule extends ModuleBase
 			}
 		}
 
+		$change = $payment === self::PAYMENT_CASH && $cashPaid > 0
+			? max(0.0, $cashPaid - $orderTotal)
+			: 0.0;
+
 		return [
 			'success' => true,
 			'message' => 'Satış tamamlandı',
 			'id_order' => (int) $idOrder,
 			'reference' => $reference,
-			'total' => $subtotal,
-			'total_formatted' => Tools::displayPrice($subtotal),
+			'total' => $orderTotal,
+			'total_formatted' => Tools::displayPrice($orderTotal),
 			'payment_label' => self::getPaymentLabel($payment),
+			'payment_method' => $payment,
 			'cart' => $this->getCartSummary(),
+			'receipt' => $this->buildReceiptPayload(
+				$reference,
+				(int) $idOrder,
+				$cart['items'],
+				$customerName,
+				$customerPhone,
+				$payment,
+				$subtotal,
+				$cashPaid,
+				$change,
+				$payable
+			),
 		];
+	}
+
+	/** @param array<string, mixed>|null $payable */
+	public function buildReceiptPayload(
+		string $reference,
+		int $idOrder,
+		array $cartItems,
+		string $customerName,
+		string $customerPhone,
+		string $payment,
+		float $subtotal,
+		float $cashPaid = 0.0,
+		float $change = 0.0,
+		?array $payable = null
+	): array {
+		$payable = $payable ?? $this->calculatePaymentTotal($subtotal, $payment);
+		$items = [];
+
+		foreach ($cartItems as $item) {
+			$items[] = [
+				'product_name' => (string) ($item['product_name'] ?? ''),
+				'variation_label' => (string) ($item['variation_label'] ?? ''),
+				'qty' => (int) ($item['qty'] ?? 0),
+				'price_formatted' => (string) ($item['price_formatted'] ?? ''),
+				'line_total_formatted' => (string) ($item['line_total_formatted'] ?? ''),
+			];
+		}
+
+		return [
+			'reference' => $reference,
+			'id_order' => $idOrder,
+			'customer_name' => $customerName,
+			'customer_phone' => $customerPhone,
+			'payment_method' => $payment,
+			'payment_label' => self::getPaymentLabel($payment),
+			'items' => $items,
+			'item_count' => array_sum(array_column($items, 'qty')),
+			'subtotal' => (float) $payable['subtotal'],
+			'subtotal_formatted' => (string) $payable['subtotal_formatted'],
+			'adjustment' => (float) ($payable['adjustment'] ?? 0),
+			'adjustment_formatted' => (string) ($payable['adjustment_formatted'] ?? ''),
+			'adjustment_signed_formatted' => (string) ($payable['adjustment_signed_formatted'] ?? ''),
+			'adjustment_label' => (string) ($payable['adjustment_label'] ?? ''),
+			'total' => (float) $payable['total'],
+			'total_formatted' => (string) $payable['total_formatted'],
+			'cash_paid' => $cashPaid,
+			'cash_paid_formatted' => $cashPaid > 0 ? Tools::displayPrice($cashPaid) : '',
+			'change' => $change,
+			'change_formatted' => $change > 0 ? Tools::displayPrice($change) : '',
+			'date' => date('d.m.Y H:i'),
+			'store_label' => (string) Settings::get(self::SET_STORE_LABEL, 'Mağaza Satış'),
+			'cashier' => $this->getTerminalUserName(),
+			'site_name' => (string) Settings::get('SITE_NAME', 'FShop'),
+		];
+	}
+
+	public function getReceiptByReference(string $reference): ?array
+	{
+		$reference = trim($reference);
+
+		if ($reference === '' || !Order::isValidPublicReference($reference)) {
+			return null;
+		}
+
+		$rows = DB::execute(
+			'SELECT * FROM orders WHERE reference = ? AND note LIKE ? LIMIT 1',
+			[$reference, '[POS]%']
+		);
+		$order = ($rows && isset($rows[0])) ? $rows[0] : null;
+
+		if (!$order) {
+			return null;
+		}
+
+		$idOrder = (int) ($order['id_order'] ?? 0);
+		$details = DB::execute(
+			'SELECT product_name, variation_label, price, qty, total FROM order_detail WHERE id_order = ? ORDER BY id_order_detail ASC',
+			[$idOrder]
+		) ?: [];
+
+		$cartItems = [];
+
+		foreach ($details as $row) {
+			$price = (float) ($row['price'] ?? 0);
+			$qty = (int) ($row['qty'] ?? 0);
+			$lineTotal = (float) ($row['total'] ?? 0);
+
+			$cartItems[] = [
+				'product_name' => (string) ($row['product_name'] ?? ''),
+				'variation_label' => (string) ($row['variation_label'] ?? ''),
+				'qty' => $qty,
+				'price_formatted' => Tools::displayPrice($price),
+				'line_total_formatted' => Tools::displayPrice($lineTotal),
+			];
+		}
+
+		$payment = (string) ($order['payment_method'] ?? '');
+		$orderSubtotal = (float) ($order['subtotal'] ?? 0);
+		$orderTotal = (float) ($order['total'] ?? 0);
+		$payable = $this->calculatePaymentTotal($orderSubtotal, $payment);
+		if (abs($orderTotal - (float) $payable['total']) > 0.02) {
+			$payable['total'] = $orderTotal;
+			$payable['total_formatted'] = Tools::displayPrice($orderTotal);
+			$payable['adjustment'] = round($orderTotal - $orderSubtotal, 2);
+			$payable['adjustment_formatted'] = Tools::displayPrice(abs((float) $payable['adjustment']));
+			$sign = ((float) $payable['adjustment']) >= 0 ? '+' : '−';
+			$payable['adjustment_signed_formatted'] = $sign . Tools::displayPrice(abs((float) $payable['adjustment']));
+		}
+		$cashPaid = 0.0;
+		$change = 0.0;
+		$note = (string) ($order['note'] ?? '');
+
+		if ($payment === self::PAYMENT_CASH && preg_match('/Alınan:\s*([^\|]+)/u', $note, $m)) {
+			$cashPaid = (float) preg_replace('/[^\d,.-]/', '', str_replace('.', '', str_replace(',', '.', trim($m[1]))));
+		}
+
+		if ($payment === self::PAYMENT_CASH && preg_match('/Para üstü:\s*(.+)$/u', $note, $m)) {
+			$change = (float) preg_replace('/[^\d,.-]/', '', str_replace('.', '', str_replace(',', '.', trim($m[1]))));
+		}
+
+		return $this->buildReceiptPayload(
+			$reference,
+			$idOrder,
+			$cartItems,
+			(string) ($order['customer_name'] ?? ''),
+			(string) ($order['customer_phone'] ?? ''),
+			$payment,
+			$orderSubtotal,
+			$cashPaid,
+			$change,
+			$payable
+		);
 	}
 
 	public function requireApiAuth(): void

@@ -38,6 +38,18 @@
 					<option value="0"{if !$coupon.active} selected{/if}>{'Inactive'|adminT}</option>
 				</select>
 			</div>
+			<div class="col-md-8">
+				<label class="form-label">{'Customer (optional)'|adminT}</label>
+				<select name="id_user" class="form-select">
+					<option value="0">{'All customers'|adminT}</option>
+					{foreach $customerOptions as $customer}
+					<option value="{$customer.id_user}"{if $coupon.id_user == $customer.id_user} selected{/if}>
+						{$customer.user_full_name|escape}{if $customer.email} ({$customer.email|escape}){/if}
+					</option>
+					{/foreach}
+				</select>
+				<div class="form-text">{'Leave empty to allow any customer. Bound coupons require login.'|adminT}</div>
+			</div>
 			<div class="col-md-6">
 				<label class="form-label">{'Start (optional)'|adminT}</label>
 				<input type="datetime-local" name="date_from" class="form-control" value="{$coupon.date_from_input|escape}">

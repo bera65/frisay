@@ -1,3 +1,12 @@
+{if $fthemeHomeRenderUnits|default:[]|@count > 0}
+{foreach $fthemeHomeRenderUnits as $unit}
+{if $unit.type == 'banner_row'}
+{include file='./partials/ftheme-banner-row.tpl' unit=$unit}
+{else}
+{include file='./partials/ftheme-block.tpl' block=$unit.block}
+{/if}
+{/foreach}
+{else}
 {if $hooks.home_slider}
 <section class="fy-container">
 	{$hooks.home_slider nofilter}
@@ -40,4 +49,5 @@
 		{$homeText nofilter}
 	</div>
 </section>
+{/if}
 {/if}

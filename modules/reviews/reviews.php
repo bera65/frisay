@@ -5,19 +5,20 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 }
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
+require_once __DIR__ . '/lib/ReviewsInviteService.php';
 
 class ReviewsModule extends ModuleBase
 {
 	public string $name = 'reviews';
 	public string $title = 'Ürün Yorumları';
-	public string $version = '1.0.0';
-	public string $description = 'Ürün sayfasında müşteri yorumları ve puanlama';
+	public string $version = '1.1.0';
+	public string $description = 'Ürün yorumları, puanlama ve teslim sonrası yorum davet e-postası';
 	public string $author = 'FShop';
 
 	public array $displayHooks = [
-		'product_tab' 			=> 'Ürün Tabı',
-		'product_tab_content' 	=> 'Ürün sayfası',
-		'product_inf' 			=> 'Yıldız gösterme',
+		'product_tab' => 'Ürün Tabı',
+		'product_tab_content' => 'Ürün sayfası',
+		'product_inf' => 'Yıldız gösterme',
 	];
 
 	public array $defaultDisplayHooks = ['product_tab', 'product_tab_content', 'product_inf'];
@@ -27,11 +28,16 @@ class ReviewsModule extends ModuleBase
 
 	public array $apiActions = [
 		'submit' => 'api/submit.php',
+		'cron' => 'api/cron.php',
 	];
 
 	public function install(): bool
 	{
-		return $this->runSqlFile('install.sql');
+		$ok = $this->runSqlFile('install.sql');
+		ReviewsInviteService::ensureSchema();
+		ReviewsInviteService::ensureDefaultSettings();
+
+		return $ok;
 	}
 
 	public function uninstall(): bool
@@ -39,11 +45,35 @@ class ReviewsModule extends ModuleBase
 		return $this->runSqlFile('uninstall.sql');
 	}
 
+	public function boot(): void
+	{
+		ReviewsInviteService::ensureSchema();
+		ReviewsInviteService::ensureDefaultSettings();
+
+		Module::registerHook('order.updated', function ($order, $oldStatus): void {
+			if (!is_array($order)) {
+				return;
+			}
+
+			ReviewsInviteService::handleOrderStatusChange(
+				$order,
+				(int) $oldStatus,
+				(int) ($order['status'] ?? 0)
+			);
+		});
+	}
+
 	public function adminPage(): void
 	{
-		global $smarty, $adminToken;
+		global $smarty, $adminToken, $domain;
 
 		$flash = '';
+		$flashType = 'success';
+		$tab = (string) Tools::getValue('tab', 'reviews');
+
+		if (!in_array($tab, ['reviews', 'invite', 'queue'], true)) {
+			$tab = 'reviews';
+		}
 
 		if (Tools::isSubmit('reviewAction')) {
 			$postToken = (string) Tools::getValue('token');
@@ -67,6 +97,48 @@ class ReviewsModule extends ModuleBase
 				}
 
 				$flash = $result['message'];
+				$flashType = !empty($result['success']) ? 'success' : 'danger';
+			}
+		}
+
+		if (Tools::isSubmit('saveReviewInviteSettings')) {
+			$postToken = (string) Tools::getValue('token');
+
+			if (!hash_equals($adminToken, $postToken)) {
+				$flash = 'Geçersiz istek';
+				$flashType = 'danger';
+			} else {
+				$result = ReviewsInviteService::saveSettings([
+					'enabled' => Tools::getValue('invite_enabled'),
+					'delay_days' => Tools::getValue('delay_days'),
+					'subject' => Tools::getValue('email_subject'),
+					'body' => Tools::getValue('email_body'),
+					'coupon_enabled' => Tools::getValue('coupon_enabled'),
+					'coupon_type' => Tools::getValue('coupon_type'),
+					'coupon_value' => Tools::getValue('coupon_value'),
+					'coupon_min_cart' => Tools::getValue('coupon_min_cart'),
+					'coupon_valid_days' => Tools::getValue('coupon_valid_days'),
+					'coupon_prefix' => Tools::getValue('coupon_prefix'),
+				]);
+				$flash = $result['message'];
+				$flashType = !empty($result['success']) ? 'success' : 'danger';
+				$tab = 'invite';
+			}
+		}
+
+		if (Tools::isSubmit('runReviewInviteCron')) {
+			$postToken = (string) Tools::getValue('token');
+
+			if (hash_equals($adminToken, $postToken)) {
+				$batch = ReviewsInviteService::processPendingBatch(50);
+				$flash = $batch['processed'] . ' kayıt işlendi — '
+					. $batch['sent'] . ' gönderildi, '
+					. $batch['failed'] . ' hata, '
+					. $batch['skipped'] . ' atlandı';
+				$tab = 'queue';
+			} else {
+				$flash = 'Geçersiz istek';
+				$flashType = 'danger';
 			}
 		}
 
@@ -78,15 +150,34 @@ class ReviewsModule extends ModuleBase
 			$total,
 			$currentPage,
 			$perPage,
-			Admin::url($this->getAdminSlug()) . '?filter=' . rawurlencode($filter)
+			Admin::url($this->getAdminSlug()) . '?tab=reviews&filter=' . rawurlencode($filter)
 		);
 
+		$shopToken = (string) Settings::get('SHOP_TOKEN');
+		$inviteSettings = ReviewsInviteService::getSettings();
+
 		$smarty->assign([
+			'tab' => $tab,
 			'reviews' => self::getAdminList($filter, $perPage, $pagination['offset']),
 			'pagination' => $pagination,
 			'filter' => $filter,
 			'pendingCount' => self::countAdmin('pending'),
 			'flash' => $flash,
+			'flashType' => $flashType,
+			'inviteSettings' => $inviteSettings,
+			'queueRows' => ReviewsInviteService::getQueueList(150),
+			'queueStats' => ReviewsInviteService::getQueueStats(),
+			'cronUrl' => rtrim($domain, '/') . '/api/module.php?m=reviews&action=cron&token=' . rawurlencode($shopToken),
+			'adminUseEditor' => $tab === 'invite',
+			'placeholders' => [
+				'{customer_name}',
+				'{customer_email}',
+				'{order_reference}',
+				'{products_list}',
+				'{coupon_code}',
+				'{coupon_info}',
+				'{site_name}',
+			],
 		]);
 	}
 

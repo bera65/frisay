@@ -61,7 +61,73 @@
 			<div class="col-md-12">
 				<label class="form-label" for="pos_card_url">Kart POS terminal URL (isteğe bağlı)</label>
 				<input type="url" class="form-control" id="pos_card_url" name="pos_card_url" value="{$posCardUrl|escape}" placeholder="https://...">
-				<div class="form-text">Kart sekmesinde "POS Terminaline Git" butonu bu adrese yönlendirir (harici sanal POS, banka terminali vb.).</div>
+				{if $posCardUrlSuggestions|@count}
+				<div class="d-flex flex-wrap gap-2 mt-2">
+					{foreach $posCardUrlSuggestions as $sug}
+					<button type="button" class="btn btn-outline-secondary btn-sm pos-url-pick" data-url="{$sug.url|escape}">{$sug.label|escape}</button>
+					{/foreach}
+				</div>
+				{/if}
+				<div class="form-text">Kart sekmesinde "POS Terminaline Git" butonu bu adrese yönlendirir. Yukarıdaki kısayollardan mevcut site adresinizi seçebilirsiniz.</div>
+			</div>
+
+			<div class="col-md-4">
+				<label class="form-label">Kasa ekranı</label>
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" name="pos_fullscreen_auto" id="pos_fullscreen_auto" value="1"{if $posFullscreenAuto} checked{/if}>
+					<label class="form-check-label" for="pos_fullscreen_auto">Açılışta tam ekran</label>
+				</div>
+				<div class="form-text">Kasa açıldığında tarayıcı tam ekran moduna geçer (kullanıcı istediğinde çıkabilir).</div>
+			</div>
+
+			<div class="col-md-12">
+				<label class="form-label">Stok kuralları</label>
+				<div class="border rounded p-3 bg-light">
+					<div class="form-check form-switch mb-2">
+						<input class="form-check-input" type="checkbox" name="pos_hide_out_of_stock" id="pos_hide_out_of_stock" value="1"{if $posHideOutOfStock} checked{/if}>
+						<label class="form-check-label" for="pos_hide_out_of_stock">Stoğu olmayan ürünleri gösterme</label>
+					</div>
+					<div class="form-text mb-3">Açıksa kasa ürün listesinde stokta olmayan ürünler hiç listelenmez (varyasyonlu ürünlerde en az bir varyasyonda stok varsa gösterilir).</div>
+					<div class="form-check form-switch mb-0">
+						<input class="form-check-input" type="checkbox" name="pos_allow_out_of_stock_sale" id="pos_allow_out_of_stock_sale" value="1"{if $posAllowOutOfStockSale} checked{/if}>
+						<label class="form-check-label" for="pos_allow_out_of_stock_sale">Stoğu olmayan ürünün satışına izin ver</label>
+					</div>
+					<div class="form-text mb-0">Açıksa stok 0 olsa bile sepete ekleme ve satış tamamlanabilir. Kapalıysa stokta olmayan ürünler soluk görünür ve tıklanamaz.</div>
+				</div>
+			</div>
+
+			<div class="col-md-12">
+				<label class="form-label">Ödeme yöntemi fiyat ayarları</label>
+				<div class="border rounded p-3 bg-light">
+					<div class="row g-3">
+						<div class="col-md-6">
+							<label class="form-label" for="pos_card_adj_type">Kredi kartı</label>
+							<div class="input-group">
+								<select class="form-select" id="pos_card_adj_type" name="pos_card_adj_type">
+									<option value="none"{if $posCardAdjType == 'none'} selected{/if}>Yok</option>
+									<option value="discount"{if $posCardAdjType == 'discount'} selected{/if}>İndirim</option>
+									<option value="commission"{if $posCardAdjType == 'commission'} selected{/if}>Komisyon</option>
+								</select>
+								<input type="number" class="form-control" id="pos_card_adj_percent" name="pos_card_adj_percent" min="0" max="100" step="0.01" value="{$posCardAdjPercent|string_format:'%.2f'}" placeholder="%">
+								<span class="input-group-text">%</span>
+							</div>
+							<div class="form-text">Örn. %5 komisyon → sepet 100₺ ise kartla 105₺ tahsil edilir.</div>
+						</div>
+						<div class="col-md-6">
+							<label class="form-label" for="pos_transfer_adj_type">Havale</label>
+							<div class="input-group">
+								<select class="form-select" id="pos_transfer_adj_type" name="pos_transfer_adj_type">
+									<option value="none"{if $posTransferAdjType == 'none'} selected{/if}>Yok</option>
+									<option value="discount"{if $posTransferAdjType == 'discount'} selected{/if}>İndirim</option>
+									<option value="commission"{if $posTransferAdjType == 'commission'} selected{/if}>Komisyon</option>
+								</select>
+								<input type="number" class="form-control" id="pos_transfer_adj_percent" name="pos_transfer_adj_percent" min="0" max="100" step="0.01" value="{$posTransferAdjPercent|string_format:'%.2f'}" placeholder="%">
+								<span class="input-group-text">%</span>
+							</div>
+							<div class="form-text">Örn. %3 indirim → sepet 100₺ ise havalede 97₺ ödenir.</div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="col-md-6">
@@ -81,3 +147,11 @@
 		</div>
 	</form>
 </div>
+<script>
+document.querySelectorAll('.pos-url-pick').forEach(function (btn) {
+	btn.addEventListener('click', function () {
+		var input = document.getElementById('pos_card_url');
+		if (input) input.value = btn.getAttribute('data-url') || '';
+	});
+});
+</script>

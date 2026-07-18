@@ -254,26 +254,46 @@ class Category
 	{
 		Lang::ensureSchema();
 
+		$defaultLang = Lang::getDefault();
+
 		foreach (Lang::getAvailable() as $lang) {
-			$entry = is_array($langData[$lang] ?? null) ? $langData[$lang] : [];
+			if (!array_key_exists($lang, $langData)) {
+				continue;
+			}
+
+			$entry = is_array($langData[$lang]) ? $langData[$lang] : [];
 			$name = trim((string) ($entry['category_name'] ?? ''));
 			$link = trim((string) ($entry['category_link'] ?? ''));
+			$metaTitle = trim(strip_tags((string) ($entry['meta_title'] ?? '')));
+			$metaDescription = trim(strip_tags((string) ($entry['meta_description'] ?? '')));
+
+			if ($lang !== $defaultLang) {
+				$hasContent = $name !== '' || $link !== '' || $metaTitle !== '' || $metaDescription !== '';
+
+				if (!$hasContent) {
+					continue;
+				}
+			}
 
 			if ($link === '' && $name !== '') {
 				$link = Tools::createSlug($name);
-			} else {
+			} elseif ($link !== '') {
 				$link = Tools::createSlug($link);
 			}
 
-			if ($link !== '' && !self::isLinkUnique($link, $idCategory, $lang)) {
+			if ($link === '') {
+				continue;
+			}
+
+			if (!self::isLinkUnique($link, $idCategory, $lang)) {
 				return self::fail('Bu URL slug zaten kullanılıyor (' . Lang::label($lang) . ')');
 			}
 
 			Lang::saveLangRow('category_lang', 'id_category', $idCategory, $lang, [
 				'category_name' => mb_substr($name, 0, 64),
 				'category_link' => mb_substr($link, 0, 128),
-				'meta_title' => mb_substr(trim(strip_tags((string) ($entry['meta_title'] ?? ''))), 0, 255),
-				'meta_description' => mb_substr(trim(strip_tags((string) ($entry['meta_description'] ?? ''))), 0, 512),
+				'meta_title' => mb_substr($metaTitle, 0, 255),
+				'meta_description' => mb_substr($metaDescription, 0, 512),
 			]);
 		}
 
@@ -313,6 +333,13 @@ class Category
 		if (!self::isLinkUnique($link, $id, $defaultLang)) {
 			return self::fail('Bu URL slug zaten kullanılıyor');
 		}
+
+		$langData[$defaultLang] = array_merge([
+			'category_name' => $name,
+			'category_link' => $link,
+			'meta_title' => $metaTitle,
+			'meta_description' => $metaDescription,
+		], is_array($langData[$defaultLang] ?? null) ? $langData[$defaultLang] : []);
 
 		$row = [
 			'category_name' => $name,

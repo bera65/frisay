@@ -11,118 +11,56 @@ class FthemeCss
 		'fy-primary' => '#2563EB',
 		'fy-secondary' => '#1D4ED8',
 		'fy-accent' => '#3B82F6',
-		'fy-hover' => '#1E40AF',
 		'fy-dark' => '#0F172A',
-		'fy-footer-bg' => '#0F172A',
-		'prime-primary' => '#2563EB',
-		'header-bg' => '#ffffff',
-		'coral-color' => '#3B82F6',
-		'brand-primary' => '#1a1a1a',
-		'brand-primary-dark' => '#000000',
-		'brand-accent' => '#d6001c',
-		'brand-accent-light' => '#fdeaec',
-		'surface' => '#ffffff',
-		'surface-soft' => '#f6f6f6',
-		'border-color' => '#ebebeb',
-		'text-primary' => '#1a1a1a',
-		'text-secondary' => '#767676',
-		'link-color' => '#1a1a1a',
-		'link-hover-color' => '#d6001c',
-		'color-dark' => '#000000',
-		'color1' => '#1a1a1a',
-		'color1-hover' => '#000000',
-		'color2' => '#f6f6f6',
-		'color3' => '#1a1a1a',
-		'color3-hover' => '#000000',
-		'price-color' => '#1a1a1a',
-		'old-price-color' => '#767676',
-		'discount-bg' => '#d6001c',
-		'discount-color' => '#ffffff',
-		'footer-bg' => '#0c0c0c',
-		'footer-heading' => '#ffffff',
-		'footer-text' => '#a3a3a3',
-		'footer-accent' => '#ffffff',
-		'footer-border' => '#0c0c0c',
-		'social-icon-color' => '#a3a3a3',
-		'social-icon-hover' => '#ffffff',
-		'social-icon-bg' => 'rgba(255,255,255,0.1)',
-		'social-icon-bg-hover' => '#d6001c',
-		'theme-color' => '#213c8b',
-		'active-category-color' => '#d6001c',
-		'category-hover-color' => '#d6001c',
-		'mobile-menu-bg' => '#ffffff',
-		'mobile-category-icon-color' => '#213c8b',
+		'fy-muted' => '#64748B',
+		'fy-light' => '#F8FAFC',
+		'fy-border' => '#E5E7EB',
 		'fy-gradient' => '#4279ea',
-		'font-family' => "'Poppins', 'Segoe UI', sans-serif",
-		'container' => 'var(--theme-container-max, 1320px)',
+		'fy-footer-bg' => '#0F172A',
+		'header-bg' => '#ffffff',
+		'surface' => '#ffffff',
+	];
+
+	/** @var array<string, string> alias => var() referansı (style.css uyumu) */
+	public const COLOR_ALIASES = [
+		'prime-primary' => 'var(--fy-gradient)',
+		'brand-accent' => 'var(--fy-gradient)',
+		'brand-primary' => 'var(--fy-dark)',
+		'brand-primary-dark' => 'var(--fy-dark)',
+		'coral-color' => 'var(--fy-accent)',
+		'text-primary' => 'var(--fy-dark)',
+		'text-secondary' => 'var(--fy-muted)',
+		'link-color' => 'var(--fy-dark)',
+		'link-hover-color' => 'var(--fy-secondary)',
+		'footer-bg' => 'var(--fy-footer-bg)',
+		'footer-text' => 'var(--fy-muted)',
+		'footer-heading' => '#ffffff',
+		'border-color' => 'var(--fy-border)',
+		'surface-soft' => 'var(--fy-light)',
+		'price-color' => 'var(--fy-dark)',
+		'old-price-color' => 'var(--fy-muted)',
+		'discount-bg' => 'var(--fy-gradient)',
+		'discount-color' => '#ffffff',
+		'color2' => 'var(--fy-light)',
 	];
 
 	/** @var array<string, array<string, string>> */
 	public const COLOR_GROUPS = [
-		'Frisay paleti' => [
-			'fy-primary' => 'Birincil',
-			'fy-secondary' => 'İkincil',
-			'fy-accent' => 'Vurgu',
-			'fy-hover' => 'Hover',
-			'fy-dark' => 'Koyu',
-			'fy-footer-bg' => 'Footer arka plan',
-			'fy-gradient' => 'Gradient',
-			'prime-primary' => 'Prime birincil',
+		'Buton & vurgu' => [
+			'fy-secondary' => 'İkincil vurgu',
+			'fy-accent' => 'Aksan',
+			'fy-gradient' => 'Buton rengi (gradient)',
 		],
-		'Header & yüzey' => [
-			'header-bg' => 'Header arka plan',
-			'surface' => 'Yüzey',
-			'surface-soft' => 'Yumuşak yüzey',
-			'border-color' => 'Kenarlık',
-			'coral-color' => 'Coral',
-		],
-		'Marka' => [
-			'brand-primary' => 'Marka birincil',
-			'brand-primary-dark' => 'Marka koyu',
-			'brand-accent' => 'Marka vurgu',
-			'brand-accent-light' => 'Marka vurgu açık',
-		],
-		'Metin & link' => [
-			'text-primary' => 'Metin birincil',
-			'text-secondary' => 'Metin ikincil',
-			'link-color' => 'Link',
-			'link-hover-color' => 'Link hover',
-			'color-dark' => 'Koyu',
-			'color1' => 'Renk 1',
-			'color1-hover' => 'Renk 1 hover',
-			'color2' => 'Renk 2',
-			'color3' => 'Renk 3',
-			'color3-hover' => 'Renk 3 hover',
-		],
-		'Fiyat' => [
-			'price-color' => 'Fiyat',
-			'old-price-color' => 'Eski fiyat',
-			'discount-bg' => 'İndirim arka plan',
-			'discount-color' => 'İndirim metin',
+		'Metin & arka plan' => [
+			'fy-dark' => 'Ana metin',
+			'fy-muted' => 'Soluk metin',
+			'fy-light' => 'Yumuşak bölüm arka planı',
+			'surface' => 'Sayfa arka planı',
+			'header-bg' => 'Header arka planı',
+			'fy-border' => 'Kenarlık',
 		],
 		'Footer' => [
-			'footer-bg' => 'Arka plan',
-			'footer-heading' => 'Başlık',
-			'footer-text' => 'Metin',
-			'footer-accent' => 'Vurgu',
-			'footer-border' => 'Kenarlık',
-		],
-		'Sosyal ikonlar' => [
-			'social-icon-color' => 'İkon rengi',
-			'social-icon-hover' => 'İkon hover',
-			'social-icon-bg' => 'İkon arka plan',
-			'social-icon-bg-hover' => 'İkon arka plan hover',
-		],
-		'Kategori & mobil' => [
-			'theme-color' => 'Tema rengi',
-			'active-category-color' => 'Aktif kategori',
-			'category-hover-color' => 'Kategori hover',
-			'mobile-menu-bg' => 'Mobil menü arka plan',
-			'mobile-category-icon-color' => 'Mobil kategori ikon',
-		],
-		'Tipografi & layout' => [
-			'font-family' => 'Font ailesi',
-			'container' => 'Container',
+			'fy-footer-bg' => 'Footer arka plan',
 		],
 	];
 
@@ -149,6 +87,13 @@ class FthemeCss
 		$theme = $theme !== '' ? $theme : self::getTargetTheme();
 
 		return Theme::customCssPath($theme);
+	}
+
+	public static function customJsPath(string $theme = ''): string
+	{
+		$theme = $theme !== '' ? $theme : self::getTargetTheme();
+
+		return Theme::templatesPath() . '/' . $theme . '/js/custom.js';
 	}
 
 	/** @return array<string, string> */
@@ -191,6 +136,37 @@ class FthemeCss
 		$content = file_get_contents($path);
 
 		return $content === false ? '' : $content;
+	}
+
+	public static function readCustomJs(string $theme = ''): string
+	{
+		$path = self::customJsPath($theme);
+
+		if (!is_file($path)) {
+			return '';
+		}
+
+		$content = file_get_contents($path);
+
+		return $content === false ? '' : $content;
+	}
+
+	public static function ensureCustomJs(string $theme = ''): void
+	{
+		$theme = $theme !== '' ? $theme : self::getTargetTheme();
+		$path = self::customJsPath($theme);
+
+		if (is_file($path)) {
+			return;
+		}
+
+		$dir = dirname($path);
+
+		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return;
+		}
+
+		file_put_contents($path, "/**\n * Özel JS — ftheme-edit modülünden düzenlenir.\n */\n");
 	}
 
 	/** @param array<string, string> $colors */
@@ -255,6 +231,24 @@ class FthemeCss
 		return ['success' => true, 'message' => 'custom.css kaydedildi'];
 	}
 
+	public static function writeCustomJs(string $js, string $theme = ''): array
+	{
+		$theme = $theme !== '' ? $theme : self::getTargetTheme();
+
+		if (!Theme::isValidName($theme)) {
+			return ['success' => false, 'message' => 'Geçersiz tema'];
+		}
+
+		self::ensureCustomJs($theme);
+		$path = self::customJsPath($theme);
+
+		if (file_put_contents($path, $js) === false) {
+			return ['success' => false, 'message' => 'custom.js yazılamadı'];
+		}
+
+		return ['success' => true, 'message' => 'custom.js kaydedildi'];
+	}
+
 	/** @param array<string, string> $colors */
 	private static function buildColorsCss(array $colors): string
 	{
@@ -266,6 +260,13 @@ class FthemeCss
 		];
 
 		foreach ($colors as $key => $value) {
+			$lines[] = "\t--{$key}: {$value};";
+		}
+
+		$lines[] = '';
+		$lines[] = "\t/* style.css / sepet / bildirim uyumu */";
+
+		foreach (self::COLOR_ALIASES as $key => $value) {
 			$lines[] = "\t--{$key}: {$value};";
 		}
 

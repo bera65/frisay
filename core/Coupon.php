@@ -4,6 +4,19 @@ class Coupon
 {
 	const SESSION_KEY = 'applied_coupon';
 
+	public static function ensureSchema(): void
+	{
+		$col = DB::execute("SHOW COLUMNS FROM `coupons` LIKE 'id_user'");
+
+		if (empty($col)) {
+			DB::execute(
+				'ALTER TABLE `coupons`
+				 ADD COLUMN `id_user` int(11) NOT NULL DEFAULT 0 AFTER `used_count`,
+				 ADD KEY `id_user` (`id_user`)'
+			);
+		}
+	}
+
 	public static function normalizeCode(string $code): string
 	{
 		return strtoupper(preg_replace('/\s+/', '', trim($code)));
@@ -168,6 +181,19 @@ class Coupon
 			return self::fail('Bu kupon kullanım limitine ulaştı');
 		}
 
+		$idUserBound = (int) ($coupon['id_user'] ?? 0);
+		if ($idUserBound > 0) {
+			$currentUserId = class_exists('Customer', false) ? Customer::getId() : 0;
+
+			if ($currentUserId <= 0) {
+				return self::fail('Bu kupon yalnızca hesabınıza özeldir. Lütfen giriş yapın.');
+			}
+
+			if ($currentUserId !== $idUserBound) {
+				return self::fail('Bu kupon sizin hesabınıza tanımlı değil');
+			}
+		}
+
 		$discount = self::calculateDiscount($coupon, $subtotal);
 
 		if ($discount <= 0) {
@@ -208,6 +234,8 @@ class Coupon
 
 	public static function getByCode(string $code): ?array
 	{
+		self::ensureSchema();
+
 		$code = self::normalizeCode($code);
 		$row = DB::getRowSafe('coupons', 'code = ?', [$code]);
 
@@ -223,7 +251,14 @@ class Coupon
 
 	public static function getAdminList(): array
 	{
-		$rows = DB::execute('SELECT * FROM coupons ORDER BY date_add DESC') ?: [];
+		self::ensureSchema();
+
+		$rows = DB::execute(
+			'SELECT c.*, u.user_full_name, u.email AS user_email
+			 FROM coupons c
+			 LEFT JOIN users u ON u.id_user = c.id_user
+			 ORDER BY c.date_add DESC'
+		) ?: [];
 
 		foreach ($rows as &$row) {
 			$row = self::enrichAdmin($row);
@@ -235,12 +270,15 @@ class Coupon
 
 	public static function save(array $data, int $idCoupon = 0): array
 	{
+		self::ensureSchema();
+
 		$code = self::normalizeCode((string) ($data['code'] ?? ''));
 		$type = (string) ($data['discount_type'] ?? 'percent');
 		$value = (float) ($data['discount_value'] ?? 0);
 		$minCart = max(0.0, (float) ($data['min_cart'] ?? 0));
 		$maxUses = max(0, (int) ($data['max_uses'] ?? 0));
 		$active = !empty($data['active']) ? 1 : 0;
+		$idUser = max(0, (int) ($data['id_user'] ?? 0));
 		$dateFrom = self::normalizeDateTime((string) ($data['date_from'] ?? ''));
 		$dateTo = self::normalizeDateTime((string) ($data['date_to'] ?? ''));
 
@@ -254,6 +292,13 @@ class Coupon
 
 		if ($value <= 0 || ($type === 'percent' && $value > 100)) {
 			return self::fail('Geçerli bir indirim değeri girin');
+		}
+
+		if ($idUser > 0) {
+			$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
+			if (!$user) {
+				return self::fail('Seçilen müşteri bulunamadı');
+			}
 		}
 
 		$exists = DB::getValue(
@@ -271,6 +316,7 @@ class Coupon
 			'discount_value' => $value,
 			'min_cart' => $minCart,
 			'max_uses' => $maxUses,
+			'id_user' => $idUser,
 			'active' => $active,
 			'date_from' => $dateFrom !== '' ? $dateFrom : null,
 			'date_to' => $dateTo !== '' ? $dateTo : null,
@@ -286,13 +332,71 @@ class Coupon
 			return self::ok('Kupon güncellendi');
 		}
 
-		$id = DB::insert('coupons', $payload);
+		$id = DB::insert('coupons', array_merge($payload, [
+			'used_count' => 0,
+			'date_add' => date('Y-m-d H:i:s'),
+		]));
 
 		if (!$id) {
 			return self::fail('Kupon oluşturulamadı');
 		}
 
-		return self::ok('Kupon oluşturuldu');
+		return self::ok('Kupon oluşturuldu', 0.0, null, (int) $id);
+	}
+
+	/**
+	 * Müşteriye özel tek kullanımlık kupon üretir.
+	 *
+	 * @return array{success: bool, message: string, id_coupon?: int, code?: string}
+	 */
+	public static function createPersonal(array $data): array
+	{
+		self::ensureSchema();
+
+		$idUser = (int) ($data['id_user'] ?? 0);
+		if ($idUser <= 0) {
+			return self::fail('Müşteri gerekli');
+		}
+
+		$prefix = preg_replace('/[^A-Z0-9]/', '', strtoupper((string) ($data['prefix'] ?? 'RVW'))) ?: 'RVW';
+		$code = '';
+
+		for ($i = 0; $i < 8; $i++) {
+			$candidate = $prefix . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+			if (!self::getByCode($candidate)) {
+				$code = $candidate;
+				break;
+			}
+		}
+
+		if ($code === '') {
+			return self::fail('Kupon kodu üretilemedi');
+		}
+
+		$result = self::save([
+			'code' => $code,
+			'discount_type' => (string) ($data['discount_type'] ?? 'percent'),
+			'discount_value' => $data['discount_value'] ?? 5,
+			'min_cart' => $data['min_cart'] ?? 0,
+			'max_uses' => max(1, (int) ($data['max_uses'] ?? 1)),
+			'id_user' => $idUser,
+			'active' => 1,
+			'date_from' => $data['date_from'] ?? date('Y-m-d H:i:s'),
+			'date_to' => $data['date_to'] ?? '',
+		], 0);
+
+		if (empty($result['success'])) {
+			return $result;
+		}
+
+		$coupon = self::getByCode($code);
+
+		return [
+			'success' => true,
+			'message' => $result['message'],
+			'id_coupon' => (int) ($coupon['id_coupon'] ?? 0),
+			'code' => $code,
+		];
 	}
 
 	public static function delete(int $idCoupon): array
@@ -335,19 +439,44 @@ class Coupon
 			: Tools::displayPrice($row['discount_value']);
 		$row['min_cart_formatted'] = Tools::displayPrice($row['min_cart']);
 		$row['active'] = (int) $row['active'];
+		$row['id_user'] = (int) ($row['id_user'] ?? 0);
 		$row['date_formatted'] = Tools::formatDate3($row['date_add']);
+		$row['customer_label'] = '';
+
+		if ($row['id_user'] > 0) {
+			$name = trim((string) ($row['user_full_name'] ?? ''));
+			$email = trim((string) ($row['user_email'] ?? ''));
+
+			if ($name === '' && $email === '') {
+				$user = DB::getRowSafe('users', 'id_user = ?', [$row['id_user']]);
+				if ($user) {
+					$name = trim((string) ($user['user_full_name'] ?? ''));
+					$email = trim((string) ($user['email'] ?? ''));
+				}
+			}
+
+			$row['customer_label'] = $name !== ''
+				? ($name . ($email !== '' ? ' (' . $email . ')' : ''))
+				: ($email !== '' ? $email : '#' . $row['id_user']);
+		}
 
 		return $row;
 	}
 
-	private static function ok(string $message, float $subtotal = 0.0, ?array $cart = null): array
+	private static function ok(string $message, float $subtotal = 0.0, ?array $cart = null, int $idCoupon = 0): array
 	{
 		$summary = $subtotal > 0 ? self::getCheckoutSummary($subtotal, $cart) : [];
 
-		return array_merge([
+		$out = array_merge([
 			'success' => true,
 			'message' => $message,
 		], $summary);
+
+		if ($idCoupon > 0) {
+			$out['id_coupon'] = $idCoupon;
+		}
+
+		return $out;
 	}
 
 	private static function fail(string $message): array

@@ -46,10 +46,12 @@
 	require_once(dirname(__FILE__).'/../core/Brand.php');
 	require_once(dirname(__FILE__).'/../core/Cms.php');
 	require_once(dirname(__FILE__).'/../core/Currency.php');
+	Currency::handleSwitchRequest();
 	require_once(dirname(__FILE__).'/../core/ModuleBase.php');
 	require_once(dirname(__FILE__).'/../core/Module.php');
 	require_once(dirname(__FILE__).'/../core/Schema.php');
 	require_once(dirname(__FILE__).'/../core/Mail.php');
+	require_once(dirname(__FILE__).'/../core/StoreStatus.php');
 	require_once(dirname(__FILE__).'/../core/SmtpMailer.php');
 	require_once(dirname(__FILE__).'/../core/Notification.php');
 	require_once(dirname(__FILE__).'/../core/Routes.php');
@@ -209,6 +211,8 @@
 		'shopLanguages' 	=> Lang::getAvailable(),
 		'defaultLang' 		=> Lang::getDefault(),
 		'langSwitcher' 		=> Lang::getSwitcherList(),
+		'displayCurrency' 	=> Currency::getDisplayCurrency(),
+		'shopCurrencyCode' 	=> Currency::getShopCurrency(),
 		'siteLogos' => [
 			'header' => SiteAssets::resolveLogoUrl('header'),
 			'bar' => SiteAssets::resolveLogoUrl('bar'),

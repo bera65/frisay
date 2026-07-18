@@ -5,7 +5,7 @@
 				<a href="{$domain}" class="fy-logo" title="Frisay">
 					<img src="{$domain}img/logoFooter.png" alt="{$siteName}" />
 				</a>
-				<p>{$fText|default:''}</p>
+				<p data-ftheme="footer-text">{$fText|default:''}</p>
 				{if $contactAddress}
 				<p class="fy-footer__contact">{$contactAddress|escape}{if $contactCity}, {$contactCity|escape}{/if}</p>
 				{/if}

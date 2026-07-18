@@ -1,0 +1,9 @@
+.bulk-pricing-admin .table td,
+.bulk-pricing-admin .table th {
+	white-space: nowrap;
+}
+
+.bulk-pricing-admin .table td:first-child {
+	white-space: normal;
+	min-width: 220px;
+}

@@ -105,6 +105,10 @@ class Cart
 			return self::fail(translate('Product not found'));
 		}
 
+		if (Product::isPackProduct($product)) {
+			return self::addPack($idProduct, $qty, $product);
+		}
+
 		$idVariation = max(0, $idVariation);
 		$options = ProductOption::normalizeSelections($options);
 
@@ -140,6 +144,66 @@ class Cart
 		$added = min($qty, $maxAllowed);
 		$_SESSION[self::SESSION_KEY][$key] = $current + $added;
 		self::setLineMeta($key, ['options' => $options]);
+
+		return self::ok(translate('Added to cart'));
+	}
+
+	/** Set ürününü bileşenlerine parçalayarak sepete ekler. */
+	private static function addPack(int $idPack, int $qty, array $packProduct): array
+	{
+		if (!Module::isEnabled('product-set')) {
+			return self::fail('Ürün seti modülü aktif değil');
+		}
+
+		$file = dirname(__DIR__) . '/modules/product-set/lib/ProductSetService.php';
+		if (!is_file($file)) {
+			return self::fail('Ürün seti tanımı bulunamadı');
+		}
+
+		require_once $file;
+
+		$items = ProductSetService::getItems($idPack);
+		if ($items === []) {
+			return self::fail('Bu sete henüz ürün eklenmemiş');
+		}
+
+		$qty = max(1, $qty);
+		$available = ProductSetService::getAvailableStock($idPack);
+		if ($available < $qty) {
+			return self::fail(translate('Out of stock'));
+		}
+
+		foreach ($items as $item) {
+			$idChild = (int) $item['id_product'];
+			$need = max(1, (int) $item['qty']) * $qty;
+			$child = Product::getById($idChild);
+
+			if (!$child || Product::isPackProduct($child)) {
+				return self::fail('Set bileşeni geçersiz: #' . $idChild);
+			}
+
+			if (ProductVariation::hasVariations($idChild)) {
+				return self::fail('Varyasyonlu ürün sete eklenemez: ' . ($child['product_name'] ?? ''));
+			}
+
+			$key = self::cartKey($idChild, 0, []);
+			$current = self::getLineQty($key);
+			$stock = Product::getStock($child, 0);
+
+			if ($stock - $current < $need) {
+				return self::fail(translate('Out of stock') . ': ' . ($child['product_name'] ?? ''));
+			}
+		}
+
+		foreach ($items as $item) {
+			$idChild = (int) $item['id_product'];
+			$need = max(1, (int) $item['qty']) * $qty;
+			$result = self::add($idChild, $need, 0, []);
+
+			if (empty($result['success'])) {
+				return $result;
+			}
+		}
 
 		return self::ok(translate('Added to cart'));
 	}

@@ -8,6 +8,18 @@
 	var token = app.getAttribute('data-token') || '';
 	var cardUrl = app.getAttribute('data-card-url') || '';
 	var hasCardGateway = app.getAttribute('data-has-card-gateway') === '1';
+	var fullscreenAuto = app.getAttribute('data-fullscreen-auto') === '1';
+	var hideOutOfStock = app.getAttribute('data-hide-oos') === '1';
+	var allowOutOfStockSale = app.getAttribute('data-allow-oos-sale') === '1';
+	var paymentAdjustments = {};
+
+	try {
+		paymentAdjustments = JSON.parse(app.getAttribute('data-payment-adjustments') || '{}') || {};
+	} catch (e) {
+		paymentAdjustments = {};
+	}
+	var storeLabel = app.getAttribute('data-store') || 'Mağaza Satış';
+	var siteName = app.querySelector('.pos-brand') ? app.querySelector('.pos-brand').textContent.trim() : 'FShop';
 
 	var state = {
 		category: 0,
@@ -18,9 +30,49 @@
 		customer: { id_user: 0, label: 'Ziyaretçi', name: 'Ziyaretçi' },
 		payMethod: 'pos_cash',
 		cashInput: '',
+		lastReceipt: null,
 	};
 
+	var audioCtx;
 	var els = {};
+
+	function playBeep() {
+		try {
+			if (!audioCtx) {
+				audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			}
+			var osc = audioCtx.createOscillator();
+			var gain = audioCtx.createGain();
+			osc.connect(gain);
+			gain.connect(audioCtx.destination);
+			osc.frequency.value = 920;
+			osc.type = 'sine';
+			gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+			gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+			osc.start(audioCtx.currentTime);
+			osc.stop(audioCtx.currentTime + 0.07);
+		} catch (e) { /* sessiz */ }
+	}
+
+	function isModalOpen() {
+		var modals = [els.payModal, els.customerModal, els.varModal, els.receiptModal];
+		for (var i = 0; i < modals.length; i++) {
+			if (modals[i] && !modals[i].hidden) return true;
+		}
+		return false;
+	}
+
+	function shouldFocusBarcode() {
+		if (isModalOpen()) return false;
+		var active = document.activeElement;
+		if (active && active !== els.query && active !== document.body) {
+			var tag = active.tagName;
+			if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	function initEls() {
 		els = {
@@ -48,6 +100,10 @@
 			varBody: document.getElementById('pos-var-body'),
 			payModal: document.getElementById('pos-pay-modal'),
 			payCustomer: document.getElementById('pos-pay-customer'),
+			paySubtotal: document.getElementById('pos-pay-subtotal'),
+			payAdjustmentRow: document.getElementById('pos-pay-adjustment-row'),
+			payAdjustmentLabel: document.getElementById('pos-pay-adjustment-label'),
+			payAdjustmentAmount: document.getElementById('pos-pay-adjustment-amount'),
 			payTotal: document.getElementById('pos-pay-total'),
 			cashSection: document.getElementById('pos-cash-section'),
 			cardSection: document.getElementById('pos-card-section'),
@@ -63,7 +119,17 @@
 			customerSearch: document.getElementById('pos-customer-search'),
 			customerResults: document.getElementById('pos-customer-results'),
 			customerVisitor: document.getElementById('pos-customer-visitor'),
+			customerCreateToggle: document.getElementById('pos-customer-create-toggle'),
+			customerCreateForm: document.getElementById('pos-customer-create-form'),
+			customerCreateName: document.getElementById('pos-customer-create-name'),
+			customerCreatePhone: document.getElementById('pos-customer-create-phone'),
+			customerCreateEmail: document.getElementById('pos-customer-create-email'),
+			customerCreateSave: document.getElementById('pos-customer-create-save'),
 			exactAmount: document.getElementById('pos-exact-amount'),
+			receiptModal: document.getElementById('pos-receipt-modal'),
+			receiptContent: document.getElementById('pos-receipt-content'),
+			receiptPrint: document.getElementById('pos-receipt-print'),
+			printArea: document.getElementById('pos-print-area'),
 		};
 	}
 
@@ -139,7 +205,208 @@
 	}
 
 	function focusQuery() {
-		if (els.query) els.query.focus();
+		if (!els.query || !shouldFocusBarcode()) return;
+		try {
+			els.query.focus({ preventScroll: true });
+			els.query.select();
+		} catch (e) {
+			els.query.focus();
+		}
+	}
+
+	function scheduleFocusQuery() {
+		setTimeout(focusQuery, 50);
+	}
+
+	/* CODE39 barkod (sipariş no) */
+	var CODE39_MAP = {
+		'0': 'nnnwwnwnn', '1': 'wnnnwwnnn', '2': 'nnwnwwnnn', '3': 'wnwnnwnnn', '4': 'nnnnwwnnn',
+		'5': 'wnnnnwwnn', '6': 'nnwnnwwnn', '7': 'nnnnnwwnn', '8': 'wnwnwnnnn', '9': 'nnwnwnnnn',
+		'A': 'wnnnnnnwn', 'B': 'nnwnnnnwn', 'C': 'wnwnnnnwn', 'D': 'nnnnnnwwn', 'E': 'wnnnnnwwn',
+		'F': 'nnwnnnwwn', 'G': 'nnnnwnwwn', 'H': 'wnnnwnwwn', 'I': 'nnwnwnwwn', 'J': 'nnnnnnwww',
+		'K': 'wnnnnnwww', 'L': 'nnwnnnwww', 'M': 'wnwnnnwww', 'N': 'nnnnwnwww', 'O': 'wnnnwnwww',
+		'P': 'nnwnwnwww', 'Q': 'nnnnnnnww', 'R': 'wnnnnnnww', 'S': 'nnwnnnnww', 'T': 'wnwnnnnww',
+		'U': 'nnnnwnnww', 'V': 'wnnnwnnww', 'W': 'nnwnwnnww', 'X': 'nnnnnnwww', 'Y': 'wnnnnnwww',
+		'Z': 'nnwnnnwww', '-': 'wnwnnnwww', '.': 'nnnnwnwww', ' ': 'wnnnwnwww', '$': 'nnwnwnwww',
+		'/': 'nnnnnnnww', '+': 'wnnnnnnww', '%': 'nnwnnnnww', '*': 'nwnnnwnnn'
+	};
+
+	function formatPercent(num) {
+		var s = Number(num || 0).toFixed(2).replace(/\.?0+$/, '');
+		return s;
+	}
+
+	function calculatePayable(subtotal, method) {
+		subtotal = Math.max(0, parseFloat(subtotal || 0));
+		var rule = paymentAdjustments[method] || { type: 'none', percent: 0 };
+		var type = rule.type || 'none';
+		var percent = Math.max(0, Math.min(100, parseFloat(rule.percent || 0)));
+		var adjustment = 0;
+		var label = '';
+
+		if (percent > 0 && type === 'discount') {
+			adjustment = -Math.round(subtotal * percent) / 100;
+			label = method === 'pos_card' ? 'Kart indirimi' : 'Havale indirimi';
+			label += ' (%' + formatPercent(percent) + ')';
+		} else if (percent > 0 && type === 'commission') {
+			adjustment = Math.round(subtotal * percent) / 100;
+			label = method === 'pos_card' ? 'Kart komisyonu' : 'Havale komisyonu';
+			label += ' (%' + formatPercent(percent) + ')';
+		}
+
+		var total = Math.max(0, Math.round((subtotal + adjustment) * 100) / 100);
+		var sign = adjustment >= 0 ? '+' : '−';
+
+		return {
+			subtotal: subtotal,
+			adjustment: adjustment,
+			label: label,
+			total: total,
+			adjustmentDisplay: Math.abs(adjustment) > 0.009 ? sign + formatDisplay(Math.abs(adjustment)) : '',
+		};
+	}
+
+	function getPayableTotal() {
+		return calculatePayable(state.cart.subtotal || 0, state.payMethod).total;
+	}
+
+	function updatePayUi() {
+		var payable = calculatePayable(state.cart.subtotal || 0, state.payMethod);
+
+		if (els.paySubtotal) els.paySubtotal.textContent = formatDisplay(payable.subtotal);
+		if (els.payTotal) els.payTotal.textContent = formatDisplay(payable.total);
+
+		if (els.payAdjustmentRow) {
+			var showAdj = Math.abs(payable.adjustment) > 0.009;
+			els.payAdjustmentRow.hidden = !showAdj;
+			if (els.payAdjustmentLabel) els.payAdjustmentLabel.textContent = payable.label;
+			if (els.payAdjustmentAmount) els.payAdjustmentAmount.textContent = payable.adjustmentDisplay;
+		}
+
+		updateCashUi();
+	}
+
+	function code39Svg(text) {
+		text = String(text || '').toUpperCase();
+		var narrow = 2;
+		var wide = 5;
+		var x = 0;
+		var bars = [];
+
+		function drawPattern(pattern) {
+			if (!pattern) return;
+			for (var i = 0; i < pattern.length; i++) {
+				var w = pattern.charAt(i) === 'w' ? wide : narrow;
+				if (i % 2 === 0) {
+					bars.push('<rect x="' + x + '" y="0" width="' + w + '" height="50" fill="#000"/>');
+				}
+				x += w;
+			}
+			x += narrow;
+		}
+
+		drawPattern(CODE39_MAP['*']);
+		for (var c = 0; c < text.length; c++) {
+			drawPattern(CODE39_MAP[text.charAt(c)]);
+		}
+		drawPattern(CODE39_MAP['*']);
+
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="' + x + '" height="50" viewBox="0 0 ' + x + ' 50">' + bars.join('') + '</svg>';
+	}
+
+	function renderReceiptHtml(receipt) {
+		if (!receipt) return '';
+
+		var itemsHtml = (receipt.items || []).map(function (item) {
+			var varLine = item.variation_label
+				? '<div class="pos-receipt__item-var">' + esc(item.variation_label) + '</div>'
+				: '';
+			return '<div class="pos-receipt__item">' +
+				'<div class="pos-receipt__item-name">' + esc(item.product_name) + '</div>' +
+				varLine +
+				'<div class="pos-receipt__item-qty">' + esc(String(item.qty)) + ' x ' + esc(item.price_formatted || '') + '</div>' +
+				'<div class="pos-receipt__item-total">' + esc(item.line_total_formatted || '') + '</div>' +
+				'</div>';
+		}).join('');
+
+		var cashLines = '';
+		if (receipt.cash_paid_formatted) {
+			cashLines += '<div class="pos-receipt__line"><span>Alınan</span><strong>' + esc(receipt.cash_paid_formatted) + '</strong></div>';
+		}
+		if (receipt.change_formatted) {
+			cashLines += '<div class="pos-receipt__line"><span>Para üstü</span><strong>' + esc(receipt.change_formatted) + '</strong></div>';
+		}
+
+		var phoneLine = receipt.customer_phone
+			? '<div class="pos-receipt__line"><span>Telefon</span><span>' + esc(receipt.customer_phone) + '</span></div>'
+			: '';
+
+		var adjustmentLine = '';
+		if (Math.abs(parseFloat(receipt.adjustment || 0)) > 0.009 && receipt.adjustment_label) {
+			adjustmentLine = '<div class="pos-receipt__line"><span>' + esc(receipt.adjustment_label) + '</span><strong>' +
+				esc(receipt.adjustment_signed_formatted || receipt.adjustment_formatted || '') + '</strong></div>';
+		}
+
+		return '<div class="pos-receipt__head">' +
+			'<p class="pos-receipt__store">' + esc(receipt.site_name || siteName) + '</p>' +
+			'<p class="pos-receipt__meta">' + esc(receipt.store_label || storeLabel) + '</p>' +
+			'<p class="pos-receipt__meta">' + esc(receipt.date || '') + ' · Kasiyer: ' + esc(receipt.cashier || '') + '</p>' +
+			'</div>' +
+			'<div class="pos-receipt__barcode">' + code39Svg(receipt.reference || '') +
+			'<div class="pos-receipt__ref">' + esc(receipt.reference || '') + '</div></div>' +
+			'<div class="pos-receipt__line"><span>Alıcı</span><strong>' + esc(receipt.customer_name || 'Ziyaretçi') + '</strong></div>' +
+			phoneLine +
+			'<div class="pos-receipt__line"><span>Ödeme</span><strong>' + esc(receipt.payment_label || '') + '</strong></div>' +
+			'<div class="pos-receipt__divider"></div>' +
+			'<div class="pos-receipt__items">' + itemsHtml + '</div>' +
+			'<div class="pos-receipt__divider"></div>' +
+			'<div class="pos-receipt__line"><span>Ürün adedi</span><span>' + esc(String(receipt.item_count || 0)) + '</span></div>' +
+			'<div class="pos-receipt__line"><span>Ara toplam</span><span>' + esc(receipt.subtotal_formatted || '') + '</span></div>' +
+			adjustmentLine +
+			cashLines +
+			'<div class="pos-receipt__total"><span>TOPLAM</span><span>' + esc(receipt.total_formatted || receipt.subtotal_formatted || '') + '</span></div>' +
+			'<div class="pos-receipt__foot">Teşekkür ederiz · İyi günler dileriz</div>';
+	}
+
+	function openReceiptModal(receipt) {
+		if (!receipt || !els.receiptModal) return;
+		state.lastReceipt = receipt;
+		if (els.receiptContent) els.receiptContent.innerHTML = renderReceiptHtml(receipt);
+		els.receiptModal.hidden = false;
+	}
+
+	function closeReceiptModal() {
+		if (els.receiptModal) els.receiptModal.hidden = true;
+		scheduleFocusQuery();
+	}
+
+	function printReceipt() {
+		if (!els.receiptContent) return;
+
+		var printRoot = els.printArea || document.getElementById('pos-print-area');
+		if (!printRoot) {
+			window.print();
+			return;
+		}
+
+		printRoot.innerHTML = '<div class="pos-receipt">' + els.receiptContent.innerHTML + '</div>';
+		printRoot.setAttribute('aria-hidden', 'false');
+
+		window.print();
+
+		setTimeout(function () {
+			printRoot.innerHTML = '';
+			printRoot.setAttribute('aria-hidden', 'true');
+		}, 300);
+	}
+
+	function loadReceiptByReference(reference) {
+		if (!reference) return;
+		request('receipt', { params: { reference: reference } }).then(function (data) {
+			if (data.success && data.receipt) {
+				openReceiptModal(data.receipt);
+			}
+		});
 	}
 
 	function updateClock() {
@@ -158,15 +425,27 @@
 			['transfer_ok', 'stat-transfer-ok'],
 			['transfer_pending', 'stat-transfer-pending'],
 		];
+		var grandTotal = 0;
+		var grandCount = 0;
+
 		map.forEach(function (pair) {
 			var key = pair[0];
 			var prefix = pair[1];
 			var elCount = document.getElementById(prefix + '-count');
 			var elTotal = document.getElementById(prefix + '-total');
-			var row = stats[key] || { count: 0, total_formatted: '₺0,00' };
+			var row = stats[key] || { count: 0, total: 0, total_formatted: '₺0,00' };
 			if (elCount) elCount.textContent = row.count + ' adet';
 			if (elTotal) elTotal.textContent = row.total_formatted || '₺0,00';
+			if (key !== 'transfer_pending') {
+				grandTotal += parseFloat(row.total || 0);
+				grandCount += parseInt(row.count || 0, 10);
+			}
 		});
+
+		var elGrandTotal = document.getElementById('stat-grand-total');
+		var elGrandCount = document.getElementById('stat-grand-count');
+		if (elGrandTotal) elGrandTotal.textContent = formatDisplay(grandTotal);
+		if (elGrandCount) elGrandCount.textContent = grandCount + ' satış';
 	}
 
 	function loadStats() {
@@ -252,13 +531,15 @@
 		}
 		if (els.productsEmpty) els.productsEmpty.hidden = true;
 		list.forEach(function (p) {
+			var canSell = allowOutOfStockSale || p.in_stock || p.has_variations;
 			var btn = document.createElement('button');
 			btn.type = 'button';
-			btn.className = 'pos-product' + (p.in_stock || p.has_variations ? '' : ' is-out');
+			btn.className = 'pos-product' + (canSell ? '' : ' is-out');
 			btn.innerHTML =
 				'<img class="pos-product__img" src="' + escAttr(p.image_url) + '" alt="">' +
 				'<p class="pos-product__name">' + esc(p.product_name) + '</p>' +
-				'<div class="pos-product__price">' + esc(p.price_formatted) + '</div>';
+				'<div class="pos-product__price">' + esc(p.price_formatted) + '</div>' +
+				(!p.in_stock && !p.has_variations && allowOutOfStockSale ? '<div class="pos-product__oos">Stok yok</div>' : '');
 			btn.addEventListener('click', function () { onProductClick(p); });
 			els.products.appendChild(btn);
 		});
@@ -274,7 +555,9 @@
 		if (els.cartLines) els.cartLines.textContent = String(lineCount);
 		if (els.itemQty) els.itemQty.textContent = String(qtyTotal);
 		if (els.openPay) els.openPay.disabled = !!cart.empty;
-		if (els.payTotal) els.payTotal.textContent = formatDisplay(cart.subtotal || 0);
+		if (els.payModal && !els.payModal.hidden) {
+			updatePayUi();
+		}
 
 		if (!items.length) {
 			if (els.cartEmpty) els.cartEmpty.hidden = false;
@@ -318,19 +601,24 @@
 
 	function loadProducts() {
 		setLoading(true);
-		var params = { page: state.page, limit: 24 };
+		var params = { page: state.page, limit: 25 };
 		if (state.query.length >= 2) params.q = state.query;
 		else if (state.category > 0) params.id_category = state.category;
 
 		request('products', { params: params }).then(function (data) {
 			setLoading(false);
 			if (!data.success) { toast(data.message || 'Hata', 'error'); return; }
+			if (data.stock_rules) {
+				hideOutOfStock = !!data.stock_rules.hide_out_of_stock;
+				allowOutOfStockSale = !!data.stock_rules.allow_out_of_stock_sale;
+			}
 			state.pages = Math.max(1, (data.pagination && data.pagination.pages) || 1);
 			if (els.pageInfo) els.pageInfo.textContent = state.page + ' / ' + state.pages;
 			if (els.prev) els.prev.disabled = state.page <= 1;
 			if (els.next) els.next.disabled = state.page >= state.pages;
 			renderProducts(data.products || []);
-		}).catch(function () { setLoading(false); });
+			scheduleFocusQuery();
+		}).catch(function () { setLoading(false); scheduleFocusQuery(); });
 	}
 
 	function loadCart() {
@@ -343,7 +631,11 @@
 	}
 
 	function onProductClick(p) {
-		if (!p.in_stock && !p.has_variations) { toast('Stokta yok', 'error'); return; }
+		if (!allowOutOfStockSale && !p.in_stock && !p.has_variations) {
+			toast('Stokta yok', 'error');
+			scheduleFocusQuery();
+			return;
+		}
 		if (p.has_variations) { openVariationModal(p.id_product); return; }
 		addToCart(p.id_product, 1, 0);
 	}
@@ -358,8 +650,9 @@
 				var btn = document.createElement('button');
 				btn.type = 'button';
 				btn.className = 'pos-var-item';
-				btn.disabled = !v.in_stock;
-				btn.innerHTML = '<span>' + esc(v.label || 'Varyasyon') + '</span><strong>' + esc(v.price_formatted) + '</strong>';
+				btn.disabled = !allowOutOfStockSale && !v.in_stock;
+				btn.innerHTML = '<span>' + esc(v.label || 'Varyasyon') + '</span><strong>' + esc(v.price_formatted) + '</strong>' +
+					(!v.in_stock && allowOutOfStockSale ? ' <em class="pos-var-oos">(stok yok)</em>' : '');
 				btn.addEventListener('click', function () {
 					closeVarModal();
 					addToCart(product.id_product, 1, v.id_variation);
@@ -378,13 +671,14 @@
 			if (!data.success) {
 				if (data.needs_variation) { openVariationModal(idProduct); return; }
 				toast(data.message || 'Eklenemedi', 'error');
-				focusQuery();
+				scheduleFocusQuery();
 				return;
 			}
 			state.cart = data.cart;
 			renderCart();
+			playBeep();
 			toast('Sepete eklendi', 'success');
-			focusQuery();
+			scheduleFocusQuery();
 		});
 	}
 
@@ -400,28 +694,31 @@
 					loadProducts();
 				}
 				toast(data.message || 'Barkod bulunamadı', 'error');
-				focusQuery();
+				scheduleFocusQuery();
 				return;
 			}
 			state.cart = data.cart;
 			renderCart();
+			playBeep();
 			toast('Okutuldu — sepete eklendi', 'success');
-			focusQuery();
+			scheduleFocusQuery();
 		});
 	}
 
 	function updateQty(key, qty) {
 		request('cart', { method: 'POST', body: { cart_op: 'update', key: key, qty: qty } }).then(function (data) {
-			if (!data.success) { toast(data.message || 'Hata', 'error'); return; }
+			if (!data.success) { toast(data.message || 'Hata', 'error'); scheduleFocusQuery(); return; }
 			state.cart = data.cart;
 			renderCart();
+			scheduleFocusQuery();
 		});
 	}
 
 	function clearCart() {
-		if (!confirm('Sepeti temizlemek istiyor musunuz?')) return;
+		if (!confirm('Sepeti temizlemek istiyor musunuz?')) { scheduleFocusQuery(); return; }
 		request('cart', { method: 'POST', body: { cart_op: 'clear' } }).then(function (data) {
 			if (data.success) { state.cart = data.cart; renderCart(); toast('Sepet temizlendi', 'success'); }
+			scheduleFocusQuery();
 		});
 	}
 
@@ -440,11 +737,12 @@
 			els.payOnlineCard.hidden = !hasCardGateway;
 			els.payOnlineCard.disabled = !hasCardGateway;
 		}
+		updatePayUi();
 	}
 
 	function updateCashUi() {
 		var paid = parseMoney(state.cashInput);
-		var total = state.cart.subtotal || 0;
+		var total = getPayableTotal();
 		if (els.cashInput) els.cashInput.value = state.cashInput;
 
 		if (els.changeAmount) {
@@ -469,8 +767,8 @@
 	function openPayModal() {
 		if (state.cart.empty) { toast('Sepet boş', 'error'); return; }
 		updateCustomerUi();
-		if (els.payTotal) els.payTotal.textContent = formatDisplay(state.cart.subtotal || 0);
 		resetPayForm();
+		updatePayUi();
 		if (els.cardTerminal) {
 			if (cardUrl) { els.cardTerminal.href = cardUrl; els.cardTerminal.hidden = false; }
 			else { els.cardTerminal.hidden = true; }
@@ -478,14 +776,76 @@
 		if (els.payModal) els.payModal.hidden = false;
 	}
 
-	function closePayModal() { if (els.payModal) els.payModal.hidden = true; }
-	function closeVarModal() { if (els.varModal) els.varModal.hidden = true; }
+	function closePayModal() {
+		if (els.payModal) els.payModal.hidden = true;
+		scheduleFocusQuery();
+	}
+	function closeVarModal() {
+		if (els.varModal) els.varModal.hidden = true;
+		scheduleFocusQuery();
+	}
 	function openCustomerModal() {
-		if (els.customerModal) els.customerModal.hidden = false;
+		if (els.customerModal) {
+			var fromPay = els.payModal && !els.payModal.hidden;
+			els.customerModal.classList.toggle('is-stacked', fromPay);
+			els.customerModal.hidden = false;
+		}
 		if (els.customerSearch) { els.customerSearch.value = ''; els.customerSearch.focus(); }
 		if (els.customerResults) els.customerResults.innerHTML = '';
+		if (els.customerCreateForm) els.customerCreateForm.hidden = true;
 	}
-	function closeCustomerModal() { if (els.customerModal) els.customerModal.hidden = true; }
+	function closeCustomerModal() {
+		if (els.customerModal) {
+			els.customerModal.hidden = true;
+			els.customerModal.classList.remove('is-stacked');
+		}
+		scheduleFocusQuery();
+	}
+
+	function createCustomerFromModal() {
+		var name = els.customerCreateName ? els.customerCreateName.value.trim() : '';
+		var phone = els.customerCreatePhone ? els.customerCreatePhone.value.trim() : '';
+		var email = els.customerCreateEmail ? els.customerCreateEmail.value.trim() : '';
+
+		if (name === '' || phone === '') {
+			toast('Ad soyad ve telefon zorunludur', 'error');
+			return;
+		}
+
+		request('customer', {
+			method: 'POST',
+			body: {
+				customer_op: 'create',
+				name: name,
+				phone: phone,
+				email: email,
+			},
+		}).then(function (data) {
+			if (!data.success) {
+				toast(data.message || 'Müşteri eklenemedi', 'error');
+				return;
+			}
+
+			var idUser = parseInt(data.id_user || (data.customer && data.customer.id_user) || 0, 10);
+
+			if (idUser > 0) {
+				setCustomer(idUser);
+				return;
+			}
+
+			toast(data.message || 'Müşteri eklendi', 'success');
+		});
+	}
+
+	function toggleFullscreen() {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen().catch(function () {});
+			if (els.fullscreen) els.fullscreen.textContent = 'Tam Ekrandan Çık';
+		} else {
+			document.exitFullscreen();
+			if (els.fullscreen) els.fullscreen.textContent = 'Tam Ekran';
+		}
+	}
 
 	function prepareOnlineCard() {
 		request('prepare-card', { method: 'POST', body: {} }).then(function (data) {
@@ -517,7 +877,7 @@
 
 		if (payment === 'pos_cash') {
 			cashPaid = parseMoney(state.cashInput);
-			if (cashPaid + 0.009 < (state.cart.subtotal || 0)) {
+			if (cashPaid + 0.009 < getPayableTotal()) {
 				toast('Alınan nakit tutarı yetersiz', 'error');
 				return;
 			}
@@ -547,9 +907,11 @@
 			closePayModal();
 			loadStats();
 			loadCustomer();
+			if (data.receipt) {
+				openReceiptModal(data.receipt);
+			}
 			toast((data.reference || 'Satış') + ' tamamlandı', 'success');
 			loadProducts();
-			focusQuery();
 		}).catch(function () {
 			if (els.completeSale) els.completeSale.disabled = false;
 		});
@@ -581,16 +943,22 @@
 				if (els.query) els.query.value = '';
 				state.query = '';
 				loadProducts();
-				focusQuery();
+				scheduleFocusQuery();
 			});
 		});
 
-		if (els.prev) els.prev.addEventListener('click', function () { if (state.page > 1) { state.page--; loadProducts(); } });
-		if (els.next) els.next.addEventListener('click', function () { if (state.page < state.pages) { state.page++; loadProducts(); } });
+		if (els.prev) els.prev.addEventListener('click', function () { if (state.page > 1) { state.page--; loadProducts(); } scheduleFocusQuery(); });
+		if (els.next) els.next.addEventListener('click', function () { if (state.page < state.pages) { state.page++; loadProducts(); } scheduleFocusQuery(); });
 		if (els.clearCart) els.clearCart.addEventListener('click', clearCart);
 		if (els.openPay) els.openPay.addEventListener('click', openPayModal);
 		if (els.changeCustomer) els.changeCustomer.addEventListener('click', openCustomerModal);
 		if (els.customerVisitor) els.customerVisitor.addEventListener('click', resetCustomer);
+		if (els.customerCreateToggle && els.customerCreateForm) {
+			els.customerCreateToggle.addEventListener('click', function () {
+				els.customerCreateForm.hidden = !els.customerCreateForm.hidden;
+			});
+		}
+		if (els.customerCreateSave) els.customerCreateSave.addEventListener('click', createCustomerFromModal);
 		if (els.payReset) els.payReset.addEventListener('click', resetPayForm);
 		if (els.completeSale) els.completeSale.addEventListener('click', completeSale);
 		if (els.payOnlineCard) els.payOnlineCard.addEventListener('click', prepareOnlineCard);
@@ -618,7 +986,7 @@
 
 		if (els.exactAmount) {
 			els.exactAmount.addEventListener('click', function () {
-				state.cashInput = formatMoney(state.cart.subtotal || 0);
+				state.cashInput = formatMoney(getPayableTotal());
 				updateCashUi();
 			});
 		}
@@ -636,13 +1004,24 @@
 				if (target === 'pay') closePayModal();
 				if (target === 'var') closeVarModal();
 				if (target === 'customer') closeCustomerModal();
+				if (target === 'receipt') closeReceiptModal();
 			});
 		});
 
+		if (els.receiptPrint) els.receiptPrint.addEventListener('click', printReceipt);
+
+		document.addEventListener('visibilitychange', function () {
+			if (!document.hidden) scheduleFocusQuery();
+		});
+
+		window.addEventListener('focus', scheduleFocusQuery);
+
 		if (els.fullscreen) {
-			els.fullscreen.addEventListener('click', function () {
-				if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () {});
-				else document.exitFullscreen();
+			els.fullscreen.addEventListener('click', toggleFullscreen);
+			document.addEventListener('fullscreenchange', function () {
+				if (els.fullscreen) {
+					els.fullscreen.textContent = document.fullscreenElement ? 'Tam Ekrandan Çık' : 'Tam Ekran';
+				}
 			});
 		}
 	}
@@ -661,11 +1040,24 @@
 	loadStats();
 	loadCustomer();
 
+	if (fullscreenAuto) {
+		setTimeout(function () {
+			if (!document.fullscreenElement) {
+				document.documentElement.requestFullscreen().catch(function () {});
+			}
+		}, 300);
+	}
+
 	var saleRef = new URLSearchParams(window.location.search).get('sale');
 	if (saleRef) {
-		toast('Satış ' + saleRef + ' tamamlandı', 'success');
+		loadReceiptByReference(saleRef);
 		if (window.history.replaceState) {
 			window.history.replaceState({}, document.title, window.location.pathname);
 		}
 	}
+
+	scheduleFocusQuery();
+	setInterval(function () {
+		if (!isModalOpen()) scheduleFocusQuery();
+	}, 3000);
 })();

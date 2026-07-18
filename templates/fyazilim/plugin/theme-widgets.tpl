@@ -7,7 +7,7 @@
 {if $showCookie|default:'0' == '1'}
 <div id="cookieBanner" class="position-fixed bottom-0 start-0 w-100 bg-dark text-white p-3 shadow-lg" style="z-index:1060;display:none;">
 	<div class="fy-container d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-		<span class="small">{$cookieText|default:''|escape}</span>
+		<span class="small" data-ftheme="cookie-text">{$cookieText|default:''|escape}</span>
 		<button type="button" class="btn btn-primary btn-sm rounded-pill px-4" id="cookieAcceptBtn">{'Accept'|translate}</button>
 	</div>
 </div>
@@ -15,12 +15,19 @@
 
 <script>
 (function () {
-	window.addEventListener('load', function () {
+	function hidePagePreloader() {
 		var loader = document.getElementById('pagePreloader');
-		if (loader) {
-			loader.style.opacity = '0';
-			setTimeout(function () { loader.style.display = 'none'; }, 400);
+		if (!loader || loader.dataset.hidden === '1') {
+			return;
 		}
+		loader.dataset.hidden = '1';
+		loader.classList.add('is-hidden');
+		setTimeout(function () { loader.style.display = 'none'; }, 400);
+	}
+
+	window.addEventListener('load', hidePagePreloader);
+	document.addEventListener('DOMContentLoaded', function () {
+		setTimeout(hidePagePreloader, 4000);
 	});
 	var topBtn = document.getElementById('backToTopBtn');
 	if (topBtn) {

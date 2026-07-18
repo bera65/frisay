@@ -7,16 +7,12 @@
 		<a href="{$settingsUrl|escape}" class="badge text-bg-warning text-decoration-none">API ayarla</a>
 		{/if}
 	</div>
-	<p class="small text-muted mb-2">Başlık, kısa/uzun açıklama ve SEO alanlarını AI ile öner.</p>
+	<p class="small text-muted mb-2">Başlık, kısa/uzun açıklama ve SEO alanlarını AI ile öner. Sonuçlar büyük pencerede açılır.</p>
 	{if $is_new}
-	<p class="small text-warning mb-0">Önce ürünü kaydedin; ardından AI paneli aktif olur. (Form alanları doluysa yeni üründe de kullanılabilir.)</p>
+	<p class="small text-warning mb-2">Önce ürünü kaydedin; ardından AI paneli aktif olur. (Form alanları doluysa yeni üründe de kullanılabilir.)</p>
 	{/if}
-	<div class="d-flex flex-wrap gap-2 mb-2">
-		<button type="button" class="btn btn-sm btn-dark" id="aiImproveProductBtn"{if !$configured} disabled{/if}>Alanları iyileştir</button>
-		<button type="button" class="btn btn-sm btn-outline-secondary" id="aiApplySuggestionsBtn" disabled>Önerileri forma yaz</button>
-	</div>
-	<p class="small mb-0" id="aiProductStatus"></p>
-	<div id="aiProductPreview" class="ai-assist-preview small mt-2" style="display:none;"></div>
+	<button type="button" class="btn btn-sm btn-dark w-100" id="aiImproveProductBtn"{if !$configured} disabled{/if}>Alanları iyileştir</button>
+	<p class="small mb-0 mt-2" id="aiProductStatus"></p>
 </div>
 
 <script>
@@ -28,5 +24,6 @@ window.AiAssistantProduct = {
 	settingsUrl: {$settingsUrl|@json_encode nofilter}
 };
 </script>
+<script src="{$domain}modules/ai-assistant/assets/js/modal.js?v={$smarty.now}"></script>
 <script src="{$domain}modules/ai-assistant/assets/js/product.js?v={$smarty.now}"></script>
 <link rel="stylesheet" href="{$domain}modules/ai-assistant/assets/css/admin.css?v={$smarty.now}">

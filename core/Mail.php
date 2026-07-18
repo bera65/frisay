@@ -54,6 +54,57 @@ class Mail
 		return self::sendViaPhpMail($to, $subject, $body);
 	}
 
+	/** @return array<int, string> */
+	public static function getLayoutPlaceholders(): array
+	{
+		return [
+			'{site_name}',
+			'{site_url}',
+			'{logo_url}',
+			'{contact_email}',
+			'{contact_phone}',
+		];
+	}
+
+	public static function getDefaultEmailHeader(): string
+	{
+		return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ffffff;">'
+			. '<tr><td align="center" style="padding:28px 20px 20px;border-bottom:1px solid #eeeeee;">'
+			. '<a href="{site_url}" style="text-decoration:none;display:inline-block;">'
+			. '<img src="{logo_url}" alt="{site_name}" width="160" style="display:block;max-width:160px;height:auto;border:0;">'
+			. '</a></td></tr></table>';
+	}
+
+	public static function getDefaultEmailFooter(): string
+	{
+		return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8f9fa;">'
+			. '<tr><td align="center" style="padding:22px 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#888888;">'
+			. '<p style="margin:0 0 8px;font-weight:bold;color:#555555;">{site_name}</p>'
+			. '<p style="margin:0 0 8px;">{contact_phone} · <a href="mailto:{contact_email}" style="color:#888888;text-decoration:none;">{contact_email}</a></p>'
+			. '<p style="margin:0;"><a href="{site_url}" style="color:#888888;text-decoration:underline;">{site_url}</a></p>'
+			. '<p style="margin:16px 0 0;font-size:11px;color:#aaaaaa;">Bu e-posta {site_name} tarafından gönderilmiştir.</p>'
+			. '</td></tr></table>';
+	}
+
+	public static function getEmailHeader(): string
+	{
+		$stored = trim((string) Settings::get('MAIL_HEADER'));
+
+		return $stored !== '' ? $stored : self::getDefaultEmailHeader();
+	}
+
+	public static function getEmailFooter(): string
+	{
+		$stored = trim((string) Settings::get('MAIL_FOOTER'));
+
+		return $stored !== '' ? $stored : self::getDefaultEmailFooter();
+	}
+
+	public static function previewTemplate(string $contentHtml): string
+	{
+		return self::wrapTemplate($contentHtml);
+	}
+
 	private static function sendViaPhpMail(string $to, string $subject, string $bodyHtml): bool
 	{
 		if (!function_exists('mail')) {
@@ -136,12 +187,54 @@ class Mail
 
 	private static function wrapTemplate(string $body): string
 	{
+		$header = self::replaceLayoutPlaceholders(self::getEmailHeader());
+		$content = self::wrapContentSection($body);
+		$footer = self::replaceLayoutPlaceholders(self::getEmailFooter());
 		$siteName = htmlspecialchars(Settings::get('SITE_NAME') ?: 'FShop', ENT_QUOTES, 'UTF-8');
 
-		return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;line-height:1.5;color:#222;">'
-			. '<div style="max-width:560px;margin:0 auto;padding:24px;">'
+		return '<!DOCTYPE html>'
+			. '<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+			. '<title>' . $siteName . '</title></head>'
+			. '<body style="margin:0;padding:0;background:#f4f4f5;">'
+			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f5;">'
+			. '<tr><td align="center" style="padding:24px 12px;">'
+			. '<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e8e8e8;">'
+			. '<tr><td>' . $header . '</td></tr>'
+			. '<tr><td>' . $content . '</td></tr>'
+			. '<tr><td>' . $footer . '</td></tr>'
+			. '</table></td></tr></table></body></html>';
+	}
+
+	private static function wrapContentSection(string $body): string
+	{
+		if (strpos($body, '<') === false) {
+			$body = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'), false);
+		}
+
+		return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">'
+			. '<tr><td style="padding:28px 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#333333;">'
 			. $body
-			. '<p style="margin-top:32px;font-size:12px;color:#888;">' . $siteName . '</p>'
-			. '</div></body></html>';
+			. '</td></tr></table>';
+	}
+
+	private static function replaceLayoutPlaceholders(string $text): string
+	{
+		global $domain;
+
+		if (!class_exists('SiteAssets', false)) {
+			require_once dirname(__DIR__) . '/core/SiteAssets.php';
+		}
+
+		$siteUrl = rtrim((string) $domain, '/');
+		$siteName = (string) (Settings::get('SITE_NAME') ?: 'FShop');
+		$map = [
+			'{site_name}' => htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'),
+			'{site_url}' => htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'),
+			'{logo_url}' => htmlspecialchars(SiteAssets::getLogoUrl('header'), ENT_QUOTES, 'UTF-8'),
+			'{contact_email}' => htmlspecialchars((string) Settings::get('CONTACT_EMAIL'), ENT_QUOTES, 'UTF-8'),
+			'{contact_phone}' => htmlspecialchars((string) Settings::get('CONTACT_PHONE'), ENT_QUOTES, 'UTF-8'),
+		];
+
+		return str_replace(array_keys($map), array_values($map), $text);
 	}
 }

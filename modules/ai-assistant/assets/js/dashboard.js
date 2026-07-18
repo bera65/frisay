@@ -4,7 +4,6 @@
 	var cfg = window.AiAssistantDashboard || {};
 	var btn = document.getElementById('aiAnalyzeDashboardBtn');
 	var statusEl = document.getElementById('aiDashStatus');
-	var resultEl = document.getElementById('aiDashResult');
 
 	if (!btn) {
 		return;
@@ -14,8 +13,9 @@
 		if (!statusEl) {
 			return;
 		}
+
 		statusEl.textContent = msg || '';
-		statusEl.className = 'small mb-2' + (type === 'error' ? ' text-danger' : type === 'success' ? ' text-success' : ' text-muted');
+		statusEl.className = 'small mb-0' + (type === 'error' ? ' text-danger' : type === 'success' ? ' text-success' : ' text-muted');
 	}
 
 	function escapeHtml(value) {
@@ -36,7 +36,8 @@
 			return '<ul class="mb-2 ps-3">' + block + '</ul>';
 		});
 		text = text.replace(/\n{2,}/g, '</p><p class="mb-2">');
-		return '<p class="mb-2">' + text + '</p>';
+
+		return '<div class="ai-modal-analysis">' + text + '</div>';
 	}
 
 	btn.addEventListener('click', function () {
@@ -46,9 +47,13 @@
 		}
 
 		btn.disabled = true;
-		setStatus('Satış verileri toplanıyor ve analiz ediliyor…', 'info');
-		if (resultEl) {
-			resultEl.innerHTML = '';
+		setStatus('Analiz başlatıldı…', 'info');
+
+		if (window.AiAssistantModal) {
+			window.AiAssistantModal.loading(
+				'Dashboard analiz ediliyor',
+				'Satış verileri toplanıyor ve yapay zeka yorumluyor…'
+			);
 		}
 
 		var body = new FormData();
@@ -63,16 +68,42 @@
 			.then(function (res) { return res.json(); })
 			.then(function (data) {
 				if (!data || !data.success) {
-					setStatus((data && data.message) || 'Analiz başarısız', 'error');
+					var err = (data && data.message) || 'Analiz başarısız';
+
+					setStatus(err, 'error');
+
+					if (window.AiAssistantModal) {
+						window.AiAssistantModal.open({
+							title: 'Analiz başarısız',
+							body: '<div class="alert alert-danger mb-0">' + escapeHtml(err) + '</div>',
+							footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+						});
+					}
+
 					return;
 				}
-				setStatus((data.message || 'Analiz hazır') + (data.model ? ' · ' + data.model : ''), 'success');
-				if (resultEl) {
-					resultEl.innerHTML = simpleMarkdown(data.analysis || '');
+
+				var meta = (data.message || 'Analiz hazır') + (data.model ? ' · ' + data.model : '');
+				setStatus('Analiz tamamlandı. Sonuçlar pencerede açıldı.', 'success');
+
+				if (window.AiAssistantModal) {
+					window.AiAssistantModal.open({
+						title: 'Yapay zeka mağaza analizi',
+						body: '<p class="small text-muted mb-3">' + escapeHtml(meta) + '</p>' + simpleMarkdown(data.analysis || ''),
+						footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+					});
 				}
 			})
 			.catch(function () {
 				setStatus('Bağlantı hatası', 'error');
+
+				if (window.AiAssistantModal) {
+					window.AiAssistantModal.open({
+						title: 'Bağlantı hatası',
+						body: '<div class="alert alert-danger mb-0">Sunucuya ulaşılamadı. Tekrar deneyin.</div>',
+						footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+					});
+				}
 			})
 			.finally(function () {
 				btn.disabled = false;

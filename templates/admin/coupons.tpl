@@ -26,6 +26,7 @@
 						<tr>
 							<th>{'Code'|adminT}</th>
 							<th>{'Discount'|adminT}</th>
+							<th>{'Customer'|adminT}</th>
 							<th>{'Min. cart'|adminT}</th>
 							<th>{'Usage'|adminT}</th>
 							<th>{'Validity'|adminT}</th>
@@ -39,6 +40,7 @@
 						<tr>
 							<td><strong>{$row.code|escape}</strong></td>
 							<td>{$row.discount_label}</td>
+							<td class="small">{if $row.customer_label}{$row.customer_label|escape}{else}<span class="text-muted">{'All'|adminT}</span>{/if}</td>
 							<td>{$row.min_cart_formatted}</td>
 							<td>{$row.used_count}{if $row.max_uses > 0} / {$row.max_uses}{/if}</td>
 							<td class="small">
@@ -59,7 +61,7 @@
 						</tr>
 						{/foreach}
 						{else}
-						<tr><td colspan="7" class="text-muted">{'No coupons yet.'|adminT}</td></tr>
+						<tr><td colspan="8" class="text-muted">{'No coupons yet.'|adminT}</td></tr>
 						{/if}
 					</tbody>
 				</table>

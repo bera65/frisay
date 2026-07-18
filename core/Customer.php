@@ -570,6 +570,57 @@ class Customer
 		];
 	}
 
+	public static function createByAdmin(string $fullName, string $phone, string $email = ''): array
+	{
+		$fullName = trim($fullName);
+		$phone = self::normalizePhone($phone);
+		$email = trim(strtolower($email));
+
+		if (!Validate::isName($fullName)) {
+			return self::fail('Geçerli bir ad soyad girin');
+		}
+
+		if (!self::isValidPhone($phone)) {
+			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+		}
+
+		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return self::fail('Geçerli bir e-posta adresi girin');
+		}
+
+		$exists = DB::getValue('SELECT id_user FROM users WHERE phone = ? LIMIT 1', [$phone]);
+
+		if ($exists) {
+			return self::fail('Bu telefon numarası zaten kayıtlı');
+		}
+
+		if ($email !== '') {
+			$emailExists = DB::getValue('SELECT id_user FROM users WHERE email = ? LIMIT 1', [$email]);
+
+			if ($emailExists) {
+				return self::fail('Bu e-posta adresi zaten kayıtlı');
+			}
+		}
+
+		$id = DB::insert('users', [
+			'user_full_name' => mb_substr($fullName, 0, 128),
+			'phone' => $phone,
+			'email' => $email,
+			'password' => self::hashPassword(bin2hex(random_bytes(12))),
+			'active' => 1,
+		]);
+
+		if (!$id) {
+			return self::fail('Müşteri oluşturulamadı');
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Müşteri oluşturuldu',
+			'id_user' => (int) $id,
+		];
+	}
+
 	public static function setPasswordByAdmin(int $idUser, string $password, string $password2): array
 	{
 		if ($idUser <= 0) {

@@ -3,9 +3,7 @@
 
 	var cfg = window.AiAssistantProduct || {};
 	var btn = document.getElementById('aiImproveProductBtn');
-	var applyBtn = document.getElementById('aiApplySuggestionsBtn');
 	var statusEl = document.getElementById('aiProductStatus');
-	var previewEl = document.getElementById('aiProductPreview');
 	var suggestions = null;
 
 	if (!btn) {
@@ -16,6 +14,7 @@
 		if (!statusEl) {
 			return;
 		}
+
 		statusEl.textContent = msg || '';
 		statusEl.className = 'small mb-0' + (type === 'error' ? ' text-danger' : type === 'success' ? ' text-success' : ' text-muted');
 	}
@@ -28,12 +27,23 @@
 			.replace(/"/g, '&quot;');
 	}
 
+	function formatBlock(label, value, extraClass) {
+		var cls = 'ai-modal-field' + (extraClass ? ' ' + extraClass : '');
+		return '<div class="' + cls + '">'
+			+ '<div class="ai-modal-field__label">' + escapeHtml(label) + '</div>'
+			+ '<div class="ai-modal-field__value">' + (value || '<span class="text-muted">—</span>') + '</div>'
+			+ '</div>';
+	}
+
 	function getActiveLangCode() {
 		var activePane = document.querySelector('.tab-pane.show.active[id^="product-pane-"]');
+
 		if (activePane && activePane.id) {
 			return activePane.id.replace('product-pane-', '');
 		}
+
 		var first = document.querySelector('.tab-pane[id^="product-pane-"]');
+
 		return first && first.id ? first.id.replace('product-pane-', '') : '';
 	}
 
@@ -41,15 +51,19 @@
 		if (lang) {
 			return document.querySelector('[name="langs[' + lang + '][' + name + ']"]');
 		}
+
 		return document.querySelector('[name="' + name + '"]');
 	}
 
 	function readFields() {
 		var lang = getActiveLangCode();
+
 		function val(name) {
 			var el = field(name, lang);
+
 			return el ? el.value : '';
 		}
+
 		return {
 			lang: lang,
 			product_name: val('product_name'),
@@ -64,54 +78,92 @@
 		if (!el) {
 			return;
 		}
+
 		el.value = value;
+
 		if (window.tinymce) {
 			var ed = tinymce.get(el.id);
+
 			if (ed) {
 				ed.setContent(value || '');
 			}
 		}
+
 		el.dispatchEvent(new Event('input', { bubbles: true }));
 		el.dispatchEvent(new Event('change', { bubbles: true }));
 	}
 
 	function applySuggestions(data) {
 		var lang = getActiveLangCode();
+
 		if (!data) {
 			return;
 		}
+
 		if (data.product_name) {
 			setTinyOrInput(field('product_name', lang), data.product_name);
 		}
+
 		if (data.short_description) {
 			setTinyOrInput(field('short_description', lang), data.short_description);
 		}
+
 		if (data.description) {
 			setTinyOrInput(field('description', lang), data.description);
 		}
+
 		if (data.meta_title) {
 			setTinyOrInput(field('meta_title', lang), data.meta_title);
 		}
+
 		if (data.meta_description) {
 			setTinyOrInput(field('meta_description', lang), data.meta_description);
 		}
 	}
 
-	function renderPreview(data, notes) {
-		if (!previewEl) {
+	function renderModalPreview(data, notes) {
+		var html = formatBlock('Başlık', escapeHtml(data.product_name || ''));
+		html += formatBlock('Kısa açıklama', escapeHtml(data.short_description || ''));
+		html += formatBlock(
+			'Uzun açıklama',
+			'<div class="ai-modal-description">' + escapeHtml(data.description || '').replace(/\n/g, '<br>') + '</div>',
+			'ai-modal-field--wide'
+		);
+		html += formatBlock('Meta başlık', escapeHtml(data.meta_title || ''));
+		html += formatBlock('Meta açıklama', escapeHtml(data.meta_description || ''));
+
+		if (notes) {
+			html += '<div class="alert alert-light border small mb-0 mt-3">' + escapeHtml(notes) + '</div>';
+		}
+
+		return html;
+	}
+
+	function openResultModal(data, notes, message) {
+		if (!window.AiAssistantModal) {
 			return;
 		}
-		var html = '<div class="border rounded p-2 bg-light">';
-		html += '<div class="mb-1"><strong>Başlık:</strong> ' + escapeHtml(data.product_name || '—') + '</div>';
-		html += '<div class="mb-1"><strong>Kısa:</strong> ' + escapeHtml(data.short_description || '—') + '</div>';
-		html += '<div class="mb-1"><strong>Meta başlık:</strong> ' + escapeHtml(data.meta_title || '—') + '</div>';
-		html += '<div class="mb-1"><strong>Meta açıklama:</strong> ' + escapeHtml(data.meta_description || '—') + '</div>';
-		if (notes) {
-			html += '<div class="text-muted mt-1">' + escapeHtml(notes) + '</div>';
+
+		var footer = ''
+			+ '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+			+ '<button type="button" class="btn btn-dark btn-sm" id="aiModalApplyBtn">Önerileri forma yaz</button>';
+
+		window.AiAssistantModal.open({
+			title: 'AI ürün metni önerileri',
+			body: renderModalPreview(data || {}, notes || '')
+				+ (message ? '<p class="small text-success mb-0 mt-2">' + escapeHtml(message) + '</p>' : ''),
+			footer: footer
+		});
+
+		var applyBtn = document.getElementById('aiModalApplyBtn');
+
+		if (applyBtn) {
+			applyBtn.addEventListener('click', function () {
+				applySuggestions(suggestions);
+				setStatus('Öneriler forma yazıldı. Kaydetmeyi unutmayın.', 'success');
+				window.AiAssistantModal.close();
+			});
 		}
-		html += '</div>';
-		previewEl.style.display = '';
-		previewEl.innerHTML = html;
 	}
 
 	btn.addEventListener('click', function () {
@@ -122,10 +174,11 @@
 
 		var current = readFields();
 		btn.disabled = true;
-		if (applyBtn) {
-			applyBtn.disabled = true;
-		}
 		setStatus('Yapay zeka çalışıyor…', 'info');
+
+		if (window.AiAssistantModal) {
+			window.AiAssistantModal.loading('Ürün metinleri iyileştiriliyor', 'Başlık, açıklama ve SEO alanları hazırlanıyor…');
+		}
 
 		var body = new FormData();
 		body.append('token', cfg.token || '');
@@ -145,31 +198,38 @@
 			.then(function (res) { return res.json(); })
 			.then(function (data) {
 				if (!data || !data.success) {
-					setStatus((data && data.message) || 'İstek başarısız', 'error');
+					var err = (data && data.message) || 'İstek başarısız';
+
+					setStatus(err, 'error');
+
+					if (window.AiAssistantModal) {
+						window.AiAssistantModal.open({
+							title: 'Hata',
+							body: '<div class="alert alert-danger mb-0">' + escapeHtml(err) + '</div>',
+							footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+						});
+					}
+
 					return;
 				}
+
 				suggestions = data.suggestions || null;
-				renderPreview(suggestions || {}, data.notes || '');
-				if (applyBtn) {
-					applyBtn.disabled = !suggestions;
-				}
-				setStatus(data.message || 'Öneriler hazır. Forma yazmak için butona basın.', 'success');
+				setStatus(data.message || 'Öneriler hazır.', 'success');
+				openResultModal(suggestions || {}, data.notes || '', data.message || '');
 			})
 			.catch(function () {
 				setStatus('Bağlantı hatası', 'error');
+
+				if (window.AiAssistantModal) {
+					window.AiAssistantModal.open({
+						title: 'Bağlantı hatası',
+						body: '<div class="alert alert-danger mb-0">Sunucuya ulaşılamadı. Tekrar deneyin.</div>',
+						footer: '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>'
+					});
+				}
 			})
 			.finally(function () {
 				btn.disabled = false;
 			});
 	});
-
-	if (applyBtn) {
-		applyBtn.addEventListener('click', function () {
-			if (!suggestions) {
-				return;
-			}
-			applySuggestions(suggestions);
-			setStatus('Öneriler forma yazıldı. Kaydetmeyi unutmayın.', 'success');
-		});
-	}
 })();

@@ -662,6 +662,12 @@ class Lang
 	{
 		self::ensureSchema();
 
+		foreach (['product_link', 'category_link', 'brand_link'] as $linkField) {
+			if (array_key_exists($linkField, $fields) && trim((string) $fields[$linkField]) === '') {
+				return;
+			}
+		}
+
 		$exists = DB::getValue(
 			'SELECT `' . $idField . '` FROM `' . $table . '` WHERE `' . $idField . '` = ? AND `lang` = ? LIMIT 1',
 			[$id, $lang]
@@ -715,6 +721,29 @@ class Lang
 			$fromSource = trim((string) ($source[$field] ?? ''));
 
 			$row[$field] = $fromSource !== '' ? $fromSource : $value;
+		}
+
+		foreach (['product_link', 'category_link', 'brand_link'] as $linkField) {
+			if (!array_key_exists($linkField, $row)) {
+				continue;
+			}
+
+			if (trim((string) $row[$linkField]) !== '') {
+				continue;
+			}
+
+			$nameField = str_replace('_link', '_name', $linkField);
+			$name = trim((string) ($row[$nameField] ?? ''));
+
+			if ($name !== '') {
+				$row[$linkField] = Tools::createSlug($name);
+			}
+		}
+
+		foreach (['product_link', 'category_link', 'brand_link'] as $linkField) {
+			if (array_key_exists($linkField, $row) && trim((string) $row[$linkField]) === '') {
+				return;
+			}
 		}
 
 		DB::insert($table, array_merge($row, [

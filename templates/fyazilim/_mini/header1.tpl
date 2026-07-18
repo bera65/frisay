@@ -26,10 +26,16 @@
 			</div>
 			<span class="fy-topbar__divider d-none d-md-inline-block"></span>
 			{include file='fyazilim/plugin/lang-switcher.tpl'}
-			<select class="fy-topbar__select" aria-label="Currency" onchange="if(this.value){ location.href=this.value; }">
-				<option value="" selected>TRY ₺</option>
-				<option value="">USD $</option>
-				<option value="">EUR €</option>
+			<select class="fy-topbar__select fy-currency-switcher" aria-label="Currency" onchange="if(this.value){ location.href=this.value; }">
+				{if $currencyOptions|default:[]|@count > 0}
+				{foreach from=$currencyOptions item=opt}
+				<option value="{$opt.url|escape}"{if $opt.is_active} selected{/if}>{$opt.code|upper|escape} {$opt.symbol|escape}</option>
+				{/foreach}
+				{else}
+				<option value="{$siteBaseUrl|default:$domain|escape}/?set_currency=try&amp;redirect={$currencyRedirectPath|default:'/'|escape:'url'}"{if $displayCurrency|default:'try' == 'try'} selected{/if}>TRY ₺</option>
+				<option value="{$siteBaseUrl|default:$domain|escape}/?set_currency=usd&amp;redirect={$currencyRedirectPath|default:'/'|escape:'url'}"{if $displayCurrency|default:'' == 'usd'} selected{/if}>USD $</option>
+				<option value="{$siteBaseUrl|default:$domain|escape}/?set_currency=eur&amp;redirect={$currencyRedirectPath|default:'/'|escape:'url'}"{if $displayCurrency|default:'' == 'eur'} selected{/if}>EUR €</option>
+				{/if}
 			</select>
 			<span class="fy-topbar__divider d-none d-md-inline-block"></span>
 			{if $isLoggedIn}
@@ -44,7 +50,7 @@
 </div>
 {/if}
 
-<header class="fy-header">
+<header class="fy-header fy-header--with-search-icon">
 	<div class="fy-container fy-header__inner">
 		<button class="fy-menu-toggle" type="button" data-bs-toggle="offcanvas" href="#primeMobileMenu" aria-controls="primeMobileMenu" aria-label="Menü">
 			<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>
@@ -54,30 +60,46 @@
 			<img src="{$domain}img/logo.png" alt="{$siteName}" />
 		</a>
 
-		<ul class="fy-nav">
-			{if $hooks.main_menu}
-				{$hooks.main_menu nofilter}
-			{else}
-			{foreach $menuCategories as $cat}
-			{if $cat.id_parent == 1}
-			<li>
-				<a href="{$domain}{$cat.category_link}" class="{if isset($category) && $category.category_link == $cat.category_link}active{/if}">
-					{$cat.category_name|escape}
-				</a>
-				{if $themeOptions.dropdown_subcategories|default:'1' == '1' && $cat.subcategories|default:[]|@count > 0}
-				<div class="fy-nav__drop">
-					{foreach $cat.subcategories as $child}
-					<a href="{$domain}{$child.category_link|escape}">{$child.category_name|escape}</a>
-					{/foreach}
-				</div>
+		<div class="fy-header__menu-area">
+			<ul class="fy-nav" data-fy-header-nav>
+				{if $hooks.main_menu}
+					{$hooks.main_menu nofilter}
+				{else}
+				{foreach $menuCategories as $cat}
+				{if $cat.id_parent == 1}
+				<li>
+					<a href="{$domain}{$cat.category_link}" class="{if isset($category) && $category.category_link == $cat.category_link}active{/if}">
+						{$cat.category_name|escape}
+					</a>
+					{if $themeOptions.dropdown_subcategories|default:'1' == '1' && $cat.subcategories|default:[]|@count > 0}
+					<div class="fy-nav__drop">
+						{foreach $cat.subcategories as $child}
+						<a href="{$domain}{$child.category_link|escape}">{$child.category_name|escape}</a>
+						{/foreach}
+					</div>
+					{/if}
+				</li>
 				{/if}
-			</li>
-			{/if}
-			{/foreach}
-			{/if}
-		</ul>
+				{/foreach}
+				{/if}
+			</ul>
+
+			<div class="fy-header-search fy-header-search--swap" data-fy-search-slot hidden>
+				{include file='fyazilim/plugin/header-search.tpl' fySearchInputId='fyHeaderSearchSwapInput'}
+			</div>
+		</div>
 
 		<div class="fy-header__actions">
+			<button
+				type="button"
+				class="fy-header-icon-btn"
+				data-fy-search-open
+				aria-label="{'Search'|translate}"
+				aria-expanded="false"
+				aria-controls="fyHeaderSearchSwapInput"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+			</button>
 			{if $isLoggedIn}
 				{include file='fyazilim/plugin/notifications-dropdown.tpl'}
 			{/if}

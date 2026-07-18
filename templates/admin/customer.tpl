@@ -36,6 +36,9 @@
 			</p>
 
 			<button type="submit" class="btn btn-dark btn-sm">{'Save information'|adminT}</button>
+			<button type="button" class="btn btn-outline-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#customerContactModal">
+				{'Contact customer'|adminT}
+			</button>
 		</form>
 
 		<form method="post" class="admin-panel p-3 mb-4">
@@ -98,3 +101,67 @@
 		</div>
 	</div>
 </div>
+
+<div class="modal fade" id="customerContactModal" tabindex="-1" aria-labelledby="customerContactModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post">
+				<input type="hidden" name="sendCustomerContact" value="1">
+				<input type="hidden" name="token" value="{$adminToken}">
+				<div class="modal-header">
+					<h5 class="modal-title" id="customerContactModalLabel">{'Contact customer'|adminT}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|adminT}"></button>
+				</div>
+				<div class="modal-body">
+					<p class="small text-muted mb-3">
+						<strong>{$customer.user_full_name|escape}</strong>
+						{if $customerHasPhone}<br>{'Phone'|adminT}: {$customer.phone|escape}{/if}
+						{if $customerHasEmail}<br>{'Email'|adminT}: {$customer.email|escape}{/if}
+					</p>
+
+					<div class="mb-3">
+						<label class="form-label" for="customerContactMessage">{'Message'|adminT}</label>
+						<textarea id="customerContactMessage" name="contact_message" class="form-control" rows="5" required placeholder="{'Write your message to the customer...'|adminT}"></textarea>
+					</div>
+
+					<div class="mb-0">
+						<label class="form-label d-block">{'Send via'|adminT}</label>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="contact_channel" id="contactChannelWhatsapp" value="whatsapp"{if $customerHasPhone} checked{else} disabled{/if}>
+							<label class="form-check-label" for="contactChannelWhatsapp">
+								WhatsApp
+								{if $customerContactWapioReady}
+								<span class="text-muted small">({'via Wapio API'|adminT})</span>
+								{else}
+								<span class="text-muted small">({'opens wa.me link'|adminT})</span>
+								{/if}
+							</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="contact_channel" id="contactChannelEmail" value="email"{if !$customerHasPhone && $customerHasEmail} checked{elseif !$customerHasPhone} disabled{/if}>
+							<label class="form-check-label" for="contactChannelEmail">{'Email'|adminT}</label>
+						</div>
+						{if !$customerHasPhone && !$customerHasEmail}
+						<p class="small text-danger mb-0 mt-2">{'Customer has no phone or email on file.'|adminT}</p>
+						{/if}
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{'Cancel'|adminT}</button>
+					<button type="submit" class="btn btn-dark btn-sm"{if !$customerHasPhone && !$customerHasEmail} disabled{/if}>{'Send message'|adminT}</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+{if $contactRedirectUrl}
+<script>
+(function () {
+	var url = {$contactRedirectUrl|@json_encode nofilter};
+	if (url) {
+		window.open(url, '_blank', 'noopener');
+	}
+})();
+</script>
+{/if}

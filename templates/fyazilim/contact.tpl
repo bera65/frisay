@@ -36,7 +36,11 @@
 
 				<p class="mb-3"><strong>{'Phone'|translate}</strong><br><a href="tel:{$contactPhoneTel|escape}">{$contactPhone|escape}</a></p>
 
-				<p class="mb-0"><strong>{'Working Hours'|translate}</strong><br>{'Monday to Friday, 09:00 – 18:00'|translate}</p>
+				{if $contactAddress}
+				<p class="mb-3"><strong>{'Address'|translate}</strong><br>{$contactAddress|escape}{if $contactCity}<br>{$contactCity|escape}{/if}{if $contactCountry}<br>{$contactCountry|escape}{/if}</p>
+				{/if}
+
+				<p class="mb-0"><strong>{'Working Hours'|translate}</strong><br>{$openHour|escape} – {$closeHour|escape}</p>
 
 			</div>
 

@@ -55,6 +55,13 @@
 		'contactError' => $contactError,
 		'formData' => $formData,
 		'contactEmail' => Settings::get('CONTACT_EMAIL'),
+		'contactPhone' => Settings::get('CONTACT_PHONE'),
+		'contactPhoneTel' => Settings::get('CONTACT_PHONE_TEL'),
+		'contactAddress' => Settings::get('CONTACT_ADDRESS'),
+		'contactCity' => Settings::get('CONTACT_CITY'),
+		'contactCountry' => Settings::get('CONTACT_COUNTRY'),
+		'openHour' => Settings::get('OPEN_HOUR') ?: '09:00',
+		'closeHour' => Settings::get('CLOSE_HOUR') ?: '18:00',
 		'breadcrumb' => [
 			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => translate('Contact Us'), 'url' => ''],

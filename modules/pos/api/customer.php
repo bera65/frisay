@@ -40,5 +40,14 @@ if ($op === 'set') {
 	exit;
 }
 
+if ($op === 'create') {
+	echo json_encode($pos->createCustomer(
+		(string) Tools::getValue('name'),
+		(string) Tools::getValue('phone'),
+		(string) Tools::getValue('email')
+	));
+	exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Geçersiz işlem']);

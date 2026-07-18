@@ -73,10 +73,37 @@
 		}
 	}
 
+	$contactRedirectUrl = '';
+
+	if (Tools::isSubmit('sendCustomerContact')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = adminT('Invalid request');
+			$flashType = 'danger';
+		} else {
+			$result = CustomerContact::send(
+				$customer,
+				(string) Tools::getValue('contact_channel'),
+				(string) Tools::getValue('contact_message')
+			);
+			$flash = $result['message'];
+			$flashType = !empty($result['success']) ? 'success' : 'danger';
+
+			if (!empty($result['success']) && !empty($result['mode']) && $result['mode'] === 'redirect' && !empty($result['url'])) {
+				$contactRedirectUrl = (string) $result['url'];
+			}
+		}
+	}
+
 	$smarty->assign([
 		'customer' => $customer,
 		'flash' => $flash,
 		'flashType' => $flashType,
+		'customerContactWapioReady' => CustomerContact::isWapioReady(),
+		'customerHasPhone' => trim((string) ($customer['phone'] ?? '')) !== '',
+		'customerHasEmail' => trim((string) ($customer['email'] ?? '')) !== '' && filter_var((string) $customer['email'], FILTER_VALIDATE_EMAIL),
+		'contactRedirectUrl' => $contactRedirectUrl,
 	]);
 
 	AdminPage::add('customer', $customer['user_full_name']);

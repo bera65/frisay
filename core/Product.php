@@ -73,6 +73,13 @@ class Product
 			);
 		}
 
+		$dovizCost = DB::execute("SHOW COLUMNS FROM `products` LIKE 'doviz_cost'");
+		if (empty($dovizCost)) {
+			DB::execute(
+				"ALTER TABLE `products` ADD COLUMN `doviz_cost` decimal(20,2) NOT NULL DEFAULT 0.00 AFTER `doviz_old_price`"
+			);
+		}
+
 		$cargoDay = DB::execute("SHOW COLUMNS FROM `products` LIKE 'cargo_day'");
 		if (empty($cargoDay)) {
 			DB::execute(
@@ -89,8 +96,34 @@ class Product
 			);
 		}
 
+		$packOverride = DB::execute("SHOW COLUMNS FROM `products` LIKE 'pack_price_override'");
+		if (empty($packOverride)) {
+			DB::execute(
+				"ALTER TABLE `products` ADD COLUMN `pack_price_override` decimal(20,2) NULL DEFAULT NULL AFTER `price`"
+			);
+		}
+
 		VirtualProduct::ensureSchema();
 		ProductVariation::ensureSchema();
+	}
+
+	public static function isPackProduct(array $product): bool
+	{
+		return ($product['product_type'] ?? 'physical') === 'pack';
+	}
+
+	/** @return class-string|null */
+	private static function productSetServiceClass(): ?string
+	{
+		$file = dirname(__DIR__) . '/modules/product-set/lib/ProductSetService.php';
+
+		if (!is_file($file)) {
+			return null;
+		}
+
+		require_once $file;
+
+		return class_exists('ProductSetService', false) ? 'ProductSetService' : null;
 	}
 
 	public static function getLink(array $row): string
@@ -151,6 +184,16 @@ class Product
 	{
 		$idProduct = (int) ($product['id_product'] ?? 0);
 
+		if (self::isPackProduct($product)) {
+			$svc = self::productSetServiceClass();
+
+			if ($svc === null || !class_exists('Module', false) || !Module::isEnabled('product-set')) {
+				return 0;
+			}
+
+			return max(0, (int) $svc::getAvailableStock($idProduct));
+		}
+
 		if ($idVariation > 0) {
 			$variation = ProductVariation::getById($idVariation);
 
@@ -193,6 +236,13 @@ class Product
 			return false;
 		}
 
+		$product = self::getByIdAdmin($idProduct);
+
+		if ($product && self::isPackProduct($product)) {
+			// Set ürünü sepete parçalanır; stok alt ürünlerden düşülür.
+			return true;
+		}
+
 		if ($idVariation > 0) {
 			return ProductVariation::decreaseStock($idVariation, $qty, $idProduct);
 		}
@@ -200,8 +250,6 @@ class Product
 		if (ProductVariation::hasVariations($idProduct)) {
 			return false;
 		}
-
-		$product = self::getByIdAdmin($idProduct);
 
 		if ($product && VirtualProduct::isVirtualProduct($product)) {
 			$kind = VirtualProduct::getKind($product);
@@ -227,6 +275,11 @@ class Product
 	public static function increaseStock(int $idProduct, int $qty, int $idVariation = 0): void
 	{
 		if ($qty <= 0) {
+			return;
+		}
+
+		$product = self::getByIdAdmin($idProduct);
+		if ($product && self::isPackProduct($product)) {
 			return;
 		}
 
@@ -372,17 +425,37 @@ class Product
 	{
 		$row['url'] = self::getLink($row);
 		$row['image_url'] = self::getImageUrl(isset($row['id_image']) ? (int) $row['id_image'] : null);
-		$row['stock'] = (int) ($row['stock'] ?? 0);
+		$row['is_pack'] = self::isPackProduct($row);
 		$row['rating'] = (float) ($row['rating'] ?? 0);
 		$row['review_count'] = (int) ($row['review_count'] ?? 0);
-		$row['in_stock'] = self::isInStock($row);
-		$row['price_formatted'] = Tools::displayPrice((float) $row['price']);
-		$row['old_price'] = (float) ($row['old_price'] ?? 0);
-		$row['has_discount'] = $row['old_price'] > (float) $row['price'];
 		$row['label'] = trim((string) ($row['label'] ?? ''));
 		$row['is_virtual'] = VirtualProduct::isVirtualProduct($row);
 		$row['virtual_kind'] = VirtualProduct::getKind($row);
 		$row['virtual_kind_label'] = VirtualProduct::getKindLabel($row['virtual_kind']);
+
+		if (!empty($row['is_pack'])) {
+			$svc = self::productSetServiceClass();
+			$idPack = (int) ($row['id_product'] ?? 0);
+
+			if ($svc !== null && class_exists('Module', false) && Module::isEnabled('product-set') && $idPack > 0) {
+				$pricing = $svc::getPricing($idPack, $row);
+				$row['price'] = (float) $pricing['price'];
+				$row['old_price'] = (float) $pricing['old_price'];
+				$row['pack_components_total'] = (float) $pricing['components_total'];
+				$row['pack_has_override'] = !empty($pricing['has_override']);
+				$row['stock'] = (int) $svc::getAvailableStock($idPack);
+			} else {
+				$row['price'] = 0.0;
+				$row['stock'] = 0;
+			}
+		} else {
+			$row['stock'] = (int) ($row['stock'] ?? 0);
+		}
+
+		$row['in_stock'] = self::isInStock($row);
+		$row['price_formatted'] = Tools::displayPrice((float) $row['price']);
+		$row['old_price'] = (float) ($row['old_price'] ?? 0);
+		$row['has_discount'] = $row['old_price'] > (float) $row['price'];
 
 		if ($row['has_discount']) {
 			$row['old_price_formatted'] = Tools::displayPrice($row['old_price']);
@@ -1000,10 +1073,29 @@ class Product
 	{
 		Lang::ensureSchema();
 
+		$defaultLang = Lang::getDefault();
+
 		foreach (Lang::getAvailable() as $lang) {
-			$entry = is_array($langData[$lang] ?? null) ? $langData[$lang] : [];
+			if (!array_key_exists($lang, $langData)) {
+				continue;
+			}
+
+			$entry = is_array($langData[$lang]) ? $langData[$lang] : [];
 			$name = trim((string) ($entry['product_name'] ?? ''));
 			$link = trim((string) ($entry['product_link'] ?? ''));
+			$shortDescription = trim(strip_tags((string) ($entry['short_description'] ?? '')));
+			$description = (string) ($entry['description'] ?? '');
+			$metaTitle = trim(strip_tags((string) ($entry['meta_title'] ?? '')));
+			$metaDescription = trim(strip_tags((string) ($entry['meta_description'] ?? '')));
+
+			if ($lang !== $defaultLang) {
+				$hasContent = $name !== '' || $link !== '' || $shortDescription !== ''
+					|| trim(strip_tags($description)) !== '' || $metaTitle !== '' || $metaDescription !== '';
+
+				if (!$hasContent) {
+					continue;
+				}
+			}
 
 			if ($link === '' && $name !== '') {
 				$link = Tools::createSlug($name);
@@ -1015,13 +1107,17 @@ class Product
 				return self::fail('Bu URL slug zaten kullanılıyor (' . Lang::label($lang) . ')');
 			}
 
+			if ($link === '') {
+				continue;
+			}
+
 			Lang::saveLangRow('product_lang', 'id_product', $idProduct, $lang, [
 				'product_name' => mb_substr($name, 0, 128),
 				'product_link' => mb_substr($link, 0, 128),
-				'short_description' => mb_substr(trim(strip_tags((string) ($entry['short_description'] ?? ''))), 0, 512),
-				'description' => (string) ($entry['description'] ?? ''),
-				'meta_title' => mb_substr(trim(strip_tags((string) ($entry['meta_title'] ?? ''))), 0, 255),
-				'meta_description' => mb_substr(trim(strip_tags((string) ($entry['meta_description'] ?? ''))), 0, 512),
+				'short_description' => mb_substr($shortDescription, 0, 512),
+				'description' => $description,
+				'meta_title' => mb_substr($metaTitle, 0, 255),
+				'meta_description' => mb_substr($metaDescription, 0, 512),
 			]);
 		}
 
@@ -1082,7 +1178,9 @@ class Product
 		$cargoDay = max(0, (int) ($data['cargo_day'] ?? $data['day'] ?? 0));
 		$label = mb_substr(trim(strip_tags((string) ($data['label'] ?? $data['tag'] ?? ''))), 0, 128);
 		$productType = (string) ($data['product_type'] ?? 'physical');
-		$productType = $productType === 'virtual' ? 'virtual' : 'physical';
+		if (!in_array($productType, ['physical', 'virtual', 'pack'], true)) {
+			$productType = 'physical';
+		}
 		$virtualKind = trim((string) ($data['virtual_kind'] ?? ''));
 		$allowedKinds = ['download', 'license', 'text'];
 
@@ -1092,8 +1190,29 @@ class Product
 			return self::fail('Sanal ürün için teslimat türü seçin');
 		}
 
+		$packPriceOverride = null;
+		if ($productType === 'pack') {
+			if (array_key_exists('pack_price_override', $data)) {
+				$rawOverride = trim((string) $data['pack_price_override']);
+				if ($rawOverride !== '') {
+					$packPriceOverride = max(0, (float) str_replace(',', '.', $rawOverride));
+				}
+			} elseif ($id > 0) {
+				$existingPack = self::getByIdAdmin($id);
+				if ($existingPack && array_key_exists('pack_price_override', $existingPack)
+					&& $existingPack['pack_price_override'] !== null
+					&& $existingPack['pack_price_override'] !== '') {
+					$packPriceOverride = (float) $existingPack['pack_price_override'];
+				}
+			}
+		}
+
 		$virtualText = trim((string) ($data['virtual_text'] ?? ''));
 
+		if ($productType === 'pack') {
+			$data['variations'] = [];
+			$data['has_variations'] = '0';
+		}
 		if ($id > 0) {
 			$existing = self::getByIdAdmin($id);
 
@@ -1177,13 +1296,14 @@ class Product
 			'description' 		=> $description,
 			'product_link' 		=> $link,
 			'price' 			=> max(0, $price),
+			'pack_price_override' => $productType === 'pack' ? $packPriceOverride : null,
 			'cost' 				=> max(0, $cost),
 			'doviz' 			=> $shopCurrency,
 			'doviz_price'		=> max(0, $price),
 			'doviz_old_price'	=> max(0, $oldPrice),
 			'old_price' 		=> max(0, $oldPrice),
 			'vat' 				=> max(0, $vat),
-			'stock' 			=> max(0, $stock),
+			'stock' 			=> $productType === 'pack' ? 0 : max(0, $stock),
 			'cargo_day' 		=> $cargoDay,
 			'label' 			=> $label,
 			'product_video' 	=> $productVideo,
@@ -1377,24 +1497,153 @@ class Product
 			return self::fail('Ürün bulunamadı');
 		}
 
+		$fetch = self::fetchImageBinaryFromUrl($url);
+
+		if (empty($fetch['success'])) {
+			return self::fail((string) ($fetch['message'] ?? 'Görsel indirilemedi'));
+		}
+
+		return self::importImageBinary($idProduct, (string) ($fetch['binary'] ?? ''));
+	}
+
+	/** @return string[] */
+	public static function parseImportImageUrls(string $raw): array
+	{
+		$raw = trim($raw);
+
+		if ($raw === '') {
+			return [];
+		}
+
+		$raw = str_replace(["\r\n", "\r", "\n"], ';', $raw);
+		$parts = preg_split('/[;|]+/', $raw) ?: [];
+		$urls = [];
+
+		foreach ($parts as $part) {
+			$url = trim($part, " \t,");
+
+			if ($url !== '') {
+				$urls[] = $url;
+			}
+		}
+
+		return array_values(array_unique($urls));
+	}
+
+	public static function getExportImageUrls(int $idProduct): string
+	{
+		if ($idProduct <= 0) {
+			return '';
+		}
+
+		$urls = [];
+
+		foreach (self::getImages($idProduct) as $image) {
+			$url = trim((string) ($image['url'] ?? ''));
+
+			if ($url !== '') {
+				$urls[] = $url;
+			}
+		}
+
+		return implode('; ', $urls);
+	}
+
+	/** @return array{success: bool, message: string, imported: int, errors: string[]} */
+	public static function importImagesFromExcel(int $idProduct, string $rawUrls): array
+	{
+		$urls = self::parseImportImageUrls($rawUrls);
+
+		if ($urls === []) {
+			return ['success' => true, 'message' => '', 'imported' => 0, 'errors' => []];
+		}
+
+		if ($idProduct <= 0 || !self::getByIdAdmin($idProduct)) {
+			return ['success' => false, 'message' => 'Ürün bulunamadı', 'imported' => 0, 'errors' => ['Ürün bulunamadı']];
+		}
+
+		$downloaded = [];
+		$errors = [];
+
+		foreach ($urls as $url) {
+			$fetch = self::fetchImageBinaryFromUrl($url);
+
+			if (!empty($fetch['success'])) {
+				$downloaded[] = [
+					'url' => $url,
+					'binary' => (string) ($fetch['binary'] ?? ''),
+				];
+				continue;
+			}
+
+			$errors[] = $url . ': ' . (string) ($fetch['message'] ?? 'Görsel indirilemedi');
+		}
+
+		if ($downloaded === []) {
+			return [
+				'success' => false,
+				'message' => 'Görsel yüklenemedi',
+				'imported' => 0,
+				'errors' => $errors,
+			];
+		}
+
+		foreach (self::getImages($idProduct) as $image) {
+			self::deleteImage((int) $image['id_image']);
+		}
+
+		$imported = 0;
+		$firstImageId = 0;
+
+		foreach ($downloaded as $item) {
+			$result = self::importImageBinary($idProduct, $item['binary']);
+
+			if (!empty($result['success'])) {
+				$imported++;
+
+				if ($firstImageId <= 0) {
+					$firstImageId = (int) ($result['id_image'] ?? $result['id'] ?? 0);
+				}
+			} else {
+				$errors[] = $item['url'] . ': ' . (string) ($result['message'] ?? 'Görsel kaydedilemedi');
+			}
+		}
+
+		if ($firstImageId > 0) {
+			self::setCover($firstImageId);
+		}
+
+		return [
+			'success' => $imported > 0,
+			'message' => $imported > 0
+				? $imported . ' görsel yüklendi'
+				: 'Görsel yüklenemedi',
+			'imported' => $imported,
+			'errors' => $errors,
+		];
+	}
+
+	/** @return array{success: bool, message?: string, binary?: string} */
+	private static function fetchImageBinaryFromUrl(string $url): array
+	{
 		$url = trim($url);
 
 		if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
-			return self::fail('Geçersiz görsel URL');
+			return ['success' => false, 'message' => 'Geçersiz görsel URL'];
 		}
 
 		$scheme = strtolower((string) (parse_url($url, PHP_URL_SCHEME) ?? ''));
 
 		if (!in_array($scheme, ['http', 'https'], true)) {
-			return self::fail('Sadece http/https URL desteklenir');
+			return ['success' => false, 'message' => 'Sadece http/https URL desteklenir'];
 		}
 
 		if (!Security::isSafeOutboundUrl($url)) {
-			return self::fail('Görsel URL güvenlik kontrolünden geçemedi');
+			return ['success' => false, 'message' => 'Görsel URL güvenlik kontrolünden geçemedi'];
 		}
 
 		if (!function_exists('curl_init')) {
-			return self::fail('cURL eklentisi gerekli');
+			return ['success' => false, 'message' => 'cURL eklentisi gerekli'];
 		}
 
 		$ch = curl_init($url);
@@ -1422,18 +1671,30 @@ class Product
 		curl_close($ch);
 
 		if ($binary === false || $binary === '') {
-			return self::fail($curlError !== '' ? 'Görsel indirilemedi: ' . $curlError : 'Görsel indirilemedi');
+			return ['success' => false, 'message' => $curlError !== '' ? 'Görsel indirilemedi: ' . $curlError : 'Görsel indirilemedi'];
 		}
 
 		if ($httpCode < 200 || $httpCode >= 300) {
-			return self::fail('Görsel indirilemedi (HTTP ' . $httpCode . ')');
+			return ['success' => false, 'message' => 'Görsel indirilemedi (HTTP ' . $httpCode . ')'];
 		}
 
 		if (strlen($binary) > 5 * 1024 * 1024) {
-			return self::fail('Görsel 5 MB sınırını aşıyor');
+			return ['success' => false, 'message' => 'Görsel 5 MB sınırını aşıyor'];
 		}
 
-		return self::importImageBinary($idProduct, $binary);
+		$info = @getimagesizefromstring($binary);
+
+		if (!$info) {
+			return ['success' => false, 'message' => 'Dosya bir görsel değil'];
+		}
+
+		$allowed = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP];
+
+		if (!in_array($info[2], $allowed, true)) {
+			return ['success' => false, 'message' => 'Sadece JPG, PNG veya WEBP desteklenir'];
+		}
+
+		return ['success' => true, 'binary' => $binary];
 	}
 
 	public static function patchQuick(int $id, array $data): array
@@ -1564,6 +1825,7 @@ class Product
 
 		$created = 0;
 		$updated = 0;
+		$imagesImported = 0;
 		$categoriesCreated = 0;
 		$brandsCreated = 0;
 		$errors = [];
@@ -1586,6 +1848,14 @@ class Product
 			);
 
 			if ($result['success']) {
+				$imagesImported += (int) ($result['images_imported'] ?? 0);
+
+				if (!empty($result['image_warnings'])) {
+					foreach ($result['image_warnings'] as $warning) {
+						$errors[] = 'Satır ' . ($i + 1) . ' görsel: ' . $warning;
+					}
+				}
+
 				if (!empty($result['created'])) {
 					$created++;
 				} else {
@@ -1609,6 +1879,10 @@ class Product
 
 		if ($brandsCreated > 0) {
 			$message .= ', ' . $brandsCreated . ' marka oluşturuldu';
+		}
+
+		if ($imagesImported > 0) {
+			$message .= ', ' . $imagesImported . ' görsel yüklendi';
 		}
 
 		if ($errors) {
@@ -1642,7 +1916,12 @@ class Product
 	): array {
 		$barcode = self::importCell($row, $map, 'barcode');
 		$stockCode = self::importCell($row, $map, 'stock_code');
-		$id = self::findIdByBarcodeOrStockCode($barcode, $stockCode);
+
+		if ($stockCode === '') {
+			return self::fail('Satır ' . $lineNo . ': stok kodu zorunludur');
+		}
+
+		$id = self::findIdByStockCode($stockCode);
 
 		$categoryName = self::importCell($row, $map, 'category_name');
 		$brandName = self::importCell($row, $map, 'brand_name');
@@ -1658,8 +1937,18 @@ class Product
 			return self::fail('Satır ' . $lineNo . ': marka oluşturulamadı');
 		}
 
-		$data = [
+		$defaultLang = Lang::getDefault();
+		$langFields = [
 			'product_name' => self::importCell($row, $map, 'product_name'),
+			'product_link' => self::importCell($row, $map, 'slug'),
+			'short_description' => self::importCell($row, $map, 'short_description'),
+			'description' => self::importCell($row, $map, 'description'),
+			'meta_title' => self::importCell($row, $map, 'meta_title'),
+			'meta_description' => self::importCell($row, $map, 'meta_description'),
+		];
+
+		$data = [
+			'product_name' => $langFields['product_name'],
 			'barcode' => $barcode,
 			'stock_code' => $stockCode,
 			'desi' => self::importCell($row, $map, 'desi'),
@@ -1667,14 +1956,17 @@ class Product
 			'old_price' => self::importCell($row, $map, 'old_price'),
 			'vat' => self::importCell($row, $map, 'vat'),
 			'stock' => self::importCell($row, $map, 'stock'),
-			'short_description' => self::importCell($row, $map, 'short_description'),
-			'description' => self::importCell($row, $map, 'description'),
-			'meta_title' => self::importCell($row, $map, 'meta_title'),
-			'meta_description' => self::importCell($row, $map, 'meta_description'),
-			'product_link' => self::importCell($row, $map, 'slug'),
+			'short_description' => $langFields['short_description'],
+			'description' => $langFields['description'],
+			'meta_title' => $langFields['meta_title'],
+			'meta_description' => $langFields['meta_description'],
+			'product_link' => $langFields['product_link'],
 			'id_category' => $idCategory,
 			'id_brand' => $idBrand,
 			'active' => self::parseImportActive(self::importCell($row, $map, 'active')),
+			'langs' => [
+				$defaultLang => $langFields,
+			],
 		];
 
 		$result = self::save($data, $id);
@@ -1683,32 +1975,45 @@ class Product
 			return self::fail('Satır ' . $lineNo . ': ' . $result['message']);
 		}
 
+		$idProduct = (int) ($result['id'] ?? 0);
+		$imageRaw = self::importCell($row, $map, 'images');
+
+		if ($imageRaw !== '' && $idProduct > 0) {
+			$imageResult = self::importImagesFromExcel($idProduct, $imageRaw);
+
+			if (($imageResult['imported'] ?? 0) <= 0) {
+				$imageError = implode('; ', array_slice($imageResult['errors'] ?? [], 0, 2));
+
+				return self::fail(
+					'Satır ' . $lineNo . ': ürün kaydedildi ancak görsel yüklenemedi'
+					. ($imageError !== '' ? ' (' . $imageError . ')' : '')
+				);
+			}
+
+			if (!empty($imageResult['errors'])) {
+				$result['image_warnings'] = $imageResult['errors'];
+			}
+
+			$result['images_imported'] = (int) $imageResult['imported'];
+		}
+
 		$result['created'] = $id <= 0;
 
 		return $result;
 	}
 
-	private static function findIdByBarcodeOrStockCode(string $barcode, string $stockCode): int
+	private static function findIdByStockCode(string $stockCode): int
 	{
-		if ($barcode !== '') {
-			$id = (int) DB::getValue(
-				'SELECT id_product FROM products WHERE barcode = ? LIMIT 1',
-				[$barcode]
-			);
+		$stockCode = trim($stockCode);
 
-			if ($id > 0) {
-				return $id;
-			}
+		if ($stockCode === '') {
+			return 0;
 		}
 
-		if ($stockCode !== '') {
-			return (int) DB::getValue(
-				'SELECT id_product FROM products WHERE stock_code = ? LIMIT 1',
-				[$stockCode]
-			);
-		}
-
-		return 0;
+		return (int) DB::getValue(
+			'SELECT id_product FROM products WHERE stock_code = ? LIMIT 1',
+			[$stockCode]
+		);
 	}
 
 	private static function resolveOrCreateCategoryId(string $name, array &$cache, int &$createdCount): int
@@ -1825,7 +2130,7 @@ class Product
 			'product_id' => ['product id'],
 			'product_name' => ['product name', 'ürün adı', 'urun adi'],
 			'barcode' => ['barcode', 'barkod'],
-			'stock_code' => ['stock code', 'stok kodu'],
+			'stock_code' => ['stock code', 'stok kodu', 'sku'],
 			'desi' => ['desi'],
 			'price' => ['price', 'fiyat'],
 			'old_price' => ['old price', 'eski fiyat'],
@@ -1838,7 +2143,7 @@ class Product
 			'slug' => ['slug', 'product link', 'url'],
 			'category_name' => ['category name', 'kategori', 'kategori adı', 'kategori adi'],
 			'brand_name' => ['brand name', 'marka', 'marka adı', 'marka adi'],
-			'images' => ['images', 'görseller', 'gorseller'],
+			'images' => ['images', 'image', 'görseller', 'gorseller', 'gorsel'],
 			'active' => ['active', 'durum', 'aktif'],
 		];
 
@@ -1904,85 +2209,42 @@ class Product
 	
 	public static function refreshCurrencyPrices(): int
 	{
-		return 0;
+		if (!class_exists('ExchangeRate', false)) {
+			require_once dirname(__DIR__) . '/core/ExchangeRate.php';
+		}
+
+		ExchangeRate::getRates(true);
+
+		return ExchangeRate::refreshProductPrices();
 	}
 
 	private static function kurPrice(float $price, string $currency): float
 	{
-		if ($price <= 0) {
-			return 0.0;
+		if (!class_exists('ExchangeRate', false)) {
+			require_once dirname(__DIR__) . '/core/ExchangeRate.php';
 		}
 
-		$currency = strtolower(trim($currency));
-
-		if ($currency === '' || $currency === 'try') {
-			return round($price, 2);
-		}
-
-		$symbols = [
-			'usd' => 'USDTRY',
-			'eur' => 'EURTRY',
-			'xau' => 'GLDGR',
-		];
-
-		if (!isset($symbols[$currency])) {
-			return round($price, 2);
-		}
-
-		$rate = self::fetchExchangeRate($symbols[$currency]);
-
-		if ($rate <= 0) {
-			return 0.0;
-		}
-
-		return round($price * $rate, 2);
+		return ExchangeRate::toTry($price, $currency);
 	}
 
 	private static function fetchExchangeRate(string $symbol): float
 	{
-		static $rates = [];
-
-		if (isset($rates[$symbol])) {
-			return $rates[$symbol];
+		if (!class_exists('ExchangeRate', false)) {
+			require_once dirname(__DIR__) . '/core/ExchangeRate.php';
 		}
 
-		$urls = [
-			'https://api.bigpara.hurriyet.com.tr/doviz/headerlist/anasayfa',
-			'http://api.bigpara.hurriyet.com.tr/doviz/headerlist/anasayfa',
+		$map = [
+			'USDTRY' => 'usd',
+			'EURTRY' => 'eur',
+			'GLDGR' => 'xau',
 		];
 
-		$json = false;
-		$context = stream_context_create(['http' => ['timeout' => 8]]);
+		$code = $map[$symbol] ?? '';
 
-		foreach ($urls as $url) {
-			$json = @file_get_contents($url, false, $context);
-
-			if ($json !== false && $json !== '') {
-				break;
-			}
-		}
-
-		if ($json === false || $json === '') {
+		if ($code === '') {
 			return 0.0;
 		}
 
-		$payload = json_decode($json);
-
-		if (!isset($payload->data) || !is_array($payload->data)) {
-			return 0.0;
-		}
-
-		foreach ($payload->data as $item) {
-			if (!isset($item->SEMBOL) || $item->SEMBOL !== $symbol) {
-				continue;
-			}
-
-			$rate = (float) ($item->ALIS ?? 0);
-			$rates[$symbol] = $rate;
-
-			return $rate;
-		}
-
-		return 0.0;
+		return ExchangeRate::getRate($code);
 	}
 }

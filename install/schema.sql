@@ -69,6 +69,7 @@ CREATE TABLE `products` (
   `doviz` varchar(16) NOT NULL DEFAULT 'try',
   `doviz_price` decimal(20,2) NOT NULL DEFAULT 0.00,
   `doviz_old_price` decimal(20,2) NOT NULL DEFAULT 0.00,
+  `doviz_cost` decimal(20,2) NOT NULL DEFAULT 0.00,
   `old_price` decimal(20,2) NOT NULL DEFAULT 0.00,
   `vat` decimal(6,2) NOT NULL DEFAULT 20.00,
   `active` tinyint(1) NOT NULL DEFAULT 1,
@@ -429,7 +430,25 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('CONTACT_EMAIL', 'destek@example.com'),
 ('CONTACT_PHONE', '0555 000 00 00'),
 ('CONTACT_PHONE_TEL', '+905550000000'),
-('MAIL_DRIVER', 'php');
+('MAIL_DRIVER', 'php'),
+('MAIL_HEADER', ''),
+('MAIL_FOOTER', ''),
+('SHOP_ACTIVE', '1'),
+('SHOP_MAINTENANCE_MESSAGE', ''),
+('SHOP_MAINTENANCE_IPS', ''),
+('CONTACT_ADDRESS', ''),
+('CONTACT_CITY', ''),
+('CONTACT_COUNTRY', ''),
+('POSTAL_CODE', ''),
+('OPEN_HOUR', '09:00'),
+('CLOSE_HOUR', '18:00'),
+('FACEBOOK_LINK', ''),
+('INSTAGRAM_LINK', ''),
+('X_LINK', ''),
+('YOUTUBE_LINK', ''),
+('LINKEDIN_LINK', ''),
+('PINTEREST_LINK', ''),
+('TIKTOK_LINK', '');
 
 INSERT INTO `admins` (`full_name`, `email`, `password`, `active`) VALUES
 ('Site Yöneticisi', 'admin@example.com', '$2y$10$AzMgY8L1.YjCNJ1ja.aShu4VQt/Fjr.vohUUcomM76cHipsqto3/C', 1);

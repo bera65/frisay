@@ -60,13 +60,14 @@
 		window.baseDir = '{$domain}';
 		window.imgDir = '{$domain}img/';
 		window.cssDir = '{$css_dir}';
+		window.searchSuggestUrl = '{$domain}api/search-suggest.php';
 	</script>
 	{include file='./plugin/schema-jsonld.tpl'}
 	{include file='./plugin/theme-options.tpl'}
 </head>
 <body id="{$pageName}" class="prime-body fy-body">
 {if $loading|default:'0' == '1'}
-<div id="pagePreloader" class="position-fixed top-50 start-50 w-100 h-100 align-items-center justify-content-center" style="z-index:9999;transition:opacity .4s ease;">
+<div id="pagePreloader" class="fy-page-preloader position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="z-index:9999;">
 	<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
 </div>
 {/if}

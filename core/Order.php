@@ -391,6 +391,10 @@ class Order
 					throw new RuntimeException('Sepette stokta olmayan ürün var: ' . ($item['product_name'] ?? ''));
 				}
 
+				if (Product::isPackProduct($product)) {
+					throw new RuntimeException('Set ürünü sepete doğrudan eklenemez: ' . ($item['product_name'] ?? ''));
+				}
+
 				if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation)) {
 					throw new RuntimeException('Stok yetersiz: ' . ($item['product_name'] ?? ''));
 				}

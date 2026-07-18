@@ -8,6 +8,7 @@
 <script type="text/javascript" src="{$js_dir}bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="{$js_dir}style.js"></script>
 <script type="text/javascript" src="{$js_dir}fyazilim.js"></script>
+<script type="text/javascript" src="{$js_dir}custom.js"></script>
 {foreach $moduleAssets.js as $moduleJs}
 <script src="{$moduleJs}"></script>
 {/foreach}

@@ -8,6 +8,10 @@
 	define('IN_SCRIPT', true);
 	require_once dirname(__FILE__) . '/config/settings.php';
 
+	if (StoreStatus::shouldBlockFront()) {
+		StoreStatus::renderMaintenance();
+	}
+
 	$container = Security::sanitizeContainerSlug((string) Tools::getValue('container'));
 
 	if ($container === '') {

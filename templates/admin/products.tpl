@@ -116,9 +116,9 @@
 						<ul class="mb-0 mt-2 small">
 							<li>{'Only <strong>.xlsx</strong> files are allowed.'|adminT nofilter}</li>
 							<li>{'Download the current product list with <strong>Export</strong> first to get a sample template.'|adminT nofilter}</li>
-							<li>{'If <strong>Barcode</strong> or <strong>SKU</strong> matches an existing product, the record is updated; otherwise a new product is created.'|adminT nofilter}</li>
+							<li>{'If <strong>SKU</strong> matches an existing product, the record is updated; otherwise a new product is created.'|adminT nofilter}</li>
 							<li>{'If <strong>category</strong> or <strong>brand</strong> in Excel does not exist, it is created automatically.'|adminT nofilter}</li>
-							<li>{'Product images are not imported via Excel; upload images on the product edit page.'|adminT nofilter}</li>
+							<li>{'In the <strong>Images</strong> column, enter image URLs separated by <strong>;</strong>. On import, existing product images are replaced with the URLs in Excel.'|adminT nofilter}</li>
 						</ul>
 					</div>
 					<div class="mb-3">

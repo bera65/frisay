@@ -3,7 +3,12 @@
 		<input type="search" name="q" class="form-control form-control-sm" placeholder="{'Search name, phone or email...'|adminT}" value="{$searchQuery|escape}">
 		<button type="submit" class="btn btn-sm btn-dark">{'Search'|adminT}</button>
 	</form>
+	<button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">{'Add customer'|adminT}</button>
 </div>
+
+{if $customerFlash}
+<div class="alert alert-{$customerFlashType|default:'info'} py-2">{$customerFlash|escape}</div>
+{/if}
 
 <div class="admin-panel">
 	<div class="table-responsive">
@@ -55,3 +60,37 @@
 	</ul>
 </nav>
 {/if}
+
+<div class="modal fade" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{$adminUrl}customers">
+				<input type="hidden" name="token" value="{$adminToken|escape}">
+				<input type="hidden" name="createCustomer" value="1">
+				<div class="modal-header">
+					<h5 class="modal-title" id="createCustomerModalLabel">{'Add customer'|adminT}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|adminT}"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label class="form-label" for="new_customer_name">{'Full name'|adminT}</label>
+						<input type="text" class="form-control" id="new_customer_name" name="user_full_name" required maxlength="128" autocomplete="off">
+					</div>
+					<div class="mb-3">
+						<label class="form-label" for="new_customer_phone">{'Phone'|adminT}</label>
+						<input type="text" class="form-control" id="new_customer_phone" name="phone" required placeholder="05xx xxx xx xx" autocomplete="off">
+					</div>
+					<div class="mb-0">
+						<label class="form-label" for="new_customer_email">{'Email'|adminT}</label>
+						<input type="email" class="form-control" id="new_customer_email" name="email" maxlength="128" autocomplete="off">
+						<div class="form-text">{'Optional. A random password is generated automatically.'|adminT}</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{'Cancel'|adminT}</button>
+					<button type="submit" class="btn btn-primary btn-sm">{'Create customer'|adminT}</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>

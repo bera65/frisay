@@ -1,8 +1,7 @@
 <?php
 
-if (!defined('IN_SCRIPT')) {
-	exit;
-}
+define('IN_SCRIPT', true);
+require_once dirname(__DIR__) . '/config/settings.php';
 
 header('Content-Type: application/json; charset=utf-8');
 

@@ -84,6 +84,141 @@ class Currency
 		return $available[0];
 	}
 
+	public static function handleSwitchRequest(): void
+	{
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			return;
+		}
+
+		if (!isset($_GET['set_currency'])) {
+			return;
+		}
+
+		$code = strtolower(trim((string) $_GET['set_currency']));
+
+		if ($code === '' || $code === 'reset') {
+			unset($_SESSION['displayCurrency']);
+		} elseif (in_array($code, self::getAvailable(), true)) {
+			$_SESSION['displayCurrency'] = $code;
+		}
+
+		$redirect = trim((string) ($_GET['redirect'] ?? ''));
+
+		if ($redirect === '') {
+			$redirect = self::normalizeRedirectPath(null, true);
+		} else {
+			$redirect = self::normalizeRedirectPath($redirect, false);
+		}
+
+		header('Location: ' . self::getSiteBaseUrl() . $redirect);
+		exit;
+	}
+
+	public static function getSiteBaseUrl(): string
+	{
+		self::ensureDefaults();
+
+		$domain = rtrim((string) Settings::get('DOMAIN'), '/');
+		$folder = rtrim((string) Settings::get('FOLDER'), '/');
+
+		if ($folder === '' || $folder === '/') {
+			return $domain;
+		}
+
+		$domainPath = parse_url($domain, PHP_URL_PATH);
+
+		if (is_string($domainPath) && $domainPath !== '') {
+			$domainPath = rtrim($domainPath, '/');
+
+			if ($domainPath === $folder || substr($domainPath, -strlen($folder)) === $folder) {
+				return $domain;
+			}
+		}
+
+		return $domain . $folder;
+	}
+
+	public static function normalizeRedirectPath(?string $uri = null, bool $withQuery = true): string
+	{
+		if ($uri === null) {
+			$uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+		} else {
+			$uri = trim($uri);
+		}
+
+		if ($uri === '') {
+			return '/';
+		}
+
+		if (strpos($uri, '://') !== false || strncmp($uri, '//', 2) === 0) {
+			return '/';
+		}
+
+		$path = (string) (parse_url($uri, PHP_URL_PATH) ?: '/');
+		$folder = rtrim((string) Settings::get('FOLDER'), '/');
+
+		if ($folder !== '' && $folder !== '/' && strpos($path, $folder) === 0) {
+			$path = substr($path, strlen($folder)) ?: '/';
+		}
+
+		if ($path === '' || $path[0] !== '/') {
+			$path = '/' . ltrim($path, '/');
+		}
+
+		if (!$withQuery) {
+			return $path;
+		}
+
+		$query = parse_url($uri, PHP_URL_QUERY);
+
+		if (!is_string($query) || $query === '') {
+			return $path;
+		}
+
+		parse_str($query, $params);
+		unset($params['set_currency'], $params['redirect'], $params['set_lang']);
+
+		if ($params === []) {
+			return $path;
+		}
+
+		return $path . '?' . http_build_query($params);
+	}
+
+	public static function buildSwitchUrl(string $code, ?string $redirect = null): string
+	{
+		$code = strtolower(trim($code));
+
+		if ($redirect === null) {
+			$redirect = self::normalizeRedirectPath(null, true);
+		} else {
+			$redirect = self::normalizeRedirectPath($redirect, false);
+		}
+
+		return self::getSiteBaseUrl() . '/?' . http_build_query([
+			'set_currency' => $code,
+			'redirect' => $redirect,
+		]);
+	}
+
+	public static function getDisplayCurrency(): string
+	{
+		self::ensureDefaults();
+
+		$display = strtolower(trim((string) ($_SESSION['displayCurrency'] ?? '')));
+
+		if ($display !== '' && in_array($display, self::getAvailable(), true)) {
+			return $display;
+		}
+
+		return self::getShopCurrency();
+	}
+
+	public static function isDisplayCurrencyActive(): bool
+	{
+		return self::getDisplayCurrency() !== self::getShopCurrency();
+	}
+
 	/** @return array<string, array{label: string, symbol: string}> */
 	public static function getMetaMap(): array
 	{
@@ -272,10 +407,10 @@ class Currency
 		return self::ok('Para birimi güncellendi');
 	}
 
-	public static function format(float $amount, ?string $lang = null): string
+	public static function format(float $amount, ?string $lang = null, ?string $currency = null): string
 	{
 		$amount = max(0, $amount);
-		$symbol = self::symbol();
+		$symbol = self::symbol($currency);
 		$lang = self::resolveLang($lang);
 
 		if ($lang === 'tr') {
@@ -283,6 +418,23 @@ class Currency
 		}
 
 		return $symbol . number_format($amount, 2, '.', ',');
+	}
+
+	public static function formatFromShop(float $shopAmount, ?string $lang = null): string
+	{
+		$shopAmount = max(0, $shopAmount);
+		$shopCurrency = self::getShopCurrency();
+		$displayCurrency = self::getDisplayCurrency();
+
+		if ($displayCurrency !== $shopCurrency) {
+			if (!class_exists('ExchangeRate', false)) {
+				require_once dirname(__DIR__) . '/core/ExchangeRate.php';
+			}
+
+			$shopAmount = ExchangeRate::fromTry($shopAmount, $displayCurrency);
+		}
+
+		return self::format($shopAmount, $lang, $displayCurrency);
 	}
 
 	private static function defaultMeta(): array

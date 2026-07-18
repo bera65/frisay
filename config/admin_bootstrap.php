@@ -56,6 +56,8 @@
 	require_once dirname(__FILE__) . '/../core/ApiKey.php';
 	require_once dirname(__FILE__) . '/../core/Cargo.php';
 	require_once dirname(__FILE__) . '/../core/Mail.php';
+	require_once dirname(__FILE__) . '/../core/StoreStatus.php';
+	require_once dirname(__FILE__) . '/../core/CustomerContact.php';
 	require_once dirname(__FILE__) . '/../core/SmtpMailer.php';
 	require_once dirname(__FILE__) . '/../core/Notification.php';
 	require_once dirname(__FILE__) . '/../core/Coupon.php';

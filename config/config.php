@@ -31,9 +31,25 @@
 		{
 			return [
 				'SITE_NAME' => ['label' => 'Site name', 'group' => 'general'],
+				'SHOP_ACTIVE' => ['label' => 'Store active', 'group' => 'general', 'type' => 'checkbox'],
+				'SHOP_MAINTENANCE_MESSAGE' => ['label' => 'Maintenance message', 'group' => 'general', 'type' => 'html'],
+				'SHOP_MAINTENANCE_IPS' => ['label' => 'Allowed IPs when store is closed', 'group' => 'general', 'type' => 'textarea'],
 				'CONTACT_EMAIL' => ['label' => 'Contact email', 'group' => 'contact'],
 				'CONTACT_PHONE' => ['label' => 'Phone (display)', 'group' => 'contact'],
 				'CONTACT_PHONE_TEL' => ['label' => 'Phone (tel link)', 'group' => 'contact'],
+				'CONTACT_ADDRESS' => ['label' => 'Store address', 'group' => 'contact', 'type' => 'textarea'],
+				'CONTACT_CITY' => ['label' => 'City', 'group' => 'contact'],
+				'CONTACT_COUNTRY' => ['label' => 'Country', 'group' => 'contact'],
+				'POSTAL_CODE' => ['label' => 'Postal code', 'group' => 'contact'],
+				'OPEN_HOUR' => ['label' => 'Opening hour', 'group' => 'contact'],
+				'CLOSE_HOUR' => ['label' => 'Closing hour', 'group' => 'contact'],
+				'FACEBOOK_LINK' => ['label' => 'Facebook URL', 'group' => 'contact'],
+				'INSTAGRAM_LINK' => ['label' => 'Instagram URL', 'group' => 'contact'],
+				'X_LINK' => ['label' => 'X (Twitter) URL', 'group' => 'contact'],
+				'YOUTUBE_LINK' => ['label' => 'YouTube URL', 'group' => 'contact'],
+				'LINKEDIN_LINK' => ['label' => 'LinkedIn URL', 'group' => 'contact'],
+				'PINTEREST_LINK' => ['label' => 'Pinterest URL', 'group' => 'contact'],
+				'TIKTOK_LINK' => ['label' => 'TikTok URL', 'group' => 'contact'],
 				'RETURN_REQUEST_DAYS' => ['label' => 'Return request window (days)', 'group' => 'returns'],
 				'ORDER_REF_PREFIX' => ['label' => 'Order number prefix', 'group' => 'orders'],
 				'ORDER_REF_SUFFIX_MODE' => ['label' => 'Order number format', 'group' => 'orders', 'type' => 'select'],
@@ -46,6 +62,8 @@
 				'SMTP_ENCRYPTION' => ['label' => 'Encryption (ssl / tls)', 'group' => 'smtp', 'type' => 'text'],
 				'SMTP_FROM_EMAIL' => ['label' => 'From email', 'group' => 'smtp', 'type' => 'text'],
 				'SMTP_FROM_NAME' => ['label' => 'From name (empty = site name)', 'group' => 'smtp', 'type' => 'text'],
+				'MAIL_HEADER' => ['label' => 'Email header (HTML)', 'group' => 'mail_template', 'type' => 'html'],
+				'MAIL_FOOTER' => ['label' => 'Email footer (HTML)', 'group' => 'mail_template', 'type' => 'html'],
 			];
 		}
 

@@ -110,9 +110,12 @@
 				'<b>Active</b>', 
 			]];
 			$exportProducts = Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, max(1, $total), 0);
+			$exportLang = Lang::getDefault();
 
 			foreach ($exportProducts as $gd)
 			{
+				$gd = Lang::applyProductForLang($gd, $exportLang);
+
 				$books[] = [
 					$gd['product_name'], 
 					$gd['barcode'], 
@@ -129,7 +132,7 @@
 					$gd['product_link'], 
 					$gd['category_name'], 
 					$gd['brand_name'], 
-					$gd['image_url'], 
+					Product::getExportImageUrls((int) $gd['id_product']), 
 					$gd['active_label'], 
 				];
 			}

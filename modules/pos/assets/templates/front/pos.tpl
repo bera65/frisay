@@ -12,6 +12,11 @@
 	data-token="{$posToken|escape}"
 	data-card-url="{$posCardUrl|escape}"
 	data-has-card-gateway="{if $posHasCardGateway}1{else}0{/if}"
+	data-fullscreen-auto="{if $posFullscreenAuto}1{else}0{/if}"
+	data-hide-oos="{if $posHideOutOfStock}1{else}0{/if}"
+	data-allow-oos-sale="{if $posAllowOutOfStockSale}1{else}0{/if}"
+	data-payment-adjustments="{$posPaymentAdjustmentsJson|escape:'htmlall'}"
+	data-store="{$posStoreLabel|escape}"
 	data-customer="{$posCustomer.label|escape}">
 
 	<header class="pos-hd">
@@ -38,26 +43,47 @@
 		</div>
 	</header>
 
-	<section class="pos-stats">
-		<div class="pos-stat">
-			<span class="pos-stat__label">Nakit</span>
-			<strong id="stat-cash-count">0 adet</strong>
-			<span id="stat-cash-total" class="pos-stat__amount">₺0,00</span>
+	<section class="pos-kasa">
+		<div class="pos-kasa__head">
+			<h2 class="pos-kasa__title">Kasa Durumu</h2>
+			<span class="pos-kasa__sub">Bugünkü satışlar</span>
 		</div>
-		<div class="pos-stat">
-			<span class="pos-stat__label">Kredi Kartı</span>
-			<strong id="stat-card-count">0 adet</strong>
-			<span id="stat-card-total" class="pos-stat__amount">₺0,00</span>
-		</div>
-		<div class="pos-stat">
-			<span class="pos-stat__label">Havale (Onaylı)</span>
-			<strong id="stat-transfer-ok-count">0 adet</strong>
-			<span id="stat-transfer-ok-total" class="pos-stat__amount">₺0,00</span>
-		</div>
-		<div class="pos-stat pos-stat--warn">
-			<span class="pos-stat__label">Havale Bekleyen</span>
-			<strong id="stat-transfer-pending-count">0 adet</strong>
-			<span id="stat-transfer-pending-total" class="pos-stat__amount">₺0,00</span>
+		<div class="pos-stats">
+			<div class="pos-stat">
+				<div class="pos-stat__row">
+					<span class="pos-stat__label">Nakit</span>
+					<span id="stat-cash-total" class="pos-stat__amount">₺0,00</span>
+				</div>
+				<div id="stat-cash-count" class="pos-stat__count">0 adet</div>
+			</div>
+			<div class="pos-stat">
+				<div class="pos-stat__row">
+					<span class="pos-stat__label">Kredi Kartı</span>
+					<span id="stat-card-total" class="pos-stat__amount">₺0,00</span>
+				</div>
+				<div id="stat-card-count" class="pos-stat__count">0 adet</div>
+			</div>
+			<div class="pos-stat">
+				<div class="pos-stat__row">
+					<span class="pos-stat__label">Havale</span>
+					<span id="stat-transfer-ok-total" class="pos-stat__amount">₺0,00</span>
+				</div>
+				<div id="stat-transfer-ok-count" class="pos-stat__count">0 adet</div>
+			</div>
+			<div class="pos-stat pos-stat--warn">
+				<div class="pos-stat__row">
+					<span class="pos-stat__label">Havale Bekleyen</span>
+					<span id="stat-transfer-pending-total" class="pos-stat__amount">₺0,00</span>
+				</div>
+				<div id="stat-transfer-pending-count" class="pos-stat__count">0 adet</div>
+			</div>
+			<div class="pos-stat pos-stat--total">
+				<div class="pos-stat__row">
+					<span class="pos-stat__label">Toplam Ciro</span>
+					<span id="stat-grand-total" class="pos-stat__amount">₺0,00</span>
+				</div>
+				<div id="stat-grand-count" class="pos-stat__count">0 satış</div>
+			</div>
 		</div>
 	</section>
 
@@ -141,6 +167,16 @@
 				<input type="text" id="pos-customer-search" class="pos-field" placeholder="Ad, telefon veya e-posta ile ara…" autocomplete="off">
 				<button type="button" id="pos-customer-visitor" class="pos-visitor-btn">Ziyaretçi (varsayılan)</button>
 				<div id="pos-customer-results" class="pos-customer-list"></div>
+
+				<div class="pos-customer-create">
+					<button type="button" id="pos-customer-create-toggle" class="pos-outline-btn pos-outline-btn--sm">+ Yeni müşteri ekle</button>
+					<div id="pos-customer-create-form" class="pos-customer-create__form" hidden>
+						<input type="text" id="pos-customer-create-name" class="pos-field" placeholder="Ad soyad" autocomplete="off">
+						<input type="text" id="pos-customer-create-phone" class="pos-field" placeholder="05xx xxx xx xx" autocomplete="off">
+						<input type="email" id="pos-customer-create-email" class="pos-field" placeholder="E-posta (isteğe bağlı)" autocomplete="off">
+						<button type="button" id="pos-customer-create-save" class="pos-checkout pos-checkout--inline">Kaydet ve seç</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -179,6 +215,14 @@
 				</div>
 
 				<div class="pos-pay-total-box">
+					<span>Ara toplam</span>
+					<strong id="pos-pay-subtotal">₺0,00</strong>
+				</div>
+				<div id="pos-pay-adjustment-row" class="pos-pay-adjustment" hidden>
+					<span id="pos-pay-adjustment-label">İndirim</span>
+					<strong id="pos-pay-adjustment-amount">₺0,00</strong>
+				</div>
+				<div class="pos-pay-total-box pos-pay-total-box--final">
 					<span>Ödenecek tutar</span>
 					<strong id="pos-pay-total">₺0,00</strong>
 				</div>
@@ -223,7 +267,27 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Fiş -->
+	<div id="pos-receipt-modal" class="pos-overlay" hidden>
+		<div class="pos-overlay__bg" data-close="receipt"></div>
+		<div class="pos-sheet pos-sheet--receipt">
+			<div class="pos-sheet__head">
+				<h3>Satış Fişi</h3>
+				<button type="button" class="pos-sheet__x" data-close="receipt">&times;</button>
+			</div>
+			<div class="pos-sheet__body pos-receipt-wrap">
+				<div id="pos-receipt-content" class="pos-receipt"></div>
+				<div class="pos-receipt-actions">
+					<button type="button" id="pos-receipt-print" class="pos-checkout pos-checkout--inline">Yazdır</button>
+					<button type="button" class="pos-outline-btn" data-close="receipt">Kapat</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
+
+<div id="pos-print-area" class="pos-print-area" aria-hidden="true"></div>
 
 <script src="{$posJsUrl|escape}"></script>
 </body>
