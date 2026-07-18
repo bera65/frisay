@@ -125,7 +125,7 @@
 					{/if}
 				</div>
 
-				<button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="cargoRateAdd">{'+ Add range'|adminT}</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="cargoRateAdd" data-empty-max-ph="{'empty = +∞'|adminT|escape}">{'+ Add range'|adminT}</button>
 
 				<div class="d-flex flex-wrap gap-2">
 					<button type="submit" class="btn btn-dark">{if $editCargo}{'Update'|adminT}{else}{'Save'|adminT}{/if}</button>
@@ -197,6 +197,8 @@
 	var addBtn = document.getElementById('cargoRateAdd');
 	if (!wrap || !addBtn) return;
 
+	var emptyMaxPh = addBtn.getAttribute('data-empty-max-ph') || '';
+
 	function bindRemove(btn) {
 		btn.addEventListener('click', function () {
 			var rows = wrap.querySelectorAll('.cargo-rate-row');
@@ -217,7 +219,7 @@
 			'<div class="col-4"><label class="form-label small mb-0">Min (₺)</label>' +
 			'<input type="text" name="rate_min[]" class="form-control form-control-sm" value=""></div>' +
 			'<div class="col-4"><label class="form-label small mb-0">Max (₺)</label>' +
-			'<input type="text" name="rate_max[]" class="form-control form-control-sm" value="" placeholder="{'empty = +∞'|adminT}"></div>' +
+			'<input type="text" name="rate_max[]" class="form-control form-control-sm" value="" placeholder="' + emptyMaxPh.replace(/"/g, '&quot;') + '"></div>' +
 			'<div class="col-3"><label class="form-label small mb-0">Fee</label>' +
 			'<input type="text" name="rate_fee[]" class="form-control form-control-sm" value=""></div>' +
 			'<div class="col-1"><button type="button" class="btn btn-sm btn-outline-danger cargo-rate-remove" title="Delete">&times;</button></div>';
